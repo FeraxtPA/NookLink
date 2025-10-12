@@ -1,6 +1,6 @@
 #pragma once
 #include "book.h"
-#include "ConnectionManager.h"
+#include "connectionManager.h"
 #include <raylib.h>
 #include <unordered_map>
 #include <string>
@@ -69,7 +69,7 @@ public:
     void updateGenrePosition(int nodeId, Vector2 newPos);
 
     void drawNode(const Node& nodes, float zoom);
-    void drawEdges(float zoom, const Rectangle& viewRect);
+    void drawEdges(float zoom,const Rectangle& viewRect);
 
 
     Font getFont()  { return m_NodeRenderer.getFont(); }
@@ -91,7 +91,7 @@ private:
     
     std::unordered_map<Genre, GenreInfo> m_Genres;
 
-   
+    
     std::unordered_map<int, Node*> m_NodeIdMap;
 
     int m_GenreIdBase = -1;

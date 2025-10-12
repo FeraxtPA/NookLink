@@ -1,8 +1,8 @@
 #pragma once
 #include <raylib.h>
 #include "bookManager.h"
-#include "TextRenderer.h"
-#include "ConnectionManager.h"
+#include "textRenderer.h"
+#include "connectionManager.h"
 #include "colors.h"
 enum class NodeType {
     Book,
