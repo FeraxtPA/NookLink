@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include "include/nlohmann/json.hpp"
 
 enum class Genre {
 	Dystopian,
@@ -24,7 +25,7 @@ enum class Genre {
 	PostApocalyptic,
 	Western,
 	CrimeFiction,
-	LiteraryMistery,
+	LiteraryMystery,
 	Biography,
 	Memoir,
 	SelfHelp,
@@ -90,7 +91,7 @@ inline std::string genreToString(Genre genre) {
         {Genre::PostApocalyptic, "Post Apocalyptic"},
         {Genre::Western, "Western"},
         {Genre::CrimeFiction, "Crime Fiction"},
-        {Genre::LiteraryMistery, "Literary Mystery"},
+        {Genre::LiteraryMystery, "Literary Mystery"},
         {Genre::Biography, "Biography"},
         {Genre::Memoir, "Memoir"},
         {Genre::SelfHelp, "Self Help"},
@@ -139,3 +140,86 @@ inline std::string genreToString(Genre genre) {
     }
     return "Unknown Genre";
 }
+
+// === ADD THIS FUNCTION ===
+inline Genre stringToGenre(const std::string& genreStr) {
+    // Create a reverse map for efficient lookup
+    static const std::unordered_map<std::string, Genre> reverseGenreMap = {
+        {"Dystopian", Genre::Dystopian},
+        {"Science Fiction", Genre::ScienceFiction},
+        {"Fantasy", Genre::Fantasy},
+        {"Adventure", Genre::Adventure},
+        {"History", Genre::History},
+        {"Literary Fiction", Genre::LiteraryFiction},
+        {"Historical Fiction", Genre::HistoricalFiction},
+        {"Mystery", Genre::Mystery},
+        {"Thriller", Genre::Thriller},
+        {"Romance", Genre::Romance},
+        {"Horror", Genre::Horror},
+        {"Young Adult", Genre::YoungAdult},
+        {"Children's Literature", Genre::ChildrensLiterature},
+        {"Graphic Novel", Genre::GraphicNovel},
+        {"Magical Realism", Genre::MagicalRealism},
+        {"Chick Lit", Genre::ChickLit},
+        {"New Adult", Genre::NewAdult},
+        {"Post Apocalyptic", Genre::PostApocalyptic},
+        {"Western", Genre::Western},
+        {"Crime Fiction", Genre::CrimeFiction},
+        {"Literary Mystery", Genre::LiteraryMystery}, // Note: M-i-s-t-e-r-y typo is from your file
+        {"Biography", Genre::Biography},
+        {"Memoir", Genre::Memoir},
+        {"Self Help", Genre::SelfHelp},
+        {"True Crime", Genre::TrueCrime},
+        {"Travel Writing", Genre::TravelWriting},
+        {"Cookbook", Genre::Cookbook},
+        {"Essay", Genre::Essay},
+        {"Science", Genre::Science},
+        {"Politics", Genre::Politics},
+        {"Philosophy", Genre::Philosophy},
+        {"Health and Wellness", Genre::HealthAndWellness},
+        {"Business", Genre::Business},
+        {"Parenting", Genre::Parenting},
+        {"Nature Writing", Genre::NatureWriting},
+        {"Spirituality", Genre::Spirituality},
+        {"Sociology", Genre::Sociology},
+        {"Psychology", Genre::Psychology},
+        {"Education", Genre::Education},
+        {"Finance", Genre::Finance},
+        {"Fan Fiction", Genre::FanFiction},
+        {"Classic Literature", Genre::ClassicLiterature},
+        {"Romanticism", Genre::Romanticism},
+        {"Realism", Genre::Realism},
+        {"Modernism", Genre::Modernism},
+        {"Surrealism", Genre::Surrealism},
+        {"Gothic Fiction", Genre::GothicFiction},
+        {"Victorian Literature", Genre::VictorianLiterature},
+        {"Beat Generation", Genre::BeatGeneration},
+        {"Existentialism", Genre::Existentialism},
+        {"Historical Romance", Genre::HistoricalRomance},
+        {"Cozy Mystery", Genre::CozyMystery},
+        {"Urban Fantasy", Genre::UrbanFantasy},
+        {"Horror Comedy", Genre::HorrorComedy},
+        {"Short Stories", Genre::ShortStories},
+        {"Poetry", Genre::Poetry},
+        {"Journals", Genre::Journals},
+        {"Action", Genre::Action},
+        {"Dark Fantasy", Genre::DarkFantasy},
+        {"Cozy Fantasy", Genre::CozyFantasy},
+        {"Nature", Genre::Nature}
+    };
+
+    auto it = reverseGenreMap.find(genreStr);
+    if (it != reverseGenreMap.end()) {
+        return it->second;
+    }
+    throw std::runtime_error("Unknown Genre: " + genreStr);
+    }
+
+        // === ADD THESE FUNCTIONS for nlohmann::json ===
+        inline void to_json(nlohmann::json& j, const Genre& g) {
+        j = genreToString(g);
+    }
+
+    inline void from_json(const nlohmann::json& j, Genre& g) {
+        g = stringToGenre(j.get<std::string>());
+    }

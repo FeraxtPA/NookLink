@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <stdexcept>
 #include <unordered_map>
+
+#include <string>     // <-- Add this
+#include <fstream>    // <-- Add this
+#include <iostream>   // <-- Add this (for error handling)
+
 class BookManager
 {
 
@@ -22,6 +27,10 @@ public:
 		
 
 	const Book* findBookById(int id) const;
+
+
+	void saveBooksToFile(const std::string& filename) const;
+	void loadBooksFromFile(const std::string& filename);
 
 private:
 	std::vector<Book> m_Books;

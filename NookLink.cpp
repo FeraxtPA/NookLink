@@ -104,6 +104,10 @@ int main()
 
     SetTextureFilter(font.texture, RL_TEXTURE_FILTER_POINT);
 
+    const char* saveFileName = "my_books.json";
+    Rectangle saveButton = { (float)screenWidth - 220, 10, 100, 40 };
+    Rectangle loadButton = { (float)screenWidth - 110, 10, 100, 40 };
+
     while (!WindowShouldClose())
     {
         float deltaTime = GetFrameTime();
@@ -127,7 +131,30 @@ int main()
                 IsKeyPressed(KEY_B);
         }
     
+        if (!IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && !graphRenderer.getDraggedNode())
+        {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                // Zkontrolovat kliknutí na tlačítko ULOŽIT
+                if (CheckCollisionPointRec(mousePos, saveButton))
+                {
+                    std::cout << "Saving books to " << saveFileName << "..." << std::endl;
+                    bookManager.saveBooksToFile(saveFileName);
+                }
 
+                // Zkontrolovat kliknutí na tlačítko NAČÍST
+                else if (CheckCollisionPointRec(mousePos, loadButton))
+                {
+                    std::cout << "Loading books from " << saveFileName << "..." << std::endl;
+                    bookManager.loadBooksFromFile(saveFileName);
+
+                    // DŮLEŽITÉ: Po načtení musíme znovu sestavit graf
+                    graphRenderer.initializePositions(); // Znovu vytvoří uzly z bookManageru
+                    layoutDirty = true;                  // Spustí nové usazení grafu
+                    settleIterations = 0;                // Resetuje počítadlo usazení
+                }
+            }
+        }
 
         if (layoutDirty) {
             updateInterval -= deltaTime;
@@ -300,6 +327,19 @@ int main()
 
         cameraHandler.endMode();
 
+        // === PŘIDAT TENTO KÓD PRO VYKRESLENÍ ===
+
+        // Vykreslit tlačítko ULOŽIT
+        bool saveHover = CheckCollisionPointRec(mousePos, saveButton);
+        DrawRectangleRec(saveButton, saveHover ? DARKGRAY : LIGHTGRAY);
+        DrawText("Save", (int)(saveButton.x + saveButton.width / 2 - MeasureText("Save", 20) / 2), (int)(saveButton.y + 10), 20, BLACK);
+
+        // Vykreslit tlačítko NAČÍST
+        bool loadHover = CheckCollisionPointRec(mousePos, loadButton);
+        DrawRectangleRec(loadButton, loadHover ? DARKGRAY : LIGHTGRAY);
+        DrawText("Load", (int)(loadButton.x + loadButton.width / 2 - MeasureText("Load", 20) / 2), (int)(loadButton.y + 10), 20, BLACK);
+
+        // === KONEC PŘIDANÉHO KÓDU ===
 
         DrawText("Right-click and drag to move nodes", 10, 10, 20, BLACK);
         DrawText("Press SPACE to add 10 new books", 10, 40, 20, BLACK);

@@ -1,0 +1,604 @@
+{
+    "books": [
+        {
+            "author": "George Orwell",
+            "genres": [
+                "Dystopian",
+                "Science Fiction",
+                "Classic Literature"
+            ],
+            "id": 1,
+            "notes": "",
+            "rating": 3.200000047683716,
+            "status": "Read",
+            "title": "1984"
+        },
+        {
+            "author": "Aldous Huxley",
+            "genres": [
+                "Dystopian",
+                "Science Fiction"
+            ],
+            "id": 2,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "Brave New World"
+        },
+        {
+            "author": "J.R.R. Tolkien",
+            "genres": [
+                "Fantasy",
+                "Adventure"
+            ],
+            "id": 3,
+            "notes": "An epic fantasy adventure set in Middle-earth.\nA prequel to The Lord of the Rings.\n- Bilbo's journey begins in the Shire.\n- Encounters with trolls, goblins, and Smaug the dragon.\n- Themes of courage, friendship, and the hero's journey.",
+            "rating": 4.5,
+            "status": "Read",
+            "title": "The Hobbit"
+        },
+        {
+            "author": "Patrick Rothfuss",
+            "genres": [
+                "Fantasy",
+                "Dark Fantasy"
+            ],
+            "id": 4,
+            "notes": "",
+            "rating": 0.0,
+            "status": "Reading",
+            "title": "The Name of the Wind"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 5,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 6,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 7,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 8,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 9,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 10,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 11,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 12,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 13,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 14,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 15,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 16,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 17,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 18,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 19,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 20,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 21,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 22,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 23,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 24,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 25,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 26,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 27,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 28,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 29,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 30,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 31,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 32,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 33,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 34,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 35,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 36,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 37,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 38,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 39,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 40,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 41,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 42,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 43,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 44,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 45,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 46,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 47,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 48,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 49,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 50,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 51,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 52,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 53,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        },
+        {
+            "author": "Author",
+            "genres": [
+                "History"
+            ],
+            "id": 54,
+            "notes": "",
+            "rating": 0.0,
+            "status": "ToRead",
+            "title": "New Book"
+        }
+    ],
+    "next_id": 55
+}
