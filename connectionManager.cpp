@@ -1,5 +1,6 @@
 #include "connectionManager.h"
-#include <iostream>
+#include <algorithm>
+
 void ConnectionManager::updateConnections(const std::vector<Book>& books)
 {
     m_Edges.clear();

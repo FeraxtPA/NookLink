@@ -171,8 +171,8 @@ void GraphManager::removeNodeById(int id) {
 
 
 Rectangle GraphManager::getCameraViewRect(const Camera2D& camera, int screenWidth, int screenHeight) {
-    float left = camera.target.x - (screenWidth / 2) / camera.zoom;
-    float top = camera.target.y - (screenHeight / 2) / camera.zoom;
+    float left = camera.target.x - (static_cast<float>(screenWidth) / 2) / camera.zoom;
+    float top = camera.target.y - (static_cast<float>(screenHeight) / 2) / camera.zoom;
     float width = screenWidth / camera.zoom;
     float height = screenHeight / camera.zoom;
     return { left, top, width, height };
