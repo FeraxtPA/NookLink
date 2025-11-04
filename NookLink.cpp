@@ -332,12 +332,12 @@ int main()
         // Vykreslit tlačítko ULOŽIT
         bool saveHover = CheckCollisionPointRec(mousePos, saveButton);
         DrawRectangleRec(saveButton, saveHover ? DARKGRAY : LIGHTGRAY);
-        DrawText("Save", (int)(saveButton.x + saveButton.width / 2 - MeasureText("Save", 20) / 2), (int)(saveButton.y + 10), 20, BLACK);
+        DrawText("Save", (int)(saveButton.x + saveButton.width / 2 - static_cast<float>(MeasureText("Save", 20)) / 2), (int)(saveButton.y + 10), 20, BLACK);
 
         // Vykreslit tlačítko NAČÍST
         bool loadHover = CheckCollisionPointRec(mousePos, loadButton);
         DrawRectangleRec(loadButton, loadHover ? DARKGRAY : LIGHTGRAY);
-        DrawText("Load", (int)(loadButton.x + loadButton.width / 2 - MeasureText("Load", 20) / 2), (int)(loadButton.y + 10), 20, BLACK);
+        DrawText("Load", (int)(loadButton.x + loadButton.width / 2 - static_cast<float>(MeasureText("Load", 20)) / 2), (int)(loadButton.y + 10), 20, BLACK);
 
         // === KONEC PŘIDANÉHO KÓDU ===
 
