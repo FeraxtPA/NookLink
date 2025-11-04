@@ -1,6 +1,9 @@
 #include "bookManager.h"
 #include <algorithm>
-#include "include/nlohmann/json.hpp" // <-- Add this
+#include <string>     
+#include <fstream>    
+#include <iostream>  
+#include "include/nlohmann/json.hpp" 
 
 int BookManager::addBook(const Book& book)
 {
@@ -42,32 +45,30 @@ const Book* BookManager::findBookById(int id) const
 
 void BookManager::saveBooksToFile(const std::string& filename) const
 {
-	// Use nlohmann::json
+
 	nlohmann::json j;
 
-	// This will automatically use the to_json functions we wrote
-	// for std::vector, Book, Status, and Genre.
+
 	j["books"] = m_Books;
 
-	// Also save the next ID so we don't have ID collisions after loading
+	//Save last id for adding new books later
 	j["next_id"] = m_NextId;
 
-	// Open an output file stream
+	
 	std::ofstream o(filename);
 	if (!o.is_open()) {
 		std::cerr << "Error: Could not open file for writing: " << filename << std::endl;
 		return;
 	}
 
-	// Write the pretty-printed JSON to the file
-	// The '4' indicates an indentation of 4 spaces
+
 	o << j.dump(4) << std::endl;
 	std::cout << "Books successfully saved to " << filename << std::endl;
 }
 
 void BookManager::loadBooksFromFile(const std::string& filename)
 {
-	// Open an input file stream
+	
 	std::ifstream i(filename);
 	if (!i.is_open()) {
 		std::cerr << "Error: Could not open file for reading: " << filename << std::endl;
@@ -77,7 +78,6 @@ void BookManager::loadBooksFromFile(const std::string& filename)
 	nlohmann::json j;
 
 	try {
-		// Parse the file
 		j = nlohmann::json::parse(i);
 	}
 	catch (nlohmann::json::parse_error& e) {
@@ -86,27 +86,24 @@ void BookManager::loadBooksFromFile(const std::string& filename)
 	}
 
 	try {
-		// Vyèistíme aktuální seznam knih
+		
+	    //Clear books before loading from save
 		m_Books.clear();
 
-		// --- TOTO JE NOVÝ KÓD (nahrazuje øádek 50) ---
-		// Místo `get_to` projdeme pole "books" ruènì
 		if (j.contains("books") && j.at("books").is_array())
 		{
-			// Pro každou položku v JSON poli "books"...
+		
 			for (const auto& book_json : j.at("books"))
 			{
-				// ...pøeveï ji na objekt Book (zavolá se from_json pro Book)
-				// a vlož ji na konec našeho vektoru m_Books.
+			
 				m_Books.push_back(book_json.get<Book>());
 			}
 		}
-		// --- KONEC NOVÉHO KÓDU ---
-
-		// Naèteme next_id, abychom pøedešli kolizím
+		
+		// Needed if any new book will be added, so that the id continues from where left off
 		m_NextId = j.at("next_id").get<int>();
 
-		std::cout << "Books successfully loaded from " << filename << std::endl;
+	
 	}
 	catch (nlohmann::json::exception& e) {
 		std::cerr << "Error: JSON data is malformed: " << e.what() << std::endl;

@@ -30,7 +30,7 @@ int main()
     book1.addGenre(Genre::ScienceFiction);
     book1.addGenre(Genre::ClassicLiterature);
    
-    book1.setRating(3.2f);
+    book1.setRating(3.33f);
     Book book2("Brave New World", "Aldous Huxley", Status::ToRead);
     book2.addGenre(Genre::Dystopian);
     book2.addGenre(Genre::ScienceFiction);
@@ -381,7 +381,7 @@ int main()
 					}
                     cachedTooltipText = "Title: " + hoveredBook->getTitle() +
                         "\nAuthor: " + hoveredBook->getAuthor() +
-                        "\nCurrent Status:" + Book::statusToString(hoveredBook->getStatus()) +
+                        "\nCurrent Status:" + statusToString(hoveredBook->getStatus()) +
                         "\nNotes: " + hoveredBook->getNotes() +
                         "\nRating: " + Book::ratingToStars(hoveredBook->getRating()) +
                         "\nBookID: " + std::to_string(hoveredBook->getId());

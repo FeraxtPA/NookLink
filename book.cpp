@@ -21,7 +21,9 @@ std::string Book::ratingToStars(float rating)
 		int empty = 5 - full - (half ? 1 : 0);
 
 		std::string bar;
+		//Full start UTF
 		for (int i = 0; i < full; i++) bar += "[\xE2\x98\x85]";
+		//Half start UTF
 		if (half) bar += "[\xC2\xBD]";
 		for (int i = 0; i < empty; i++) bar += "[ ]";
 
@@ -29,15 +31,6 @@ std::string Book::ratingToStars(float rating)
 
 }
 
-std::string Book::statusToString(Status status)
-{
-	switch (status) {
-	case Status::ToRead: return "To Read";
-	case Status::Reading: return "Reading";
-	case Status::Read: return "Read";
-	default: return "Unknown";
-	}
-}
 
 
 

@@ -1,9 +1,11 @@
 ﻿#pragma once
 
+#include <memory_resource>
 #include <string>
 #include <vector>
 #include "genres.h"
 #include "include/nlohmann/json.hpp"
+#include <cmath>
 
 using nlohmann::json;
 
@@ -13,6 +15,24 @@ enum class Status
 	Reading,
 	Read,
 };
+
+inline double GetRatingTwoDecimal(const float& rating) {
+
+  int i;
+  double d_rating = static_cast<double>(rating);
+
+  if (static_cast<double>(d_rating) >= 0)
+
+    i = static_cast<int>(d_rating * 100 + 0.5);
+
+  else
+
+    i = static_cast<int>(d_rating * 100 - 0.5);
+
+
+  return (i / 100.0);
+
+}
 
 inline std::string statusToString(Status status) {
 	switch (status) {
@@ -46,7 +66,7 @@ public:
 	
 	static std::string ratingToStars(float rating);
 
-	static std::string statusToString(Status status);
+
 
 	int getId() const { return m_id; }
 	const std::string& getTitle() const { return m_Title; }
@@ -63,7 +83,7 @@ public:
 	void addGenre(Genre genre) { m_Genres.push_back(genre); }
 	void clearGenres() { m_Genres.clear(); } 
 	void setNotes(const std::string& notes) { m_Notes = notes; }
-	float getRating() const { return m_Rating; }
+	float getRating() const { return m_Rating;}
 	
 	void setRating(float rating) {
 		if (rating >= 0.0f && rating <= 5.0f) {
@@ -82,7 +102,12 @@ private:
 
 };
 
+//Function to convert book attributes to json format
 inline void to_json(json& j, const Book& b) {
+
+	std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << b.getRating();
+
 	j = json{
 		{"id", b.getId()},
 		{"title", b.getTitle()},
@@ -90,30 +115,31 @@ inline void to_json(json& j, const Book& b) {
 		{"status", b.getStatus()},
 		{"genres", b.getGenres()},
 		{"notes", b.getNotes()},
-		{"rating", b.getRating()}
+		{"rating", GetRatingTwoDecimal(b.getRating())}
+
 	};
 }
 
+
+//Convert from json back to book attributes, using overloaded functions for status and genres
 inline void from_json(const json& j, Book& b) {
 	b.setId(j.at("id").get<int>());
 	b.setTitle(j.at("title").get<std::string>());
 	b.setAuthor(j.at("author").get<std::string>());
 	b.setStatus(j.at("status").get<Status>());
 
-	// --- Začátek úpravy ---
-
-	// Nejprve vymažeme staré žánry pro případ, že načítáme do existující knihy
+	
 	b.clearGenres();
 
-	// Bezpečnější načtení žánrů: pouze pokud existují a jsou pole
+	
 	if (j.contains("genres") && j.at("genres").is_array()) {
-		// Načteme do dočasného vektoru
+		
 		auto genres = j.at("genres").get<std::vector<Genre>>();
 		for (const auto& genre : genres) {
 			b.addGenre(genre);
 		}
 	}
-	// --- Konec úpravy ---
+	
 
 	b.setNotes(j.at("notes").get<std::string>());
 	b.setRating(j.at("rating").get<float>());

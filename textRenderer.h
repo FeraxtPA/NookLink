@@ -10,7 +10,7 @@ public:
 
     void drawTextCentered(const std::string& text, Vector2 pos, float radius);
 
-    Font getFont() {
+    const Font& getFont() {
 		return m_Font;
 	}
 private:

@@ -2,19 +2,36 @@
 #include <raylib.h>
 namespace NookCol
 {
-	constexpr Color BACKGROUND = { 40, 44, 48, 255 };
-	constexpr Color CURRENTLY_READING = { 162, 55, 60, 255 };
-	constexpr Color TO_READ = { 210, 170, 80, 255 };
-	constexpr Color READ = { 108, 88, 68, 255 };
-	constexpr Color GENRE = { 85, 115, 80, 255 };
-	constexpr Color EDGE = { 95, 95, 95, 255 };
-	constexpr Color POPUP_BG = { 52, 56, 60, 255 };
-	constexpr Color POPUP_BORDER = { 120, 105, 85, 255 };
-	constexpr Color TEXT_DEFAULT = { 220, 220, 220, 255 };
-	constexpr Color TEXT_HIGHLIGHT = { 60, 160, 160, 255 };
-	constexpr Color TEXT_ONNODE = { 235, 235, 235, 255 };
-}
+    // --- Base UI ---
+    // A dark, warm, "retro" grey-brown
+    constexpr Color BACKGROUND = { 60, 58, 56, 255 };
+    // A slightly lighter, muted grey-brown for edges
+    constexpr Color EDGE = { 80, 78, 76, 255 };
 
+    // --- Node Colors ---
+    // A soft, muted "retro" red
+    constexpr Color CURRENTLY_READING = { 190, 70, 60, 255 };
+    // A muted, "old gold" or ochre
+    constexpr Color TO_READ = { 200, 150, 50, 255 };
+    // A desaturated, earthy "retro" green
+    constexpr Color READ = { 140, 130, 40, 255 };
+    // A soft, "faded" aqua or teal
+    constexpr Color GENRE = { 80, 130, 135, 255 };
+
+    // --- Popup UI ---
+    // A slightly lighter, distinct grey-brown
+    constexpr Color POPUP_BG = { 70, 68, 66, 255 };
+    // A solid border using the "old gold" accent
+    constexpr Color POPUP_BORDER = { 200, 150, 50, 255 };
+
+    // --- Text Colors ---
+    // The classic Gruvbox "cream" text
+    constexpr Color TEXT_DEFAULT = { 235, 219, 178, 255 };
+    // A bright but soft aqua for highlights
+    constexpr Color TEXT_HIGHLIGHT = { 120, 150, 150, 255 };
+    // The same light cream for text on nodes
+    constexpr Color TEXT_ONNODE = { 235, 219, 178, 255 };
+}
 
 //touissant
 /*
