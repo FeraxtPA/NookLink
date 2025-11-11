@@ -59,7 +59,7 @@ void GraphManager::resolveNodeOverlaps(float padding) {
 
 void GraphManager::drawEdges(float zoom, const Rectangle& viewRect) {
 
-    m_NodeRenderer.drawEdges(m_ConnectionManager, m_Nodes, viewRect);
+    m_NodeRenderer.drawEdges(m_ConnectionManager, m_Nodes, viewRect, zoom);
 }
 
 

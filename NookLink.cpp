@@ -6,7 +6,7 @@
 #include "graphManager.h"
 #include <iostream>
 #include "cameraHandler.h"
-
+#include <format>
 
 
 
@@ -348,6 +348,7 @@ int main()
         DrawText("Double click a node to unlock it", 10, 130, 20, BLACK);
         DrawText("Press V to unlock framerate", 10, 160, 20, BLACK);
         DrawText("Press B to enable VSYNC", 10, 190, 20, BLACK);
+        DrawText( (std::format("Zoom: {}",  cameraHandler.getCamera().zoom)).c_str(),  10, 220, 20, BLACK);
 
         std::string nodeAmountText = "Node amount: " + std::to_string(graphRenderer.getNodes().size());
         DrawText(nodeAmountText.c_str(), 10, screenHeight - 40, 20, BLACK);

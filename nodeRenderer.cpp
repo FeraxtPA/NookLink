@@ -18,11 +18,15 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
         const Book* book = m_BookManager.findBookById(node.id);
         if(!book) return; 
         Color color = getStatusColor(book->getStatus());
-        DrawCircleV(node.position, node.radius, color);
+       
 
         
         if (zoom >= 0.4f)
+        {
+            
+            DrawCircleV(node.position, node.radius, color);
             m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius);
+        }
     }
     else if (node.type == NodeType::Genre) {
         auto genreOpt = findGenreByNodeId(genres, node.id);
@@ -37,13 +41,18 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
 }
 
 
-void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node>& nodes, const Rectangle& viewRect)
+void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node>& nodes, const Rectangle& viewRect, float zoom)
 {
+    if(zoom > 0.4f)
+    {
+
+   
     const auto& edges = cm.getEdges();
     rlPushMatrix();
     rlSetLineWidth(4.0f);
     
     rlBegin(RL_LINES);
+    
     for (const auto& edge : edges) {
         if (edge.type != EdgeType::BookToGenre) continue; // Skip non-BookToGenre edges
 
@@ -60,7 +69,7 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
     rlEnd();
  
     rlPopMatrix();
-   
+    }
 }
 
 
