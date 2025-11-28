@@ -18,70 +18,35 @@
 
 class GraphManager {
 public:
-    GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize)
-        : m_BookManager(bm), m_ConnectionManager(cm), m_NodeRenderer(bm), m_CanvasSize(canvasSize)  {}
-
-    void initializePositions() {
-
-        m_ConnectionManager.updateConnections(m_BookManager.getBooks());
-        
-        resetNodeState();
-
-        placeGenreNodes(m_ConnectionManager.getExistingGenres(), m_ConnectionManager.getGenreIdMap());
-        
-
-       
-        placeBookNodes();
-
-        for (auto& node : m_Nodes) {
-            m_NodeIdMap[node.id] = &node;
-        }
-        
-    }
+    GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize);
+      
+    void initializePositions();
    
-    void updateConnections()
-    {
-        m_ConnectionManager.updateConnections(m_BookManager.getBooks());
-    }
-
     void removeNodeById(int id);
 
-  
-    Rectangle getCameraViewRect(const Camera2D& camera, int screenWidth, int screenHeight);
+    const Rectangle getCameraViewRect(const Camera2D& camera, Vector2 screenDimensions);
 
-
-    std::optional<Genre> getGenreByNodeId(int nodeId) const;
-  
-
-
-    const std::vector<Edge>& getEdges() const {
-		return m_ConnectionManager.getEdges();
-	}
-
-
-    Node* getNodeById(int id) {
-        auto it = m_NodeIdMap.find(id);
-        return (it != m_NodeIdMap.end()) ? it->second : nullptr;
-    }
+    const std::optional<Genre> getGenreByNodeId(int nodeId) const;
 
     bool isNodeVisible(const Node& node, const Rectangle& viewRect);
 
     void updateGenrePosition(int nodeId, Vector2 newPos);
 
-    void drawNode(const Node& nodes, float zoom);
+    void drawNode(const Node& node, float zoom);
     void drawEdges(float zoom,const Rectangle& viewRect);
 
+    int getNumOfConnectedBooks(int genreNodeId) const;
 
-    Font getFont()  { return m_NodeRenderer.getFont(); }
-
-    std::vector<Node>& getNodes() { return m_Nodes; }
+    std::vector<Node>& getNodes()  { return m_Nodes; }
     Node* getDraggedNode() { return draggedNode; }
     void setDraggedNode(Node* node) { draggedNode = node; }
+
     void resolveNodeOverlaps(float padding = 10.0f);
  
     Node* getNodeAtPosition(Vector2 mousePos);
     const std::string getGenreNameByNodeId(int nodeId) const;
 
+    void clearGenresAndConnections() { m_ConnectionManager.Clear(); }
 private:
     const BookManager& m_BookManager;
     ConnectionManager& m_ConnectionManager;
@@ -90,16 +55,11 @@ private:
     GraphLayout m_GraphLayout;
     
     std::unordered_map<Genre, GenreInfo> m_Genres;
-
-    
     std::unordered_map<int, Node*> m_NodeIdMap;
 
     int m_GenreIdBase = -1;
     Node* draggedNode = nullptr;
     Vector2 m_CanvasSize;
-
-
-
 
     void resetNodeState();
 

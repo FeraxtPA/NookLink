@@ -1,9 +1,10 @@
 #include "graphLayout.h"
 
-
+// Resolve overlaps between nodes by adjusting their positions
 void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
 {
-    float maxDisplacement = 20.0f;
+    // Maximum displacement to avoid excessive movement
+    float maxDisplacement = 100.0f;
 
     for (size_t i = 0; i < m_Nodes.size(); ++i) {
         for (size_t j = i + 1; j < m_Nodes.size(); ++j) {
@@ -14,7 +15,10 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
             Vector2 delta = Vector2Subtract(b.position, a.position);
             float dist = Vector2Length(delta);
 
+            // Check for overlap
             if (dist < totalRadius && dist > 0.001f) {
+
+                
                 Vector2 direction = Vector2Normalize(delta);
                 float overlap = totalRadius - dist;
                 Vector2 displacement = Vector2Scale(direction, std::min(overlap * 0.5f, maxDisplacement));
@@ -27,8 +31,11 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
                     a.position = Vector2Subtract(a.position, displacement);
                 }
                 else {
-                    float aWeight = (a.type == NodeType::Genre) ? 0.2f : 1.0f;
-                    float bWeight = (b.type == NodeType::Genre) ? 0.2f : 1.0f;
+
+                    // Apply different weights based on node type
+                    // Can't move genres nodes by other genre nodes
+                    float aWeight = (a.type == NodeType::Genre) ? 0.0f : 1.0f;
+                    float bWeight = (b.type == NodeType::Genre) ? 0.0f : 1.0f;
 
                     a.position = Vector2Subtract(a.position, Vector2Scale(displacement, aWeight));
                     b.position = Vector2Add(b.position, Vector2Scale(displacement, bWeight));
@@ -36,10 +43,10 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
             }
         }
     }
-
- 
 }
 
+// Apply spring constraints between book nodes and genre nodes
+// Adjust spring length based on the number of books in each genre
 void GraphLayout::applySpringConstraints(
     std::vector<Node>& nodes,
     const std::unordered_map<int, std::vector<int>>& bookToGenreMap,

@@ -2,7 +2,7 @@
 #include "colors.h"
 
 TextRenderer::TextRenderer() {
-    m_Font = LoadFontEx("Assets/OB.ttf", 40, nullptr, 0);
+    m_Font = LoadFontEx("Assets/OB.ttf", 32, nullptr, 0);
     SetTextureFilter(m_Font.texture, TEXTURE_FILTER_POINT);
     m_EllipsisWidth = MeasureTextEx(m_Font, "...", m_FontSize, m_Spacing).x;
 }
@@ -39,7 +39,7 @@ std::string TextRenderer::fitTextToWidth(const std::string& text, float maxWidth
 
 void TextRenderer::drawTextCentered(const std::string& text, Vector2 pos, float radius)
 {
-    float maxTextWidth = radius * 1.8f;
+    float maxTextWidth = radius * 1.95f;
 
     if (text != m_CachedTextInput || radius != m_CachedRadius) {
         m_CachedTextInput = text;

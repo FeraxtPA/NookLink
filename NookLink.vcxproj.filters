@@ -42,6 +42,12 @@
     <ClCompile Include="cameraHandler.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
+    <ClCompile Include="application.cpp">
+      <Filter>Zdrojové soubory</Filter>
+    </ClCompile>
+    <ClCompile Include="uiManager.cpp">
+      <Filter>Zdrojové soubory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="book.h">
@@ -72,6 +78,12 @@
       <Filter>Zdrojové soubory</Filter>
     </ClInclude>
     <ClInclude Include="colors.h">
+      <Filter>Zdrojové soubory</Filter>
+    </ClInclude>
+    <ClInclude Include="application.h">
+      <Filter>Zdrojové soubory</Filter>
+    </ClInclude>
+    <ClInclude Include="uiManager.h">
       <Filter>Zdrojové soubory</Filter>
     </ClInclude>
   </ItemGroup>

@@ -28,7 +28,7 @@ void BookManager::removeBook(const Book& book)
 
 const Book* BookManager::findBookById(int id) const
 {
-
+	//Binary search since books are stored sorted by id
 	auto it = std::lower_bound(m_Books.begin(), m_Books.end(), id,
 		[](const Book& book, int value) {
 			return book.getId() < value;
@@ -89,6 +89,8 @@ void BookManager::loadBooksFromFile(const std::string& filename)
 		
 	    //Clear books before loading from save
 		m_Books.clear();
+		
+
 
 		if (j.contains("books") && j.at("books").is_array())
 		{

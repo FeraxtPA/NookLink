@@ -3,7 +3,7 @@
 
 class CameraHandler {
 public:
-    CameraHandler(int screenWidth, int screenHeight, Vector2 canvasSize);
+    CameraHandler(Vector2 screenDimensions, Vector2 canvasSize);
    
     void update();
    
@@ -13,9 +13,9 @@ public:
 
     const Camera2D& getCamera() const { return m_Camera; }
 
-    void setPanButton(MouseButton mouseButton) { m_PanButton = mouseButton; }
-    void setZoomLimits(float minZ, float maxZ) { m_MinZoom = minZ; m_MaxZoom = maxZ; }
-    void setZoomSpeed(float speed) { m_ZoomSpeed = speed; }
+    
+    
+    
 
 private:
     Camera2D m_Camera;

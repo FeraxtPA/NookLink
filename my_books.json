@@ -9,7 +9,7 @@
             ],
             "id": 1,
             "notes": "",
-            "rating": 3.33,
+            "rating": 3.0,
             "status": "Read",
             "title": "1984"
         },
@@ -45,10 +45,43 @@
             ],
             "id": 4,
             "notes": "",
-            "rating": 0.0,
+            "rating": 1.25,
             "status": "Reading",
             "title": "The Name of the Wind"
+        },
+        {
+            "author": "Frank Herbert",
+            "genres": [
+                "Science Fiction"
+            ],
+            "id": 6,
+            "notes": "",
+            "rating": 5.0,
+            "status": "Read",
+            "title": "Dune"
+        },
+        {
+            "author": "Isaac Asimov",
+            "genres": [
+                "Science Fiction"
+            ],
+            "id": 7,
+            "notes": "",
+            "rating": 3.75,
+            "status": "ToRead",
+            "title": "Foundation"
+        },
+        {
+            "author": "Brandon Sanderson",
+            "genres": [
+                "Fantasy"
+            ],
+            "id": 8,
+            "notes": "",
+            "rating": 4.489999771118164,
+            "status": "Reading",
+            "title": "Mistborn: The Final Empire"
         }
     ],
-    "next_id": 5
+    "next_id": 9
 }

@@ -10,12 +10,10 @@ public:
 
     void drawTextCentered(const std::string& text, Vector2 pos, float radius);
 
-    const Font& getFont() {
-		return m_Font;
-	}
+   
 private:
     Font m_Font;
-    float m_FontSize = 40.0f;
+    float m_FontSize = 32.0f;
     float m_Spacing = 1.0f;
 
     std::string m_CachedTextInput;

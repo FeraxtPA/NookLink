@@ -129,6 +129,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="application.cpp" />
     <ClCompile Include="book.cpp" />
     <ClCompile Include="bookManager.cpp" />
     <ClCompile Include="cameraHandler.cpp" />
@@ -138,8 +139,10 @@
     <ClCompile Include="nodeRenderer.cpp" />
     <ClCompile Include="NookLink.cpp" />
     <ClCompile Include="textRenderer.cpp" />
+    <ClCompile Include="uiManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="application.h" />
     <ClInclude Include="book.h" />
     <ClInclude Include="bookManager.h" />
     <ClInclude Include="cameraHandler.h" />
@@ -150,6 +153,7 @@
     <ClInclude Include="graphManager.h" />
     <ClInclude Include="nodeRenderer.h" />
     <ClInclude Include="textRenderer.h" />
+    <ClInclude Include="uiManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

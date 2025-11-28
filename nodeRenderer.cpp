@@ -3,6 +3,8 @@
 #include "math.h"
 #include <optional>
 #include <iostream>
+
+
 static std::optional<Genre> findGenreByNodeId(const std::unordered_map<Genre, GenreInfo>& genres, int nodeId) {
     for (const auto& [genre, info] : genres) {
         if (info.nodeId == nodeId) {
@@ -21,12 +23,11 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
        
 
         
-        if (zoom >= 0.4f)
-        {
-            
+       
             DrawCircleV(node.position, node.radius, color);
-            m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius);
-        }
+            if (zoom >= 0.4f)
+                m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius);
+        
     }
     else if (node.type == NodeType::Genre) {
         auto genreOpt = findGenreByNodeId(genres, node.id);
@@ -41,38 +42,91 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
 }
 
 
+const float NODE_VISIBILITY_MARGIN = 100.0f;
+
+
+
 void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node>& nodes, const Rectangle& viewRect, float zoom)
 {
-    if(zoom > 0.4f)
-    {
+    // Helper function to check if a world coordinate point (with radius) is inside the view rectangle
+    auto isNodeVisible = [&](const Vector2& pos, const Rectangle& rect, float radius) -> bool {
+        
+        // Node's bounding box coordinates
+        float nodeMinX = pos.x - radius;
+        float nodeMaxX = pos.x + radius;
+        float nodeMinY = pos.y - radius;
+        float nodeMaxY = pos.y + radius;
 
-   
+        // ViewRect coordinates
+        float rectMinX = rect.x;
+        float rectMaxX = rect.x + rect.width;
+        float rectMinY = rect.y;
+        float rectMaxY = rect.y + rect.height;
+
+        // The node is visible if its bounding box overlaps the viewRect
+        bool overlapsX = (nodeMaxX >= rectMinX) && (nodeMinX <= rectMaxX);
+        bool overlapsY = (nodeMaxY >= rectMinY) && (nodeMinY <= rectMaxY);
+
+        return overlapsX && overlapsY;
+        };
+
+    // Helper function to get node by ID
+    auto getNodeById = [&](int id) -> const Node* {
+		for (const auto& node : nodes) {
+			if (node.id == id) return &node;
+		}
+		return nullptr;
+	};
+
     const auto& edges = cm.getEdges();
+
+    
+
     rlPushMatrix();
     rlSetLineWidth(4.0f);
-    
+
     rlBegin(RL_LINES);
-    
+
     for (const auto& edge : edges) {
-        if (edge.type != EdgeType::BookToGenre) continue; // Skip non-BookToGenre edges
+        if (edge.type != EdgeType::BookToGenre) continue; 
 
         Vector2 from = getNodePosition(edge.fromId, nodes);
         Vector2 to = getNodePosition(edge.toId, nodes);
 
+        const Node* fromNode = getNodeById(edge.fromId);
+        const Node* toNode = getNodeById(edge.toId);
+
+        float fromRadius = fromNode->radius; 
+        float toRadius = toNode->radius;
+
+        if (!fromNode || !toNode) continue;
 
 
+        if (!isNodeVisible(from, viewRect, fromRadius) ||
+            !isNodeVisible(to, viewRect, toRadius))
+        {
+            continue;
+        }
+
+        // If both nodes are visible, draw the edge
         rlColor4ub(NookCol::EDGE.r, NookCol::EDGE.g, NookCol::EDGE.b, 255);
         rlVertex2f(from.x, from.y);
         rlVertex2f(to.x, to.y);
     }
 
     rlEnd();
- 
+
     rlPopMatrix();
-    }
 }
 
 
+Node* getNodeById(int id, std::vector<Node>& nodes)
+{
+	for (auto& node : nodes) {
+		if (node.id == id) return &node;
+	}
+	return nullptr;
+}
 Vector2 NodeRenderer::getNodePosition(int id, const std::vector<Node>& nodes) const
 {
     for (const auto& node : nodes) {
@@ -91,114 +145,3 @@ Color NodeRenderer::getStatusColor(Status status) const
     }
 }
 
-
-
-
-
-/*
-namespace std {
-    template<>
-    struct hash<Color> {
-        size_t operator()(const Color& c) const noexcept {
-            // Pack RGBA into a 32-bit int (or size_t)
-            return (size_t(c.r) << 24) | (size_t(c.g) << 16) | (size_t(c.b) << 8) | size_t(c.a);
-        }
-    };
-}
-
-
-inline bool operator==(const Color& lhs, const Color& rhs)
-{
-    return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b && lhs.a == rhs.a;
-}
-
-inline bool operator!=(const Color& lhs, const Color& rhs)
-{
-    return !(lhs == rhs);
-}
-
-
-void NodeRenderer::drawNode(std::vector<Node> m_Nodes, float zoom, std::unordered_map<int, Genre>& genreIdLookup)
-{
-    // Maps from Color to vector of nodes that share that color
-    std::unordered_map<Color, std::vector<Vector2>> nodesByColor;
-
-    // Group nodes by color
-    for (const auto& node : m_Nodes)
-    {
-        Color color;
-        if (node.type == NodeType::Book) {
-            const Book& book = m_BookManager.findBookById(node.id);
-            color = getStatusColor(book.getStatus());
-        }
-        else if (node.type == NodeType::Genre) {
-            color = VIOLET;
-        }
-        else {
-            color = LIGHTGRAY;
-        }
-
-        nodesByColor[color].push_back(node.position);
-    }
-
-    // For each color group, batch draw circles
-    for (auto& [color, positions] : nodesByColor)
-    {
-
-        rlColor4ub(color.r, color.g, color.b, color.a);
-
-        rlBegin(RL_QUADS);
-
-        for (const auto& pos : positions)
-        {
-            // Here draw a filled circle at pos.
-            // Since rlgl does not provide a built-in circle primitive, you can draw a polygon approximating a circle:
-
-            constexpr int segments = 24;
-
-            for (int i = 0; i < segments; i++)
-            {
-                float angle1 = 2.0f * PI * i / segments;
-                float angle2 = 2.0f * PI * (i + 1) / segments;
-
-                // Points on the outer edge
-                float x1 = pos.x + cosf(angle1) * 100.0f;
-                float y1 = pos.y + sinf(angle1) * 100.0f;
-                float x2 = pos.x + cosf(angle2) * 100.0f;
-                float y2 = pos.y + sinf(angle2) * 100.0f;
-
-                // We use the center point twice to create a thin quad "strip"
-                rlVertex2f(pos.x, pos.y);
-                rlVertex2f(pos.x, pos.y);
-                rlVertex2f(x2, y2);
-                rlVertex2f(x1, y1);
-            }
-        }
-        rlEnd();
-    }
-
-
-
-
-
-
-
-    // Draw text after all circles if zoom threshold met
-    if (zoom > 0.15f)
-    {
-        for (const auto& node : m_Nodes)
-        {
-            if (node.type == NodeType::Book) {
-                const Book& book = m_BookManager.findBookById(node.id);
-                m_TextRenderer.drawTextCentered(book.getTitle(), node.position, node.radius);
-            }
-            else if (node.type == NodeType::Genre) {
-                const Genre& genre = genreIdLookup[node.id];
-                m_TextRenderer.drawTextCentered(genreToString(genre), node.position, node.radius);
-            }
-        }
-    }
-
-}
-
-*/

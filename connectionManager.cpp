@@ -15,6 +15,7 @@ void ConnectionManager::updateConnections(const std::vector<Book>& books)
 
 }
 
+//Not currently used maybe later for something
 void ConnectionManager::AddBookToBookEdges(const std::vector<Book>& books)
 {
     for (size_t i = 0; i < books.size(); ++i) {
@@ -37,8 +38,7 @@ void ConnectionManager::AddBookToBookEdges(const std::vector<Book>& books)
 
 void ConnectionManager::AssignGenreIds(const std::vector<Book>& books)
 {
-    //m_GenreIdMap.clear();
-    //m_ExistingGenres.clear();
+   
     int genreIdBase = m_baseGenreId;
 
     // First, assign unique IDs to genres
@@ -65,6 +65,7 @@ void ConnectionManager::AddBookToGenreEdges(const std::vector<Book>& books)
 
 void ConnectionManager::removeEdgesConnectedToNode(int nodeId)
 {
+    // Remove edges connected to the specified node so that there are no dangling edges after a node is removed
     m_Edges.erase(
         std::remove_if(m_Edges.begin(), m_Edges.end(),
             [nodeId](const Edge& edge) {
@@ -76,7 +77,8 @@ void ConnectionManager::removeEdgesConnectedToNode(int nodeId)
 
 const std::unordered_set<Genre>& ConnectionManager::getExistingGenres() 
 {
-  
+    
+  	m_ExistingGenres.clear();
     for(auto& [genre, id] : m_GenreIdMap) {
         m_ExistingGenres.insert(genre);
 	}

@@ -19,16 +19,22 @@ class ConnectionManager {
 public:
     void updateConnections(const std::vector<Book>& books);
 
-   
-
-   
-
     void removeEdgesConnectedToNode(int nodeId);
 
     const std::unordered_set<Genre>& getExistingGenres();
    
     const std::vector<Edge>& getEdges() const { return m_Edges; }
+
     const std::unordered_map<Genre, int>& getGenreIdMap() const { return m_GenreIdMap; }
+
+
+    //Need to reset all data when loading a new library(åoading a file)
+    void Clear() {
+		m_Edges.clear();
+		m_ExistingGenres.clear();
+		m_GenreIdMap.clear();
+		m_baseGenreId = -1;
+	}
 
 private:
     std::vector<Edge> m_Edges;

@@ -4,6 +4,7 @@
 #include <string>
 #include "include/nlohmann/json.hpp"
 
+//Might need to use strings later so that user can input custom genres
 enum class Genre {
 	Dystopian,
 	ScienceFiction,
@@ -165,7 +166,7 @@ inline Genre stringToGenre(const std::string& genreStr) {
         {"Post Apocalyptic", Genre::PostApocalyptic},
         {"Western", Genre::Western},
         {"Crime Fiction", Genre::CrimeFiction},
-        {"Literary Mystery", Genre::LiteraryMystery}, // Note: M-i-s-t-e-r-y typo is from your file
+        {"Literary Mystery", Genre::LiteraryMystery}, 
         {"Biography", Genre::Biography},
         {"Memoir", Genre::Memoir},
         {"Self Help", Genre::SelfHelp},
@@ -215,11 +216,16 @@ inline Genre stringToGenre(const std::string& genreStr) {
     throw std::runtime_error("Unknown Genre: " + genreStr);
     }
 
-        // === ADD THESE FUNCTIONS for nlohmann::json ===
-        inline void to_json(nlohmann::json& j, const Genre& g) {
-        j = genreToString(g);
-    }
 
-    inline void from_json(const nlohmann::json& j, Genre& g) {
-        g = stringToGenre(j.get<std::string>());
-    }
+// Overload to convert enum to json string 
+inline void to_json(nlohmann::json& j, const Genre& g)
+{
+    j = genreToString(g);
+}
+// Overload to convert json string to enum
+inline void from_json(const nlohmann::json& j, Genre& g)
+{
+    g = stringToGenre(j.get<std::string>());
+}
+
+

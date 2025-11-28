@@ -1,9 +1,9 @@
 #include "cameraHandler.h"
 
-CameraHandler::CameraHandler(int screenWidth, int screenHeight, Vector2 canvasSize) 
+CameraHandler::CameraHandler(Vector2 screenDimensions, Vector2 canvasSize)
 {
     m_Camera.target = { (float)canvasSize.x / 2, (float)canvasSize.y / 2 };
-    m_Camera.offset = { (float)screenWidth / 2, (float)screenHeight / 2 };
+    m_Camera.offset = { (float)screenDimensions.x / 2, (float)screenDimensions.y / 2 };
     m_Camera.rotation = 0.0f;
     m_Camera.zoom = 0.5f;
 

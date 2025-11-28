@@ -7,6 +7,7 @@ class GraphLayout
 public:
 	GraphLayout() = default;
 
+	//Right now it checks every node against every other node - could be optimized later somehow
 	void  resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes);
 
 	void applySpringConstraints(

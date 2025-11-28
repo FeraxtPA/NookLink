@@ -9,7 +9,7 @@ const std::string GraphManager::getGenreNameByNodeId(int nodeId) const {
     return "Unknown Genre";
 }
 
-std::optional<Genre> GraphManager::getGenreByNodeId(int nodeId) const {
+const std::optional<Genre> GraphManager::getGenreByNodeId(int nodeId) const {
     for (const auto& [genre, info] : m_Genres) {
         if (info.nodeId == nodeId) {
             return genre;
@@ -62,15 +62,22 @@ void GraphManager::drawEdges(float zoom, const Rectangle& viewRect) {
     m_NodeRenderer.drawEdges(m_ConnectionManager, m_Nodes, viewRect, zoom);
 }
 
-
-
-
+int GraphManager::getNumOfConnectedBooks(int genreNodeId) const
+{
+    int counter = 0;
+    for (const auto& edge : m_ConnectionManager.getEdges()) {
+		if (edge.type == EdgeType::BookToGenre && edge.toId == genreNodeId) {
+			counter++;
+		}
+	}
+    return counter;
+}
 
 
 void GraphManager::resetNodeState() {
     m_Nodes.clear();
     m_Genres.clear();
-   m_GenreIdBase = -1;
+    m_GenreIdBase = -1;
 }
 
 float GraphManager::calculateCircleRadius(int nodeCount, float minRadius) const
@@ -145,6 +152,27 @@ bool GraphManager::isNodeVisible(const Node& node, const Rectangle& viewRect) {
         node.position.y - node.radius > viewRect.y + viewRect.height);
 }
 
+GraphManager::GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize)
+    : m_BookManager(bm), m_ConnectionManager(cm), m_NodeRenderer(bm), m_CanvasSize(canvasSize)
+{
+}
+
+void GraphManager::initializePositions()
+{
+    m_ConnectionManager.updateConnections(m_BookManager.getBooks());
+
+    resetNodeState();
+
+    placeGenreNodes(m_ConnectionManager.getExistingGenres(), m_ConnectionManager.getGenreIdMap());
+
+    placeBookNodes();
+
+    for (auto& node : m_Nodes) {
+        m_NodeIdMap[node.id] = &node;
+    }
+
+}
+
 void GraphManager::removeNodeById(int id) {
   
     m_Nodes.erase(std::remove_if(m_Nodes.begin(), m_Nodes.end(),
@@ -170,11 +198,11 @@ void GraphManager::removeNodeById(int id) {
 
 
 
-Rectangle GraphManager::getCameraViewRect(const Camera2D& camera, int screenWidth, int screenHeight) {
-    float left = camera.target.x - (static_cast<float>(screenWidth) / 2) / camera.zoom;
-    float top = camera.target.y - (static_cast<float>(screenHeight) / 2) / camera.zoom;
-    float width = screenWidth / camera.zoom;
-    float height = screenHeight / camera.zoom;
+const Rectangle GraphManager::getCameraViewRect(const Camera2D& camera, Vector2 screenDimensions) {
+    float left = camera.target.x - (static_cast<float>(screenDimensions.x) / 2) / camera.zoom;
+    float top = camera.target.y - (static_cast<float>(screenDimensions.y) / 2) / camera.zoom;
+    float width = screenDimensions.x / camera.zoom;
+    float height = screenDimensions.y / camera.zoom;
     return { left, top, width, height };
 }
 

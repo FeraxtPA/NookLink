@@ -1,6 +1,4 @@
 ﻿#pragma once
-
-#include <memory_resource>
 #include <string>
 #include <vector>
 #include "genres.h"
@@ -16,10 +14,12 @@ enum class Status
 	Read,
 };
 
-inline double GetRatingTwoDecimal(const float& rating) {
+
+// Rounds a  rating to two decimal places and returns, for saving to json so it looks better
+inline float GetRatingTwoDecimal(const float& rating) {
 
   int i;
-  double d_rating = static_cast<double>(rating);
+  float d_rating = static_cast<double>(rating);
 
   if (static_cast<double>(d_rating) >= 0)
 
@@ -33,6 +33,7 @@ inline double GetRatingTwoDecimal(const float& rating) {
   return (i / 100.0);
 
 }
+
 
 inline std::string statusToString(Status status) {
 	switch (status) {
@@ -49,10 +50,13 @@ inline Status stringToStatus(const std::string& s) {
 	if (s == "Read") return Status::Read;
 	throw std::runtime_error("Unknown Status: " + s);
 }
+
+// Convert Status enum to JSON string
 inline void to_json(json& j, const Status& s) {
 	j = statusToString(s);
 }
 
+// Convert JSON string back to Status enum
 inline void from_json(const json& j, Status& s) {
 	s = stringToStatus(j.get<std::string>());
 }
@@ -65,8 +69,6 @@ public:
 	Book(const std::string& title, const std::string& author, Status status);
 	
 	static std::string ratingToStars(float rating);
-
-
 
 	int getId() const { return m_id; }
 	const std::string& getTitle() const { return m_Title; }
@@ -92,6 +94,7 @@ public:
 	}
 
 private:
+
 	int m_id;
 	std::string m_Title;
 	std::string m_Author;
@@ -102,7 +105,7 @@ private:
 
 };
 
-//Function to convert book attributes to json format
+//Convert book attributes to json, using overloaded functions for status and genres
 inline void to_json(json& j, const Book& b) {
 
 	std::ostringstream oss;

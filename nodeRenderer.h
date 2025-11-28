@@ -4,6 +4,7 @@
 #include "textRenderer.h"
 #include "connectionManager.h"
 #include "colors.h"
+
 enum class NodeType {
     Book,
     Genre
@@ -32,9 +33,6 @@ public:
     void drawNode(const Node& node, float zoom, const std::unordered_map<Genre, GenreInfo>& genres);
     void drawEdges(const ConnectionManager& cm, const std::vector<Node>& nodes, const Rectangle& viewRect, float zoom);
 
-    Font getFont()  {
-		return m_TextRenderer.getFont();
-	}
 
 private:
     const BookManager& m_BookManager;
