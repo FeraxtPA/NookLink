@@ -15,76 +15,76 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NookLink.cpp">
+    <ClCompile Include="src\application.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="book.cpp">
+    <ClCompile Include="src\book.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="bookManager.cpp">
+    <ClCompile Include="src\bookManager.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="connectionManager.cpp">
+    <ClCompile Include="src\cameraHandler.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="nodeRenderer.cpp">
+    <ClCompile Include="src\connectionManager.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="textRenderer.cpp">
+    <ClCompile Include="src\graphLayout.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="graphLayout.cpp">
+    <ClCompile Include="src\graphManager.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="graphManager.cpp">
+    <ClCompile Include="src\nodeRenderer.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="cameraHandler.cpp">
+    <ClCompile Include="src\NookLink.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="application.cpp">
+    <ClCompile Include="src\textRenderer.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
-    <ClCompile Include="uiManager.cpp">
+    <ClCompile Include="src\uiManager.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="book.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\application.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="bookManager.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\book.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="connectionManager.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\bookManager.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="graphManager.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\cameraHandler.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="cameraHandler.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\colors.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="nodeRenderer.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\connectionManager.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="textRenderer.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\genres.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="graphLayout.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\graphLayout.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="genres.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\graphManager.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="colors.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\nodeRenderer.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="application.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\textRenderer.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
-    <ClInclude Include="uiManager.h">
-      <Filter>Zdrojové soubory</Filter>
+    <ClInclude Include="src\uiManager.h">
+      <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

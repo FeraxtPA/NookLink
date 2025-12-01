@@ -361,3 +361,24 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ------------------------------------------
+# VLASTNÍ ÚPRAVY PRO NOOKLINK PROJEKT
+# ------------------------------------------
+
+# 1. Složka pro sestavení (kterou jsme nastavili v Intermediate Directory)
+build/
+
+# 2. Cache pro Clangd (vidìl jsem .clangd složku na vašem screenshotu)
+.clangd/
+.cache/
+compile_commands.json
+
+# 3. Binární soubory (pojistka, kdyby se vygenerovaly mimo x64/bin)
+*.exe
+*.dll
+*.lib
+*.exp
+*.ilk
+*.pdb
+
