@@ -96,4 +96,7 @@
       <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="ideas.txt" />
+  </ItemGroup>
 </Project>

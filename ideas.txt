@@ -1,1 +1,2 @@
 Upscale  genre bubbles when zooming out
+Genres currently dont repel and they can be stacked on top of each other

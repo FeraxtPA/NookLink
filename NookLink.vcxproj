@@ -176,6 +176,9 @@
     <ClInclude Include="src\UI\button.h" />
     <ClInclude Include="src\UI\widget.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="ideas.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
