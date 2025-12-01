@@ -8,8 +8,9 @@ public:
     TextRenderer();
     ~TextRenderer();
 
-    void drawTextCentered(const std::string& text, Vector2 pos, float radius);
+    void drawTextCentered(const std::string& text, Vector2 pos, float radius, Color col);
 
+    Font& getFont()  { return m_Font; }
    
 private:
     Font m_Font;
@@ -22,5 +23,6 @@ private:
     Vector2 m_CachedSize = { 0, 0 };
     float m_EllipsisWidth = 0.0f;
 
+    void InitFont();
     std::string fitTextToWidth(const std::string& text, float maxWidth);
 };

@@ -158,6 +158,7 @@
     <ClCompile Include="src\NookLink.cpp" />
     <ClCompile Include="src\textRenderer.cpp" />
     <ClCompile Include="src\uiManager.cpp" />
+    <ClCompile Include="src\UI\button.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\application.h" />
@@ -172,6 +173,8 @@
     <ClInclude Include="src\nodeRenderer.h" />
     <ClInclude Include="src\textRenderer.h" />
     <ClInclude Include="src\uiManager.h" />
+    <ClInclude Include="src\UI\button.h" />
+    <ClInclude Include="src\UI\widget.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

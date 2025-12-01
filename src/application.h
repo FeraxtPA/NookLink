@@ -25,13 +25,15 @@ private:
 	Vector2 m_ScreenSize{ 1920, 1080 };
 	Vector2 m_CanvasSize{ 2000,2000 };
 
+	
+
 	BookManager m_BookManager{};
 	ConnectionManager m_ConnectionManager{};
 	std::unique_ptr<GraphManager> m_GraphManager{};
 	std::unique_ptr<CameraHandler> m_CameraHandler{};
 	std::unique_ptr<UIManager> m_UIManager{};
 
-	Font m_Font{ 0 };
+	
 	
 	std::filesystem::path m_SaveFileName{ "my_books.json" };
 
@@ -49,7 +51,7 @@ private:
 
 
 	void Update();
-	void InitFont();
+	
 	void InitBookManager();
 	void Draw();
 	void HandleInput(Vector2 worldMousePos);

@@ -26,7 +26,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
        
             DrawCircleV(node.position, node.radius, color);
             if (zoom >= 0.4f)
-                m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius);
+                m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius, NookCol::TEXT_ONNODE);
         
     }
     else if (node.type == NodeType::Genre) {
@@ -37,7 +37,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
         DrawCircleV(node.position, node.radius, NookCol::GENRE);
 
         if (zoom >= 0.4f)
-            m_TextRenderer.drawTextCentered(genreToString(genre), node.position, node.radius);
+            m_TextRenderer.drawTextCentered(genreToString(genre), node.position, node.radius, NookCol::TEXT_ONNODE);
     }
 }
 

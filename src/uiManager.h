@@ -8,20 +8,9 @@
 #include "graphManager.h"
 #include "colors.h" 
 #include "book.h" 
+#include "UI/widget.h"
+#include "UI/button.h"
 
-
-struct UI_Constants {
-    const int screenWidth;
-    const int screenHeight;
-    // File name for saving/loading book data, user will choose their own file in future
-    const char* saveFileName = "my_books.json";
-
-    //Should be relative to screen size later so it works on different resolutions
-    const Rectangle saveButton = { (float)screenWidth - 220, 10, 100, 40 };
-    const Rectangle loadButton = { (float)screenWidth - 110, 10, 100, 40 };
-
-    UI_Constants(int width, int height) : screenWidth(width), screenHeight(height) {}
-};
 
 
 class UIManager
@@ -29,18 +18,29 @@ class UIManager
 public:
     
     //Should only use font from textRenderer not creating multiple fonts...
-    UIManager(int screenWidth, int screenHeight, Font font);
+    UIManager(int screenWidth, int screenHeight);
     ~UIManager();
 
   
-    bool Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer);
+    void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer);
 
    
     void Draw(Vector2 mousePos,  GraphManager* graphRenderer, const BookManager& bookManager) const;
 
+    void BuildInterface(
+        std::function<void()> onSave,
+        std::function<void()> onLoad
+    );
+
 private:
-    UI_Constants m_const;
-    Font m_font;
+  
+    
+    
+
+    const int screenWidth;
+    const int screenHeight;
+    std::vector<std::shared_ptr<Widget>> m_Widgets;
+
 
     // --- Stav Tooltipu (pøesunuto z Application) ---
     Node* m_LastHoveredNode = nullptr;
@@ -53,9 +53,9 @@ private:
 
     // --- Interní logika ---
     void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager);
-    void DrawButtons(Vector2 mousePos) const;
     void DrawHelpText() const;
     void DrawTooltip(Vector2 mousePos) const;
 
-    void DrawButton(const std::string& text) const;
+
+    
 };

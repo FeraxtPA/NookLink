@@ -4,40 +4,18 @@
 
 
 
-UIManager::UIManager(int screenWidth, int screenHeight, Font font)
-    : m_const(screenWidth, screenHeight), m_font(font)
-{
+UIManager::UIManager(int screenWidth, int screenHeight)
+    : screenHeight(screenHeight), screenWidth(screenWidth)
  
-}
+{}
 
 UIManager::~UIManager()
 {
 }
 
-bool UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer)
+void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer)
 {
-    bool layoutChanged = false;
-
-  
-    if (!IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && (graphRenderer == nullptr || graphRenderer->getDraggedNode() == nullptr))
-    {
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        {
-            if (CheckCollisionPointRec(mousePos, m_const.saveButton))
-            {
-                std::cout << "Saving books to " << m_const.saveFileName << "..." << std::endl;
-                bookManager.saveBooksToFile(m_const.saveFileName);
-            }
-            else if (CheckCollisionPointRec(mousePos, m_const.loadButton))
-            {
-                std::cout << "Loading books from " << m_const.saveFileName << "..." << std::endl;
-                bookManager.loadBooksFromFile(m_const.saveFileName);
-                graphRenderer->clearGenresAndConnections();
-                layoutChanged = true;
-            }
-        }
-    }
-
+    
   
     bool mouseMoved = (mousePos.x != m_LastMousePos.x || mousePos.y != m_LastMousePos.y);
     m_LastMousePos = mousePos;
@@ -54,9 +32,11 @@ bool UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
         }
     }
 
+    for (auto& w : m_Widgets) w->Update();
+
     UpdateTooltipCache(graphRenderer, bookManager);
 
-    return layoutChanged;
+   
 }
 
 
@@ -102,7 +82,7 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
     int maxLineWidth = 0;
     for (const std::string& line : m_CachedLines) {
         // Pou�ijte MeasureTextEx s va�� font prom�nnou a spacingem 2
-        int width = MeasureTextEx(m_font, line.c_str(), (float)fontSize, 2).x;
+        int width = MeasureText(line.c_str(), (float)fontSize);
         if (width > maxLineWidth) maxLineWidth = width;
     }
 
@@ -113,42 +93,40 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
 
 void UIManager::Draw(Vector2 mousePos,  GraphManager* graphRenderer, const BookManager& bookManager) const
 {
-    // Vykreslen� UI prvk�
-    DrawButtons(mousePos);
+   
     DrawHelpText();
 
     // Vykreslen� FPS
-    DrawFPS(10, m_const.screenHeight - 20);
+    DrawFPS(10,screenHeight-20);
+
+    for (auto& w : m_Widgets) w->Draw();
 
     // Vykreslen� po�tu uzl� (vy�aduje GraphManager)
     if (graphRenderer != nullptr) {
         std::string nodeAmountText = "Node amount: " + std::to_string(graphRenderer->getNodes().size());
-        DrawText(nodeAmountText.c_str(), 10, m_const.screenHeight - 40, 20, BLACK);
+        DrawText(nodeAmountText.c_str(), 10, screenHeight - 40, 20, BLACK);
     }
 
     // Vykreslen� tooltipu (vy�aduje logiku v�po�tu v Draw)
     DrawTooltip(mousePos);
 }
 
-// --- PRIV�TN� METODA: Vykreslen� tla��tek ---
-void UIManager::DrawButtons(Vector2 mousePos) const
+void UIManager::BuildInterface(std::function<void()> onSave, std::function<void()> onLoad)
 {
-    // ULO�IT
-    bool saveHover = CheckCollisionPointRec(mousePos, m_const.saveButton);
-    DrawRectangleRec(m_const.saveButton, saveHover ? DARKGRAY : LIGHTGRAY);
-    DrawTextEx(m_font,"Save", { m_const.saveButton.x + m_const.saveButton.width / 2 - MeasureTextEx(m_font, "Save", 20, 2).x / 2, m_const.saveButton.y + 10 }, 20, 2, BLACK);
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)screenWidth - 220, 10, 100, 40 }, "Save", onSave
+    ));
 
-    // NA��ST
-    bool loadHover = CheckCollisionPointRec(mousePos, m_const.loadButton);
-    DrawRectangleRec(m_const.loadButton, loadHover ? DARKGRAY : LIGHTGRAY);
-    DrawTextEx(m_font,"Load", { m_const.loadButton.x + m_const.loadButton.width / 2 - MeasureTextEx(m_font, "Load", 20, 2).x / 2, m_const.loadButton.y + 10 }, 20, 2, BLACK);
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)screenHeight - 110, 10, 100, 40 }, "Load", onLoad
+    ));
+
+
 }
 
 
-void UIManager::DrawButton(const std::string& text) const
-{
 
-}
+
 
 // --- PRIV�TN� METODA: Vykreslen� n�pov�dy ---
 void UIManager::DrawHelpText() const
@@ -187,12 +165,12 @@ void UIManager::DrawTooltip(Vector2 mousePos) const
                 std::string label = line.substr(0, colonPos + 1);
                 std::string value = line.substr(colonPos + 1);
 
-                DrawTextEx(m_font, label.c_str(), { xStart, yStart }, (float)fontSize, 2, NookCol::TEXT_HIGHLIGHT);
-                int labelWidth = MeasureTextEx(m_font, label.c_str(), (float)fontSize, 2).x;
-                DrawTextEx(m_font, value.c_str(), { xStart + labelWidth, yStart }, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
+                DrawTextEx(GetFontDefault(), label.c_str(), {xStart, yStart}, (float)fontSize, 2, NookCol::TEXT_HIGHLIGHT);
+                int labelWidth = MeasureTextEx(GetFontDefault(), label.c_str(), (float)fontSize, 2).x;
+                DrawTextEx(GetFontDefault(), value.c_str(), {xStart + labelWidth, yStart}, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
             }
             else {
-                DrawTextEx(m_font, line.c_str(), { xStart, yStart }, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
+                DrawTextEx(GetFontDefault(), line.c_str(), {xStart, yStart}, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
             }
             yOffset += fontSize + lineSpacing;
         }

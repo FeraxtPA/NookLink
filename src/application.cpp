@@ -1,10 +1,10 @@
 #include "application.h"
-
+#include "UI/button.h"
 Application::Application()
 {
-    //Default init, will be loaded later
-    m_Font = { 0 };
+   
     m_UpdateInterval = m_UpdateIntervalInitial;
+    
 }
 
 Application::~Application()
@@ -24,9 +24,23 @@ void Application::Initialize()
     // Initialize graph with current books and connections
     m_GraphManager->initializePositions();
 
-    InitFont();
+   
     //Needs to be initialized after font is loaded
-    m_UIManager = std::make_unique<UIManager>(m_ScreenSize.x, m_ScreenSize.y, m_Font);
+    m_UIManager = std::make_unique<UIManager>(m_ScreenSize.x, m_ScreenSize.y);
+
+    m_UIManager->BuildInterface(
+		[this]() { // onSave
+			std::cout << "Saving books to " << m_SaveFileName << "..." << std::endl;
+			m_BookManager.saveBooksToFile(m_SaveFileName.string());
+		},
+		[this]() { // onLoad
+			std::cout << "Loading books from " << m_SaveFileName << "..." << std::endl;
+			m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+			m_GraphManager->clearGenresAndConnections();
+			m_GraphManager->initializePositions();
+			m_LayoutDirty = true;
+		}
+	);
     
     SetTargetFPS(60);
 }
@@ -42,7 +56,7 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-    UnloadFont(m_Font);
+    
 	CloseWindow();
 }
 
@@ -103,6 +117,7 @@ void Application::Draw()
 
     m_CameraHandler->beginMode();
 
+    
     // Determine visible area
     Rectangle viewRect = m_GraphManager->getCameraViewRect(m_CameraHandler->getCamera(), m_ScreenSize);
     
@@ -116,6 +131,7 @@ void Application::Draw()
     }
     m_CameraHandler->endMode();
 
+   
     m_UIManager->Draw(GetMousePosition(),m_GraphManager.get(),m_BookManager);
 
     EndDrawing();
@@ -296,43 +312,16 @@ void Application::Update()
         }
     }
 
-
+    
     HandleInput(worldMousePos);
 
-    // Update UI and check for layout changes
-    bool uiLayoutChange = m_UIManager->Update(
+    // Update UI
+    m_UIManager->Update(
         worldMousePos,
         GetMousePosition(),
         m_BookManager,
-        m_GraphManager.get()
-    );
-
-
-    //Need to reinitialize graph layout after saving/loading from file
-    if (uiLayoutChange) {
-        m_GraphManager->initializePositions();
-        m_LayoutDirty = true;
-        m_SettleIterations = 0;
-    }
-    
-   
+        m_GraphManager.get());
 
 }
 
-void Application::InitFont()
-{
-    
-    int codepoints[101] = { 0 };
-    for (int i = 0; i < 95; i++) codepoints[i] = 32 + i; // ASCII 32-126
 
-    
-    codepoints[95] = 0x00BC; // 1/4 (Vulgar Fraction One Quarter)
-    codepoints[96] = 0x00BD; // 1/2 (Vulgar Fraction One Half)
-    codepoints[97] = 0x00BE; // 3/4 (Vulgar Fraction Three Quarters)
-    codepoints[98] = 0x2605; // star (Black Star)
-
-    
-    m_Font = LoadFontEx("assets/DejaVuSans.ttf", 48, codepoints, 99);
-
-    SetTextureFilter(m_Font.texture, RL_TEXTURE_FILTER_TRILINEAR);
-}
