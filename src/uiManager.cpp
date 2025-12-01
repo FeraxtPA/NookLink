@@ -1,4 +1,4 @@
-#include "UIManager.h"
+#include "uiManager.h"
 #include <iostream>
 #include <algorithm>
 
@@ -49,7 +49,7 @@ bool UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
             if (newlyHovered != m_LastHoveredNode || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
                 m_LastHoveredNode = newlyHovered;
                 m_HoverStartTime = GetTime();
-                m_CachedTooltipText.clear(); // Vynutí pøestavbu pøi zmìnì uzlu
+                m_CachedTooltipText.clear(); // Vynutï¿½ pï¿½estavbu pï¿½i zmï¿½nï¿½ uzlu
             }
         }
     }
@@ -86,7 +86,7 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
             "\nGenreID: " + std::to_string(m_LastHoveredNode->id);
     }
 
-    // Rozdìlení na øádky a výpoèet velikosti boxu (Layout)
+    // Rozdï¿½lenï¿½ na ï¿½ï¿½dky a vï¿½poï¿½et velikosti boxu (Layout)
     const int fontSize = 20;
     const int padding = 16;
     const int lineSpacing = 12;
@@ -101,7 +101,7 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
 
     int maxLineWidth = 0;
     for (const std::string& line : m_CachedLines) {
-        // Použijte MeasureTextEx s vaší font promìnnou a spacingem 2
+        // Pouï¿½ijte MeasureTextEx s vaï¿½ï¿½ font promï¿½nnou a spacingem 2
         int width = MeasureTextEx(m_font, line.c_str(), (float)fontSize, 2).x;
         if (width > maxLineWidth) maxLineWidth = width;
     }
@@ -113,32 +113,32 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
 
 void UIManager::Draw(Vector2 mousePos,  GraphManager* graphRenderer, const BookManager& bookManager) const
 {
-    // Vykreslení UI prvkù
+    // Vykreslenï¿½ UI prvkï¿½
     DrawButtons(mousePos);
     DrawHelpText();
 
-    // Vykreslení FPS
+    // Vykreslenï¿½ FPS
     DrawFPS(10, m_const.screenHeight - 20);
 
-    // Vykreslení poètu uzlù (vyžaduje GraphManager)
+    // Vykreslenï¿½ poï¿½tu uzlï¿½ (vyï¿½aduje GraphManager)
     if (graphRenderer != nullptr) {
         std::string nodeAmountText = "Node amount: " + std::to_string(graphRenderer->getNodes().size());
         DrawText(nodeAmountText.c_str(), 10, m_const.screenHeight - 40, 20, BLACK);
     }
 
-    // Vykreslení tooltipu (vyžaduje logiku výpoètu v Draw)
+    // Vykreslenï¿½ tooltipu (vyï¿½aduje logiku vï¿½poï¿½tu v Draw)
     DrawTooltip(mousePos);
 }
 
-// --- PRIVÁTNÍ METODA: Vykreslení tlaèítek ---
+// --- PRIVï¿½TNï¿½ METODA: Vykreslenï¿½ tlaï¿½ï¿½tek ---
 void UIManager::DrawButtons(Vector2 mousePos) const
 {
-    // ULOŽIT
+    // ULOï¿½IT
     bool saveHover = CheckCollisionPointRec(mousePos, m_const.saveButton);
     DrawRectangleRec(m_const.saveButton, saveHover ? DARKGRAY : LIGHTGRAY);
     DrawTextEx(m_font,"Save", { m_const.saveButton.x + m_const.saveButton.width / 2 - MeasureTextEx(m_font, "Save", 20, 2).x / 2, m_const.saveButton.y + 10 }, 20, 2, BLACK);
 
-    // NAÈÍST
+    // NAï¿½ï¿½ST
     bool loadHover = CheckCollisionPointRec(mousePos, m_const.loadButton);
     DrawRectangleRec(m_const.loadButton, loadHover ? DARKGRAY : LIGHTGRAY);
     DrawTextEx(m_font,"Load", { m_const.loadButton.x + m_const.loadButton.width / 2 - MeasureTextEx(m_font, "Load", 20, 2).x / 2, m_const.loadButton.y + 10 }, 20, 2, BLACK);
@@ -150,7 +150,7 @@ void UIManager::DrawButton(const std::string& text) const
 
 }
 
-// --- PRIVÁTNÍ METODA: Vykreslení nápovìdy ---
+// --- PRIVï¿½TNï¿½ METODA: Vykreslenï¿½ nï¿½povï¿½dy ---
 void UIManager::DrawHelpText() const
 {
     DrawText("Right-click and drag to move nodes", 10, 10, 20, BLACK);
@@ -162,11 +162,11 @@ void UIManager::DrawHelpText() const
     DrawText("Press B to enable VSYNC", 10, 190, 20, BLACK);
 }
 
-// --- PRIVÁTNÍ METODA: Vykreslení tooltipu ---
+// --- PRIVï¿½TNï¿½ METODA: Vykreslenï¿½ tooltipu ---
 void UIManager::DrawTooltip(Vector2 mousePos) const
 {
     if (m_LastHoveredNode && (GetTime() - m_HoverStartTime >= 0.5) && !IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-        // Vykreslení boxu
+        // Vykreslenï¿½ boxu
         DrawRectangleRounded({ mousePos.x + 10, mousePos.y + 10, (float)m_CachedBoxWidth + 20, (float)m_CachedBoxHeight + 20 }, 0.2f, 10, Fade(NookCol::POPUP_BORDER, 0.75f));
         DrawRectangleRounded({ mousePos.x + 10, mousePos.y + 10, (float)m_CachedBoxWidth + 16, (float)m_CachedBoxHeight + 16 }, 0.2f, 10, Fade(NookCol::POPUP_BG, 0.95f));
 
@@ -175,11 +175,11 @@ void UIManager::DrawTooltip(Vector2 mousePos) const
         const int lineSpacing = 12;
         int yOffset = 0;
 
-        // Vykreslení textu
+        // Vykreslenï¿½ textu
         for (const std::string& line : m_CachedLines) {
             size_t colonPos = line.find(':');
 
-            // Posun o 10, protože box je posunut o 10
+            // Posun o 10, protoï¿½e box je posunut o 10
             float xStart = mousePos.x + 10 + padding;
             float yStart = mousePos.y + 10 + padding + yOffset;
 

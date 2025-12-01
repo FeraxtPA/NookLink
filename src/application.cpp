@@ -1,5 +1,5 @@
 #include "application.h"
-#include <format>
+
 Application::Application()
 {
     //Default init, will be loaded later
