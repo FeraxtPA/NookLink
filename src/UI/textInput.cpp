@@ -18,7 +18,7 @@ void TextInput::Update() {
 
     // 2. Handle Text Entry
     if (isFocused) {
-        SetMouseCursor(MOUSE_CURSOR_IBEAM);
+        Widget::DesiredCursor = MOUSE_CURSOR_IBEAM; 
 
         int key = GetCharPressed();
         while (key > 0) {
@@ -35,11 +35,9 @@ void TextInput::Update() {
         }
     }
     else if (isHovered) {
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND; 
     }
-	else {
-		SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-	}
+	
     
 }
 

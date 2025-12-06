@@ -314,7 +314,7 @@ void Application::Update()
     Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), m_CameraHandler->getCamera());
 
     
-
+   
    
     // Check for user interaction
     if (IsWindowFocused())

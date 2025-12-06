@@ -10,6 +10,9 @@ public:
     bool isVisible = true;
     bool isHovered = false;
 
+
+    static MouseCursor DesiredCursor;
+
     Widget(Rectangle r) : bounds(r) {}
     virtual ~Widget() = default;
 

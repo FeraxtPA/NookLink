@@ -4,6 +4,7 @@
 #include "UI/panel.h"    
 #include "colors.h"
 #include <iostream>
+#include <numeric>
 
 UIManager::UIManager(int screenWidth, int screenHeight)
     : m_ScreenWidth(screenWidth), m_ScreenHeight(screenHeight)
@@ -11,9 +12,13 @@ UIManager::UIManager(int screenWidth, int screenHeight)
 
 UIManager::~UIManager() {}
 
+
+MouseCursor Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
+
 void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer)
 {
-    
+    Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
+
     m_LastMousePos = mousePos;
 
     if (graphRenderer != nullptr) {
@@ -25,12 +30,19 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
         }
     }
 
-    // 2. Update Widgets
+  
     for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
         (*it)->Update();
     }
-    // 3. Update Tooltip (Measure text if needed)
+   
     UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
+
+    if (!IsMouseOverUI())
+    {
+		SetMouseCursor(Widget::DesiredCursor);
+	}
+
+   
 }
 
 void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
@@ -44,7 +56,14 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
             m_CachedTooltipText = "Title: " + b->getTitle() +
                 "\nAuthor: " + b->getAuthor() +
                 "\nStatus: " + statusToString(b->getStatus()) +
-                "\nRating: " + Book::ratingToStars(b->getRating());
+                "\nRating: " + Book::ratingToStars(b->getRating())+
+                "\nGenres: " + std::accumulate(
+					b->getGenres().begin(), b->getGenres().end(), std::string(),
+					[](const std::string& a, const std::string& b) {
+						return a + (a.length() > 0 ? ", " : "") + b;
+					}
+				) +
+                "\nNotes: " + b->getNotes();
         }
     }
     else if (m_LastHoveredNode->type == NodeType::Genre) {

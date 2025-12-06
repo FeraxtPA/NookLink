@@ -12,7 +12,7 @@ void Panel::AddChild(std::shared_ptr<Widget> widget) {
 void Panel::Update() {
     if (!isVisible) return;
 
-    isHovered = CheckCollisionPointRec(GetMousePosition(), bounds);
+    //isHovered = CheckCollisionPointRec(GetMousePosition(), bounds);
 
    
 

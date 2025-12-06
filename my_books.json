@@ -92,18 +92,7 @@
             "rating": 4.489999771118164,
             "status": "Reading",
             "title": "Mistborn: The Final Empire"
-        },
-        {
-            "author": "sdfsdf",
-            "genres": [
-                "sdfsdf"
-            ],
-            "id": 9,
-            "notes": "sdf",
-            "rating": 0.0,
-            "status": "ToRead",
-            "title": "Kajda"
         }
     ],
-    "next_id": 10
+    "next_id": 9
 }
