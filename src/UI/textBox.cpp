@@ -2,13 +2,13 @@
 #include "../textRenderer.h"
 #include <algorithm>
 #include <sstream>
-#include <cctype> // for isalnum
+#include <cctype> 
 
 TextBox::TextBox(Rectangle r, std::string ph)
     : Widget(r), placeholder(ph)
 {}
 
-// Helper: Check if character is part of a word
+
 bool IsWordChar(char c) {
     return std::isalnum(c) || c == '_';
 }
@@ -20,7 +20,7 @@ void TextBox::MoveLeft(bool jumpWord) {
         cursorIndex--;
     }
     else {
-        // Ctrl+Left: Skip spaces/punctuation, then skip the word
+        // Ctrl+Left
         while (cursorIndex > 0 && !IsWordChar(text[cursorIndex - 1])) {
             cursorIndex--;
         }
@@ -37,7 +37,7 @@ void TextBox::MoveRight(bool jumpWord) {
         cursorIndex++;
     }
     else {
-        // Ctrl+Right: Skip current word, then skip spaces
+        // Ctrl+Right
         while (cursorIndex < (int)text.length() && IsWordChar(text[cursorIndex])) {
             cursorIndex++;
         }
@@ -47,7 +47,7 @@ void TextBox::MoveRight(bool jumpWord) {
     }
 }
 
-// Helper to handle the "Hold Key to Repeat" logic
+//Key hold to move cursor
 void TextBox::HandleKeyRepeat(int key, bool jumpWord, void (TextBox::* moveFunc)(bool)) {
     if (IsKeyPressed(key)) {
         (this->*moveFunc)(jumpWord);
@@ -76,24 +76,23 @@ void TextBox::Update() {
     Vector2 mouse = GetMousePosition();
     isHovered = CheckCollisionPointRec(mouse, bounds);
 
-    // 1. Focus Handling
+  
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         bool wasFocused = isFocused;
         isFocused = isHovered;
-        // Simple behavior: clicking focuses and moves cursor to end
-        // (Pixel-perfect click placement requires logic from Draw, simplified here)
+       
         if (isFocused && !wasFocused) cursorIndex = (int)text.length();
     }
 
     
     
-    // 2. Scrolling
+   
     if (isHovered || isFocused) {
         float wheel = GetMouseWheelMove();
         if (wheel != 0) scrollY -= wheel * 20.0f;
     }
 
-    // 3. Input Handling
+   
     if (isFocused) {
 
 
@@ -102,11 +101,11 @@ void TextBox::Update() {
 
         bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
 
-        // --- NAVIGATION ---
+     
         HandleKeyRepeat(KEY_LEFT, ctrl, &TextBox::MoveLeft);
         HandleKeyRepeat(KEY_RIGHT, ctrl, &TextBox::MoveRight);
 
-        // --- TEXT ENTRY ---
+       
         int key = GetCharPressed();
         while (key > 0) {
             if ((key >= 32) && (key <= 125) && (text.length() < maxLength)) {
@@ -116,14 +115,14 @@ void TextBox::Update() {
             key = GetCharPressed();
         }
 
-        // --- BACKSPACE (with Ctrl support) ---
+       
         if (IsKeyPressed(KEY_BACKSPACE)) {
             if (cursorIndex > 0 && !text.empty()) {
                 int deleteCount = 1;
                 int startIndex = cursorIndex - 1;
 
                 if (ctrl) {
-                    // Ctrl+Backspace: Delete word to the left
+                    // Ctrl+Backspace
                     int tempIndex = cursorIndex;
                     while (tempIndex > 0 && !IsWordChar(text[tempIndex - 1])) tempIndex--;
                     while (tempIndex > 0 && IsWordChar(text[tempIndex - 1])) tempIndex--;
@@ -136,14 +135,14 @@ void TextBox::Update() {
             }
         }
 
-        // --- DELETE ---
+      
         if (IsKeyPressed(KEY_DELETE)) {
             if (cursorIndex < (int)text.length()) {
                 text.erase(cursorIndex, 1);
             }
         }
 
-        // --- ENTER ---
+       
         if (IsKeyPressed(KEY_ENTER)) {
             text.insert(cursorIndex, 1, '\n');
             cursorIndex++;
@@ -158,20 +157,19 @@ void TextBox::Update() {
 void TextBox::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
-    // 1. Draw Background & Border
+    //Background & Border
     DrawRectangleRec(bounds, RAYWHITE);
     Color borderColor = isFocused ? RED : (isHovered ? DARKGRAY : LIGHTGRAY);
     DrawRectangleLinesEx(bounds, 2, borderColor);
 
     if (!renderer) return;
 
-    // 2. Determine Text to Draw
+    //Text to Draw
     std::string textToDraw = text;
     bool showPlaceholder = text.empty() && !isFocused;
     if (showPlaceholder) textToDraw = placeholder;
 
-    // 3. Layout Calculation
-    // We iterate character-by-character to handle wrapping and find the cursor position.
+    
     const float fontSize = 20.0f;
     const float padding = 5.0f;
     const float lineHeight = 24.0f;
@@ -193,15 +191,15 @@ void TextBox::Draw(TextRenderer* renderer) {
         float absoluteY = bounds.y + padding + currentY - scrollY;
         float absoluteX = bounds.x + padding;
 
-        // Draw ONLY if visible
+        // Draw if visible
         if (absoluteY + lineHeight > bounds.y && absoluteY < bounds.y + bounds.height) {
             std::string lineStr = textToDraw.substr(lineStartIndex, endIndex - lineStartIndex);
             renderer->DrawSimpleText(lineStr, { absoluteX, absoluteY }, fontSize, showPlaceholder ? GRAY : BLACK);
         }
 
-        // Check if cursor is on this line (if focused)
+        // Check if cursor is on this line
         if (isFocused && !showPlaceholder && !cursorFound && cursorIndex >= lineStartIndex && cursorIndex <= endIndex) {
-            // Measure partial string to find exact X
+            
             std::string sub = textToDraw.substr(lineStartIndex, cursorIndex - lineStartIndex);
             float subWidth = renderer->Measure(sub, fontSize);
             cursorPos = { absoluteX + subWidth, absoluteY };
@@ -217,7 +215,7 @@ void TextBox::Draw(TextRenderer* renderer) {
     for (int i = 0; i < (int)textToDraw.length(); i++) {
         char c = textToDraw[i];
 
-        // Handle Hard Newline
+        // Handle newline
         if (c == '\n') {
             finishLine(i, true);
             lineStartIndex = i + 1;
@@ -225,24 +223,24 @@ void TextBox::Draw(TextRenderer* renderer) {
             continue;
         }
 
-        // Measure Char
+       
         std::string charStr(1, c);
         float charWidth = renderer->Measure(charStr, fontSize);
 
         // Check Wrap
         if (currentX + charWidth > contentWidth) {
             if (lastSpaceIndex != -1) {
-                // Wrap at last space
+                
                 finishLine(lastSpaceIndex, false);
-                i = lastSpaceIndex; // Rewind loop to space
+                i = lastSpaceIndex; 
                 lineStartIndex = lastSpaceIndex + 1;
                 lastSpaceIndex = -1;
             }
             else {
-                // Force wrap (word too long)
+                // Force wrap
                 finishLine(i, false);
                 lineStartIndex = i;
-                i--; // Reprocess char on new line
+                i--; 
             }
         }
         else {
@@ -251,17 +249,17 @@ void TextBox::Draw(TextRenderer* renderer) {
         }
     }
 
-    // Finish the final line
+  
     finishLine((int)textToDraw.length(), false);
 
     // 4. Draw Cursor
     if (isFocused && cursorFound) {
-        // Auto-scroll logic: if cursor is out of bounds, adjust scrollY
+       
         float relY = cursorPos.y - bounds.y;
         if (relY < 0) scrollY += relY;
         if (relY + lineHeight > bounds.height) scrollY += (relY + lineHeight - bounds.height);
 
-        // Blinking cursor
+        // Blinking
         if (((int)(GetTime() * 2) % 2) == 0) {
             renderer->DrawSimpleText("|", { cursorPos.x - 1, cursorPos.y }, fontSize, BLACK);
         }
@@ -269,7 +267,7 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     EndScissorMode();
 
-    // 5. Scrollbar Logic
+    //Scrollbar Logic
     float totalHeight = currentY + lineHeight;
     maxScrollY = std::max(0.0f, totalHeight - (bounds.height - padding * 2));
 

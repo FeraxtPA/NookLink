@@ -36,37 +36,36 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
                     aMoveFactor = 0.0f;
                     bMoveFactor = 0.0f;
                 }
-                // 2. If A is fixed (Dragged/Locked)...
+                // 2. If A is fixed
                 else if (aUserFixed) {
-                    aMoveFactor = 0.0f; // A never yields
+                    aMoveFactor = 0.0f; 
 
                    
                     if (aIsGenre) {
-                        // Dragged GENRE pushes everything (Books AND Genres)
+                       
                         bMoveFactor = 1.0f;
                     }
                     else {
-                        // Dragged BOOK pushes Books, but CANNOT push Genres
+                        // Dragged book pushes books, but not Genres
                         if (bIsGenre) bMoveFactor = 0.0f;
                         else bMoveFactor = 1.0f;
                     }
                 }
-                //If B is fixed (Dragged/Locked)...
+                //If B is fixed 
                 else if (bUserFixed) {
-                    bMoveFactor = 0.0f; // B never yields
+                    bMoveFactor = 0.0f; 
 
-                    // Does A yield?
+                   
                     if (bIsGenre) {
-                        // Dragged GENRE pushes everything
+                       
                         aMoveFactor = 1.0f;
                     }
                     else {
-                        // Dragged BOOK pushes Books, but CANNOT push Genres
+                       
                         if (aIsGenre) aMoveFactor = 0.0f;
                         else aMoveFactor = 1.0f;
                     }
                 }
-                // 4. Neither is fixed (Standard Physics)
                 else {
                     // Genre vs Genre
                     if (aIsGenre && bIsGenre) {

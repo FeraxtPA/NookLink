@@ -21,7 +21,7 @@ void TextRenderer::InitFont()
     codepoints[97] = 0x00BE; // 3/4
     codepoints[98] = 0x2605; // star
 
-    // Ensure assets folder exists or path is correct relative to exe
+    
     m_Font = LoadFontEx("Assets/DejaVuSans.ttf", 32, codepoints, 99);
     SetTextureFilter(m_Font.texture, TEXTURE_FILTER_BILINEAR);
 }

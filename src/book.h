@@ -101,7 +101,7 @@ public:
 			{"title", b.m_Title},
 			{"author", b.m_Author},
 			{"status", b.m_Status},
-			{"genres", b.m_Genres}, // This just works now
+			{"genres", b.m_Genres}, 
 			{"notes", b.m_Notes},
 			{"rating", b.m_Rating}
 		};
@@ -112,7 +112,7 @@ public:
 		j.at("title").get_to(b.m_Title);
 		j.at("author").get_to(b.m_Author);
 		j.at("status").get_to(b.m_Status);
-		j.at("genres").get_to(b.m_Genres); // Automatic
+		j.at("genres").get_to(b.m_Genres); 
 		if (j.contains("notes")) j.at("notes").get_to(b.m_Notes);
 		j.at("rating").get_to(b.m_Rating);
 	}

@@ -47,14 +47,14 @@ private:
     mutable int m_CachedBoxHeight = 0;
     Vector2 m_LastMousePos = { -1, -1 };
 
-    // --- EDIT PANEL WIDGETS ---
+    
     std::shared_ptr<Panel> m_EditPanel;
     std::shared_ptr<TextInput> m_EditTitle;
     std::shared_ptr<TextInput> m_EditAuthor;
     std::shared_ptr<TextInput> m_EditGenres;
     std::shared_ptr<TextInput> m_EditRating;
 
-    // CHANGED: This is now a TextBox for multiline notes
+   
     std::shared_ptr<TextBox> m_EditNotes;
 
     std::shared_ptr<Button> m_EditStatusBtn;

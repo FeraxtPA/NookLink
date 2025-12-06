@@ -135,7 +135,7 @@ void GraphManager::placeBookNodes() {
         Vector2 avgPos = {};
         int count = 0;
 
-        // Iterate over the book's genres (now strings)
+       
         for (const auto& genreStr : book.getGenres()) {
             // Find the genre node position in the map (keys are now strings)
             auto it = m_Genres.find(genreStr);
@@ -148,7 +148,7 @@ void GraphManager::placeBookNodes() {
         // If the book has genres, place it near them; otherwise, place it near the center
         avgPos = (count > 0) ? Vector2Scale(avgPos, 1.0f / count) : canvasCenter;
 
-        // Add some random offset so nodes don't stack perfectly on top of each other
+        // Add some random offset 
         float angle = distAngle(rng);
         Vector2 pos = {
             avgPos.x + offsetDistance * cos(angle),
@@ -191,7 +191,7 @@ void GraphManager::initializePositions()
 
 void GraphManager::removeNodeById(int id) {
 
-    // Helper lambda to remove a single node and its edges/mappings
+    
     auto removeSingleNode = [&](int targetId) {
         // 1. Remove from m_Nodes vector
         m_Nodes.erase(
@@ -200,10 +200,10 @@ void GraphManager::removeNodeById(int id) {
             m_Nodes.end()
         );
 
-        // 2. Remove edges connected to this node
+        // Remove edges connected to this node
         m_ConnectionManager.removeEdgesConnectedToNode(targetId);
 
-        // 3. Remove from m_Genres map if it's a genre node
+        //Remove from m_Genres map if it's a genre node
         for (auto it = m_Genres.begin(); it != m_Genres.end(); ) {
             if (it->second.nodeId == targetId) {
                 it = m_Genres.erase(it);
@@ -219,17 +219,16 @@ void GraphManager::removeNodeById(int id) {
         }
         };
 
-    // --- STEP 1: Remove the target node (The Book you clicked) ---
+    //Remove book
     removeSingleNode(id);
 
 
-    // --- STEP 2: Garage Collection (Remove Empty Genres) ---
-    // Now that the book is gone, check if any genres are left with 0 connections
+    //Check if any genre is now alone
     std::vector<int> emptyGenres;
 
     for (const auto& node : m_Nodes) {
         if (node.type == NodeType::Genre) {
-            // Check if this genre has any edges left
+            
             if (getNumOfConnectedBooks(node.id) == 0) {
                 emptyGenres.push_back(node.id);
             }
@@ -243,9 +242,7 @@ void GraphManager::removeNodeById(int id) {
     }
 
 
-    // --- STEP 3: Rebuild Pointer Map ---
-    // CRITICAL: Since we erased elements from std::vector, the addresses of 
-    // the remaining nodes have changed. We must rebuild the lookup map.
+    //Rebuild map
     m_NodeIdMap.clear();
     for (auto& node : m_Nodes) {
         m_NodeIdMap[node.id] = &node;

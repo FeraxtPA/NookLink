@@ -25,6 +25,7 @@ void Application::Initialize()
     m_CameraHandler = std::make_unique<CameraHandler>(m_ScreenSize, m_CanvasSize);
 
     InitBookManager();
+
     // Initialize graph with current books and connections
     m_GraphManager->initializePositions();
 
@@ -48,12 +49,12 @@ void Application::Initialize()
             std::cout << "Adding book: " << title << std::endl;
 
 
-            // 1. Create Book
+           
             Book newBook(title, author, status);
             newBook.setRating(rating);
             newBook.setNotes(notes);
 
-            // 2. Parse Genres (String split by comma)
+            //Parse Genres (String split by comma)
             std::stringstream ss(genreStr);
             std::string segment;
             while (std::getline(ss, segment, ',')) {
@@ -63,32 +64,29 @@ void Application::Initialize()
                     size_t last = segment.find_last_not_of(' ');
                     std::string cleanGenre = segment.substr(first, (last - first + 1));
 
-                    // Add the string directly!
+                   
                     newBook.addGenre(cleanGenre);
                 }
             }
 
-            // 3. Add to System
+            // Add book to manager and update graph
             m_BookManager.addBook(newBook);
             m_GraphManager->initializePositions();
             m_LayoutDirty = true;
             m_SettleIterations = 0;
         },
-        // NEW: EDIT BOOK CALLBACK
+        //Edit book
         [this](int id, std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
             std::cout << "Editing book ID: " << id << std::endl;
             Book* book = m_BookManager.getBookById(id);
             if (book) {
-                // Update basic fields
+              
                 book->setTitle(title);
                 book->setAuthor(author);
                 book->setRating(rating);
                 book->setStatus(status);
                 book->setNotes(notes);
 
-               
-
-                
                 book->clearGenres();
 
                 std::stringstream ss(genreStr);

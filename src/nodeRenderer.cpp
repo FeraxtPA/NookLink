@@ -34,7 +34,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
                 m_TextRenderer->DrawTextFitted(
                     book->getTitle(),
                     node.position,
-                    node.radius * 1.8f, // Max width (90% of diameter)
+                    node.radius * 1.8f, // Max Width = 90%
                     dynamicFontSize,
                     NookCol::TEXT_ONNODE
                 );
@@ -94,7 +94,7 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
         return overlapsX && overlapsY;
         };
 
-    // Helper function to get node by ID
+   
     auto getNodeById = [&](int id) -> const Node* {
 		for (const auto& node : nodes) {
 			if (node.id == id) return &node;

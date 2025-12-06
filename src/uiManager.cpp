@@ -6,7 +6,7 @@
 #include "colors.h"
 #include <iostream>
 #include <numeric>
-#include <format> // Check if your compiler supports this, otherwise use sprintf or to_string
+#include <format> 
 #include "UI/widget.h"
 
 UIManager::UIManager(int screenWidth, int screenHeight)
@@ -24,12 +24,10 @@ void UIManager::OpenEditPanel(Book* book)
     m_EditTitle->text = book->getTitle();
     m_EditAuthor->text = book->getAuthor();
 
-    // Rating conversion
-    char buffer[16];
-    sprintf_s(buffer, "%.2f", book->getRating());
-    m_EditRating->text = std::string(buffer);
+    
+    m_EditRating->text = std::format("{:.2f}", book->getRating());
 
-    // Notes -> TextBox
+    
     m_EditNotes->SetText(book->getNotes());
 
     // Genres
@@ -198,7 +196,7 @@ void UIManager::BuildInterface(
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
 {
-    // 1. TOP BAR
+    
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
     ));
@@ -217,9 +215,7 @@ void UIManager::BuildInterface(
     float inputW = 360;
     float xOff = -180;
 
-    // ============================================================
-    // 2. ADD BOOK PANEL
-    // ============================================================
+    //Book Add Panel
     auto addPanel = std::make_shared<Panel>(
         Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Add New Book"
     );
@@ -230,7 +226,7 @@ void UIManager::BuildInterface(
     auto inGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres (e.g. SciFi, Horror)");
     auto inRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating (0.0 - 5.0)");
 
-    // Use TextBox for Add Panel (Local variable)
+    //Text Box for notes
     auto inNotes = std::make_shared<TextBox>(
         Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
         "Notes"
@@ -239,7 +235,7 @@ void UIManager::BuildInterface(
     // Add Status Button
     auto addStatusState = std::make_shared<int>(0);
     auto btnAddStatus = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status: To Read", []() {} // Adjusted Y pos due to taller notes
+        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status: To Read", []() {} 
     );
 
     std::weak_ptr<Button> weakAddBtn = btnAddStatus;
@@ -272,7 +268,7 @@ void UIManager::BuildInterface(
 
                 onAddBook(t, a, g, r, s, n);
 
-                // Clear
+                
                 inTitle->Clear(); inAuthor->Clear(); inGenres->Clear();
                 inRating->Clear(); inNotes->Clear();
                 addPanel->isVisible = false;
@@ -298,9 +294,7 @@ void UIManager::BuildInterface(
     addPanel->AddChild(btnCreate);
     addPanel->AddChild(btnCancelAdd);
 
-    // ============================================================
-    // 3. EDIT BOOK PANEL
-    // ============================================================
+    // Edit book panel
     m_EditPanel = std::make_shared<Panel>(
         Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Edit Book Details"
     );
@@ -311,7 +305,7 @@ void UIManager::BuildInterface(
     m_EditGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres");
     m_EditRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating");
 
-    // Member TextBox for Edit Panel
+    //Text box for notes
     m_EditNotes = std::make_shared<TextBox>(
         Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
         "Notes"
@@ -374,9 +368,7 @@ void UIManager::BuildInterface(
     m_EditPanel->AddChild(btnUpdate);
     m_EditPanel->AddChild(btnCancelEdit);
 
-    // ============================================================
-    // 4. REGISTER
-    // ============================================================
+    
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "Add Book",
         [addPanel]() { addPanel->isVisible = true; }

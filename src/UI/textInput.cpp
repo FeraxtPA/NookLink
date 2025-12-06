@@ -11,12 +11,12 @@ void TextInput::Update() {
     Vector2 mouse = GetMousePosition();
     bool isHovered = CheckCollisionPointRec(mouse, bounds);
 
-    // 1. Handle Focus
+   
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         isFocused = isHovered;
     }
 
-    // 2. Handle Text Entry
+    
     if (isFocused) {
         Widget::DesiredCursor = MOUSE_CURSOR_IBEAM; 
 
@@ -48,7 +48,7 @@ void TextInput::Update() {
 void TextInput::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
-    // Draw Background & Border
+    // Draw Background + Border
     DrawRectangleRec(bounds, RAYWHITE);
 
     Color borderColor = isFocused ? RED : (CheckCollisionPointRec(GetMousePosition(), bounds) ? DARKGRAY : LIGHTGRAY);
@@ -71,7 +71,6 @@ void TextInput::Draw(TextRenderer* renderer) {
     }
 
     // Draw Blinking Cursor
-    // We use renderer->Measure to find exactly where the text ends
     if (isFocused && ((int)(GetTime() * 2) % 2) == 0) {
         float textWidth = renderer->Measure(text, fontSize);
 

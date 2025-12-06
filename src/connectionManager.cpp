@@ -7,7 +7,7 @@ void ConnectionManager::updateConnections(const std::vector<Book>& books)
 
    
 
-    // 1. Assign unique NEGATIVE IDs to all genres found
+    // Negative IDs for genres
     for (const auto& book : books) {
         for (const auto& genre : book.getGenres()) {
             if (m_ExistingGenres.find(genre) == m_ExistingGenres.end()) {
@@ -19,10 +19,10 @@ void ConnectionManager::updateConnections(const std::vector<Book>& books)
         }
     }
 
-    // 2. Create Edges
+    // Edges
     for (const auto& book : books) {
         for (const auto& genre : book.getGenres()) {
-            // Retrieve the negative ID
+            
             if (m_GenreIdMap.find(genre) != m_GenreIdMap.end()) {
                 int genreId = m_GenreIdMap[genre];
                 m_Edges.push_back({ book.getId(), genreId, EdgeType::BookToGenre });

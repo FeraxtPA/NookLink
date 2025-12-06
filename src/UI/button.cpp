@@ -31,7 +31,7 @@ void Button::Draw(TextRenderer* renderer) {
     DrawRectangleRec(bounds, isHovered ? DARKGRAY : LIGHTGRAY);
     DrawRectangleLinesEx(bounds, 2, BLACK);
 
-    // Use the passed renderer
+    
     if (renderer) {
         Vector2 center = { bounds.x + bounds.width / 2.0f, bounds.y + bounds.height / 2.0f };
         renderer->DrawTextCentered(text, center, 20.0f, BLACK);

@@ -10,18 +10,18 @@ public:
     bool isFocused = false;
     int maxLength = 2000;
 
-    // Navigation state
+    
     int cursorIndex = 0;
 
-    // Scrolling state
+   
     float scrollY = 0.0f;
     float maxScrollY = 0.0f;
 
     // Key Repeat State
     float keyRepeatTimer = 0.0f;
     int lastKeyPressed = -1;
-    const float KEY_REPEAT_DELAY = 0.5f; // Initial delay
-    const float KEY_REPEAT_RATE = 0.03f; // Repeat speed
+    const float KEY_REPEAT_DELAY = 0.5f; 
+    const float KEY_REPEAT_RATE = 0.03f; 
 
     TextBox(Rectangle r, std::string ph = "");
 
