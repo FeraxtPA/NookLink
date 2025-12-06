@@ -47,6 +47,8 @@ public:
     const std::string getGenreNameByNodeId(int nodeId) const; 
 
     void clearGenresAndConnections() { m_ConnectionManager.Clear(); }
+
+    void updateConnections() { m_ConnectionManager.updateConnections(m_BookManager.getBooks()); }
 private:
     const BookManager& m_BookManager;
     ConnectionManager& m_ConnectionManager;

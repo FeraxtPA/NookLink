@@ -3,8 +3,7 @@
 // Resolve overlaps between nodes by adjusting their positions
 void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
 {
-    // Maximum displacement to avoid excessive movement
-    float maxDisplacement = 100.0f;
+    float maxDisplacement = 20.0f;
 
     for (size_t i = 0; i < m_Nodes.size(); ++i) {
         for (size_t j = i + 1; j < m_Nodes.size(); ++j) {
@@ -15,36 +14,92 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
             Vector2 delta = Vector2Subtract(b.position, a.position);
             float dist = Vector2Length(delta);
 
-            // Check for overlap
             if (dist < totalRadius && dist > 0.001f) {
-
-                
                 Vector2 direction = Vector2Normalize(delta);
                 float overlap = totalRadius - dist;
                 Vector2 displacement = Vector2Scale(direction, std::min(overlap * 0.5f, maxDisplacement));
 
+                
+                bool aUserFixed = a.locked || a.isDragged;
+                bool bUserFixed = b.locked || b.isDragged;
+
+                bool aIsGenre = (a.type == NodeType::Genre);
+                bool bIsGenre = (b.type == NodeType::Genre);
+
+                float aMoveFactor = 0.0f;
+                float bMoveFactor = 0.0f;
+
                
-                if (a.locked && !b.locked) {
-                    b.position = Vector2Add(b.position, displacement);
+
+                // Both fixed none moves
+                if (aUserFixed && bUserFixed) {
+                    aMoveFactor = 0.0f;
+                    bMoveFactor = 0.0f;
                 }
-                else if (!a.locked && b.locked) {
-                    a.position = Vector2Subtract(a.position, displacement);
+                // 2. If A is fixed (Dragged/Locked)...
+                else if (aUserFixed) {
+                    aMoveFactor = 0.0f; // A never yields
+
+                   
+                    if (aIsGenre) {
+                        // Dragged GENRE pushes everything (Books AND Genres)
+                        bMoveFactor = 1.0f;
+                    }
+                    else {
+                        // Dragged BOOK pushes Books, but CANNOT push Genres
+                        if (bIsGenre) bMoveFactor = 0.0f;
+                        else bMoveFactor = 1.0f;
+                    }
                 }
+                //If B is fixed (Dragged/Locked)...
+                else if (bUserFixed) {
+                    bMoveFactor = 0.0f; // B never yields
+
+                    // Does A yield?
+                    if (bIsGenre) {
+                        // Dragged GENRE pushes everything
+                        aMoveFactor = 1.0f;
+                    }
+                    else {
+                        // Dragged BOOK pushes Books, but CANNOT push Genres
+                        if (aIsGenre) aMoveFactor = 0.0f;
+                        else aMoveFactor = 1.0f;
+                    }
+                }
+                // 4. Neither is fixed (Standard Physics)
                 else {
-
-                    // Apply different weights based on node type
-                    // Can't move genres nodes by other genre nodes
-                    float aWeight = (a.type == NodeType::Genre) ? 0.0f : 1.0f;
-                    float bWeight = (b.type == NodeType::Genre) ? 0.0f : 1.0f;
-
-                    a.position = Vector2Subtract(a.position, Vector2Scale(displacement, aWeight));
-                    b.position = Vector2Add(b.position, Vector2Scale(displacement, bWeight));
+                    // Genre vs Genre
+                    if (aIsGenre && bIsGenre) {
+                        aMoveFactor = 0.5f;
+                        bMoveFactor = 0.5f;
+                    }
+                    // Genre vs Book: Genre stays, Book moves
+                    else if (aIsGenre) {
+                        aMoveFactor = 0.0f;
+                        bMoveFactor = 1.0f;
+                    }
+                    // Book vs Genre: Book moves, Genre stays
+                    else if (bIsGenre) {
+                        aMoveFactor = 1.0f;
+                        bMoveFactor = 0.0f;
+                    }
+                    // Book vs Book
+                    else {
+                        aMoveFactor = 0.5f;
+                        bMoveFactor = 0.5f;
+                    }
                 }
+
+                
+                if (aMoveFactor > 0.0f)
+                    a.position = Vector2Subtract(a.position, Vector2Scale(displacement, aMoveFactor));
+
+                if (bMoveFactor > 0.0f)
+                    b.position = Vector2Add(b.position, Vector2Scale(displacement, bMoveFactor));
             }
         }
     }
 }
-
 // Apply spring constraints between book nodes and genre nodes
 // Adjust spring length based on the number of books in each genre
 void GraphLayout::applySpringConstraints(

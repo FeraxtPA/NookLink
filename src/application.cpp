@@ -73,8 +73,42 @@ void Application::Initialize()
             m_GraphManager->initializePositions();
             m_LayoutDirty = true;
             m_SettleIterations = 0;
+        },
+        // NEW: EDIT BOOK CALLBACK
+        [this](int id, std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
+            std::cout << "Editing book ID: " << id << std::endl;
+            Book* book = m_BookManager.getBookById(id);
+            if (book) {
+                // Update basic fields
+                book->setTitle(title);
+                book->setAuthor(author);
+                book->setRating(rating);
+                book->setStatus(status);
+                book->setNotes(notes);
+
+               
+
+                
+                book->clearGenres();
+
+                std::stringstream ss(genreStr);
+                std::string segment;
+                while (std::getline(ss, segment, ',')) {
+                    size_t first = segment.find_first_not_of(' ');
+                    if (std::string::npos != first) {
+                        size_t last = segment.find_last_not_of(' ');
+                        book->addGenre(segment.substr(first, (last - first + 1)));
+                    }
+                }
+
+                // Rebuild graph to update connections/visuals
+                m_GraphManager->updateConnections();
+                //m_LayoutDirty = true;
+                //m_SettleIterations = 0;
+            }
         }
-	);
+    );
+	
     
     SetTargetFPS(60);
 }
@@ -199,6 +233,8 @@ void Application::HandleInput(Vector2 worldMousePos)
             }
         }
 
+        
+
 
         // Release drag
         if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) {
@@ -296,11 +332,15 @@ void Application::HandleInput(Vector2 worldMousePos)
                     }
                 }
             }
-            else
-            {
-                std::cout << "Clicked on empty space" << std::endl;
-                m_LastClickedNode = nullptr;
-                m_LastClickTime = 0.0;
+            
+        }
+    }
+
+    if (IsKeyPressed(KEY_E)) {
+        if (m_LastClickedNode && m_LastClickedNode->type == NodeType::Book) {
+            Book* bookToEdit = m_BookManager.getBookById(m_LastClickedNode->id);
+            if (bookToEdit) {
+                m_UIManager->OpenEditPanel(bookToEdit);
             }
         }
     }

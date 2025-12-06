@@ -12,13 +12,19 @@ void Panel::AddChild(std::shared_ptr<Widget> widget) {
 void Panel::Update() {
     if (!isVisible) return;
 
-    //isHovered = CheckCollisionPointRec(GetMousePosition(), bounds);
-
+    isHovered = CheckCollisionPointRec(GetMousePosition(), bounds);
+    if (isHovered)
+    {
+        Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND;
+    }
    
 
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
         (*it)->Update();
     }
+  
+
+   
 }
 
 void Panel::Draw(TextRenderer* renderer) {

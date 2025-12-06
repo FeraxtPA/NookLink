@@ -37,6 +37,10 @@ void TextInput::Update() {
     else if (isHovered) {
         Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND; 
     }
+    else
+    {
+        Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
+    }
 	
     
 }

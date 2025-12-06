@@ -25,7 +25,7 @@ public:
 
 	const std::vector<Book>& getBooks() const { return m_Books; }
 		
-
+	Book* getBookById(int id);
 	const Book* findBookById(int id) const;
 
 

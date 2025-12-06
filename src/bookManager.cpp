@@ -26,6 +26,14 @@ void BookManager::removeBook(const Book& book)
 	removeBook(book.getId());
 }
 
+Book* BookManager::getBookById(int id) {
+	for (auto& book : m_Books) {
+		if (book.getId() == id) {
+			return &book;
+		}
+	}
+	return nullptr;
+}
 const Book* BookManager::findBookById(int id) const
 {
 	//Binary search since books are stored sorted by id
