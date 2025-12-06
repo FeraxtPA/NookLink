@@ -47,6 +47,7 @@ void Application::Initialize()
         [this](std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
             std::cout << "Adding book: " << title << std::endl;
 
+
             // 1. Create Book
             Book newBook(title, author, status);
             newBook.setRating(rating);
