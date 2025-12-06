@@ -9,6 +9,8 @@ public:
     ~TextRenderer();
 
     void drawTextCentered(const std::string& text, Vector2 pos, float radius, Color col);
+       
+    void DrawText(const std::string& text, Vector2 pos, float fontSize, Color col, bool centered = false);
 
     Font& getFont()  { return m_Font; }
    

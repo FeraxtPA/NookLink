@@ -24,9 +24,9 @@ void TextRenderer::InitFont()
         codepoints[98] = 0x2605; // star (Black Star)
 
 
-        m_Font = LoadFontEx("assets/DejaVuSans.ttf", 48, codepoints, 99);
+        m_Font = LoadFontEx("assets/DejaVuSans.ttf", 20, codepoints, 99);
 
-        SetTextureFilter(m_Font.texture, TEXTURE_FILTER_POINT);
+       // SetTextureFilter(m_Font.texture, TEXTURE_FILTER_POINT);
     
 }
 
@@ -74,4 +74,17 @@ void TextRenderer::drawTextCentered(const std::string& text, Vector2 pos, float 
     };
 
     DrawTextEx(m_Font, m_CachedFittedText.c_str(), textPos, m_FontSize, m_Spacing, col);
+}
+
+void TextRenderer::DrawText(const std::string& text, Vector2 pos, float fontSize, Color col, bool centered)
+{
+	Vector2 size = MeasureTextEx(m_Font, text.c_str(), fontSize, m_Spacing);
+	Vector2 drawPos = pos;
+
+	if (centered) {
+		drawPos.x -= size.x / 2.0f;
+		drawPos.y -= size.y / 2.0f;
+	}
+
+	DrawTextEx(m_Font, text.c_str(), drawPos, fontSize, m_Spacing, col);
 }

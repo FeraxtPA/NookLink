@@ -23,8 +23,13 @@ void Button::Draw()
     DrawRectangleRec(bounds, isHovered ? DARKGRAY : LIGHTGRAY);
     DrawRectangleLinesEx(bounds, 2, BLACK);
     int textW = MeasureText(text.c_str(), 20);
-    textRenderer.drawTextCentered(text, 
-		{ bounds.x + bounds.width / 2, bounds.y + bounds.height / 2 }, 
-		bounds.width / 2 - 10, BLACK);
+    
+    textRenderer.DrawText(
+		text, 
+		{ bounds.x + bounds.width / 2.0f, bounds.y + bounds.height / 2.0f }, 
+		20, 
+		BLACK, 
+		true
+	);
 }
 
