@@ -4,6 +4,7 @@
 #include "textRenderer.h"
 #include "connectionManager.h"
 #include "colors.h"
+#include "textRenderer.h" 
 
 enum class NodeType {
     Book,
@@ -27,16 +28,16 @@ struct GenreInfo {
 
 class NodeRenderer {
 public:
-    NodeRenderer(const BookManager& bm)
-        : m_BookManager(bm) {}
+   
+    NodeRenderer(const BookManager& bm, TextRenderer* tr)
+        : m_BookManager(bm), m_TextRenderer(tr) {}
 
-    void drawNode(const Node& node, float zoom, const std::unordered_map<Genre, GenreInfo>& genres);
+    void drawNode(const Node& node, float zoom, const std::unordered_map<std::string, GenreInfo>& genres);
     void drawEdges(const ConnectionManager& cm, const std::vector<Node>& nodes, const Rectangle& viewRect, float zoom);
-
 
 private:
     const BookManager& m_BookManager;
-    TextRenderer m_TextRenderer;
+    TextRenderer* m_TextRenderer; 
 
     Vector2 getNodePosition(int id, const std::vector<Node>& nodes) const;
     Color getStatusColor(Status status) const;

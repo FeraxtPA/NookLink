@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
 #include <vector>
-#include "genres.h"
+
 #include "../include/nlohmann/json.hpp"
 #include <cmath>
 
@@ -74,7 +74,7 @@ public:
 	const std::string& getTitle() const { return m_Title; }
 	const std::string& getAuthor() const { return m_Author; }
 	Status getStatus() const { return m_Status; }
-	const std::vector<Genre>& getGenres() const { return m_Genres; }
+	const std::vector<std::string>& getGenres() const { return m_Genres; }
 	const std::string& getNotes() const { return m_Notes; }
 
 
@@ -82,7 +82,9 @@ public:
 	void setTitle(const std::string& title) { m_Title = title; }
 	void setAuthor(const std::string& author) { m_Author = author; }
 	void setStatus(Status status) { m_Status = status; }
-	void addGenre(Genre genre) { m_Genres.push_back(genre); }
+	void addGenre(const std::string& genre) {
+		if (!genre.empty()) m_Genres.push_back(genre);
+	}
 	void clearGenres() { m_Genres.clear(); } 
 	void setNotes(const std::string& notes) { m_Notes = notes; }
 	float getRating() const { return m_Rating;}
@@ -93,57 +95,37 @@ public:
 		}
 	}
 
+	friend void to_json(json& j, const Book& b) {
+		j = json{
+			{"id", b.m_id},
+			{"title", b.m_Title},
+			{"author", b.m_Author},
+			{"status", b.m_Status},
+			{"genres", b.m_Genres}, // This just works now
+			{"notes", b.m_Notes},
+			{"rating", b.m_Rating}
+		};
+	}
+
+	friend void from_json(const json& j, Book& b) {
+		j.at("id").get_to(b.m_id);
+		j.at("title").get_to(b.m_Title);
+		j.at("author").get_to(b.m_Author);
+		j.at("status").get_to(b.m_Status);
+		j.at("genres").get_to(b.m_Genres); // Automatic
+		if (j.contains("notes")) j.at("notes").get_to(b.m_Notes);
+		j.at("rating").get_to(b.m_Rating);
+	}
+
 private:
 
 	int m_id;
 	std::string m_Title;
 	std::string m_Author;
 	Status m_Status;
-	std::vector<Genre> m_Genres;
+	std::vector<std::string> m_Genres;
 	std::string m_Notes;
 	float m_Rating;
 
 };
 
-//Convert book attributes to json, using overloaded functions for status and genres
-inline void to_json(json& j, const Book& b) {
-
-	std::ostringstream oss;
-    oss << std::fixed << std::setprecision(2) << b.getRating();
-
-	j = json{
-		{"id", b.getId()},
-		{"title", b.getTitle()},
-		{"author", b.getAuthor()},
-		{"status", b.getStatus()},
-		{"genres", b.getGenres()},
-		{"notes", b.getNotes()},
-		{"rating", GetRatingTwoDecimal(b.getRating())}
-
-	};
-}
-
-
-//Convert from json back to book attributes, using overloaded functions for status and genres
-inline void from_json(const json& j, Book& b) {
-	b.setId(j.at("id").get<int>());
-	b.setTitle(j.at("title").get<std::string>());
-	b.setAuthor(j.at("author").get<std::string>());
-	b.setStatus(j.at("status").get<Status>());
-
-	
-	b.clearGenres();
-
-	
-	if (j.contains("genres") && j.at("genres").is_array()) {
-		
-		auto genres = j.at("genres").get<std::vector<Genre>>();
-		for (const auto& genre : genres) {
-			b.addGenre(genre);
-		}
-	}
-	
-
-	b.setNotes(j.at("notes").get<std::string>());
-	b.setRating(j.at("rating").get<float>());
-}

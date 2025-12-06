@@ -1,61 +1,50 @@
 #pragma once
-
-#include <raylib.h>
-#include <string>
 #include <vector>
-#include <memory> 
-#include "bookManager.h" 
-#include "graphManager.h"
-#include "colors.h" 
-#include "book.h" 
+#include <memory>
+#include <functional>
+#include <string>
+#include <raylib.h>
+
 #include "UI/widget.h"
-#include "UI/button.h"
+#include "bookManager.h"
+#include "graphManager.h"
+#include "textRenderer.h" 
 
-
-
-class UIManager
-{
+class UIManager {
 public:
-    
-    //Should only use font from textRenderer not creating multiple fonts...
-    UIManager(int screenWidth, int screenHeight);
+    UIManager(int w, int h);
     ~UIManager();
 
-  
-    void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer);
 
-   
-    void Draw(Vector2 mousePos,  GraphManager* graphRenderer, const BookManager& bookManager) const;
+    bool IsMouseOverUI() const;
 
     void BuildInterface(
         std::function<void()> onSave,
-        std::function<void()> onLoad
-    );
+        std::function<void()> onLoad,
+        std::function<void(std::string title, std::string author, std::string genres, float rating, Status status, std::string notes)> onAddBook);
+
+    // Update needs renderer for measuring tooltip text
+    void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer);
+
+    // Draw needs renderer for drawing text
+    void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const;
 
 private:
-  
-    
-    
-
-    const int screenWidth;
-    const int screenHeight;
+    int m_ScreenWidth, m_ScreenHeight;
     std::vector<std::shared_ptr<Widget>> m_Widgets;
 
-
-    // --- Stav Tooltipu (pøesunuto z Application) ---
+    // Tooltip State
     Node* m_LastHoveredNode = nullptr;
     double m_HoverStartTime = 0.0;
-    std::string m_CachedTooltipText;
-    std::vector<std::string> m_CachedLines;
-    int m_CachedBoxWidth = 0;
-    int m_CachedBoxHeight = 0;
+
+    // Mutable strings for caching text layout
+    mutable std::string m_CachedTooltipText;
+    mutable std::vector<std::string> m_CachedLines;
+    mutable int m_CachedBoxWidth = 0;
+    mutable int m_CachedBoxHeight = 0;
     Vector2 m_LastMousePos = { -1, -1 };
 
-    // --- Interní logika ---
-    void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager);
-    void DrawHelpText() const;
-    void DrawTooltip(Vector2 mousePos) const;
-
-
-    
+    void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer);
+    void DrawHelpText(TextRenderer* renderer) const;
+    void DrawTooltip(Vector2 mousePos, TextRenderer* renderer) const;
 };

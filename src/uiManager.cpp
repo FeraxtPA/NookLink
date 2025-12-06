@@ -1,73 +1,59 @@
 #include "uiManager.h"
+#include "UI/button.h"
+#include "UI/textInput.h" 
+#include "UI/panel.h"    
+#include "colors.h"
 #include <iostream>
-#include <algorithm>
-
-
 
 UIManager::UIManager(int screenWidth, int screenHeight)
-    : screenHeight(screenHeight), screenWidth(screenWidth)
- 
+    : m_ScreenWidth(screenWidth), m_ScreenHeight(screenHeight)
 {}
 
-UIManager::~UIManager()
-{
-}
+UIManager::~UIManager() {}
 
-void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer)
+void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer)
 {
     
-  
-    bool mouseMoved = (mousePos.x != m_LastMousePos.x || mousePos.y != m_LastMousePos.y);
     m_LastMousePos = mousePos;
 
     if (graphRenderer != nullptr) {
         Node* newlyHovered = graphRenderer->getNodeAtPosition(worldMousePos);
-
-        if (mouseMoved || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-            if (newlyHovered != m_LastHoveredNode || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-                m_LastHoveredNode = newlyHovered;
-                m_HoverStartTime = GetTime();
-                m_CachedTooltipText.clear(); // Vynut� p�estavbu p�i zm�n� uzlu
-            }
+        if (newlyHovered != m_LastHoveredNode) {
+            m_LastHoveredNode = newlyHovered;
+            m_HoverStartTime = GetTime(); 
+            m_CachedTooltipText.clear(); 
         }
     }
 
-    for (auto& w : m_Widgets) w->Update();
-
-    UpdateTooltipCache(graphRenderer, bookManager);
-
-   
+    // 2. Update Widgets
+    for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
+        (*it)->Update();
+    }
+    // 3. Update Tooltip (Measure text if needed)
+    UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
 }
 
-
-void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager)
+void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
 {
-    if (m_LastHoveredNode == nullptr || m_CachedTooltipText.empty() == false) return;
+    if (m_LastHoveredNode == nullptr || m_CachedTooltipText.empty() == false || textRenderer == nullptr) return;
 
+    
     if (m_LastHoveredNode->type == NodeType::Book) {
-        const Book* hoveredBook = bookManager.findBookById(m_LastHoveredNode->id);
-        if (hoveredBook) {
-            m_CachedTooltipText = "Title: " + hoveredBook->getTitle() +
-                "\nAuthor: " + hoveredBook->getAuthor() +
-                "\nCurrent Status: " + statusToString(hoveredBook->getStatus()) +
-                "\nNotes: " + hoveredBook->getNotes() +
-                "\nRating: " + Book::ratingToStars(hoveredBook->getRating()) +
-                "\nBookID: " + std::to_string(hoveredBook->getId());
-        }
-        else {
-            m_CachedTooltipText = "Book not found!";
-            m_LastHoveredNode = nullptr;
-            return;
+        const Book* b = bookManager.findBookById(m_LastHoveredNode->id);
+        if (b) {
+            m_CachedTooltipText = "Title: " + b->getTitle() +
+                "\nAuthor: " + b->getAuthor() +
+                "\nStatus: " + statusToString(b->getStatus()) +
+                "\nRating: " + Book::ratingToStars(b->getRating());
         }
     }
     else if (m_LastHoveredNode->type == NodeType::Genre) {
         m_CachedTooltipText = "Genre: " + graphRenderer->getGenreNameByNodeId(m_LastHoveredNode->id) +
-            "\nBooks: " + std::to_string(graphRenderer->getNumOfConnectedBooks(m_LastHoveredNode->id)) +
-            "\nGenreID: " + std::to_string(m_LastHoveredNode->id);
+            "\nBooks: " + std::to_string(graphRenderer->getNumOfConnectedBooks(m_LastHoveredNode->id));
     }
 
-    // Rozd�len� na ��dky a v�po�et velikosti boxu (Layout)
-    const int fontSize = 20;
+    // Calculate Layout
+    const float fontSize = 20.0f;
     const int padding = 16;
     const int lineSpacing = 12;
 
@@ -79,102 +65,212 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
     }
     m_CachedLines.push_back(m_CachedTooltipText.substr(start));
 
-    int maxLineWidth = 0;
+    float maxLineWidth = 0;
     for (const std::string& line : m_CachedLines) {
-        // Pou�ijte MeasureTextEx s va�� font prom�nnou a spacingem 2
-        int width = MeasureText(line.c_str(), (float)fontSize);
+        // Use the renderer to measure properly!
+        float width = textRenderer->Measure(line, fontSize);
         if (width > maxLineWidth) maxLineWidth = width;
     }
 
-    m_CachedBoxWidth = maxLineWidth + 2 * padding;
-    m_CachedBoxHeight = (fontSize + lineSpacing) * (int)m_CachedLines.size() - lineSpacing + 2 * padding;
+    m_CachedBoxWidth = (int)maxLineWidth + 2 * padding;
+    m_CachedBoxHeight = (int)((fontSize + lineSpacing) * m_CachedLines.size()) - lineSpacing + 2 * padding;
 }
 
-
-void UIManager::Draw(Vector2 mousePos,  GraphManager* graphRenderer, const BookManager& bookManager) const
+void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const
 {
-   
-    DrawHelpText();
+    if (!textRenderer) return;
 
-    // Vykreslen� FPS
-    DrawFPS(10,screenHeight-20);
+    DrawHelpText(textRenderer);
 
-    for (auto& w : m_Widgets) w->Draw();
+    // Draw FPS
+    textRenderer->DrawSimpleText(std::to_string(GetFPS()), { 10, (float)m_ScreenHeight - 20 }, 20, GREEN);
 
-    // Vykreslen� po�tu uzl� (vy�aduje GraphManager)
+    // Draw Widgets
+    for (auto& w : m_Widgets) w->Draw(textRenderer);
+
+    // Draw Node Count
     if (graphRenderer != nullptr) {
-        std::string nodeAmountText = "Node amount: " + std::to_string(graphRenderer->getNodes().size());
-        DrawText(nodeAmountText.c_str(), 10, screenHeight - 40, 20, BLACK);
+        std::string count = "Nodes: " + std::to_string(graphRenderer->getNodes().size());
+        textRenderer->DrawSimpleText(count, { 10, (float)m_ScreenHeight - 40 }, 20, BLACK);
     }
 
-    // Vykreslen� tooltipu (vy�aduje logiku v�po�tu v Draw)
-    DrawTooltip(mousePos);
+    if (!IsMouseOverUI())
+    {
+        DrawTooltip(mousePos, textRenderer);
+    }
+    
 }
 
-void UIManager::BuildInterface(std::function<void()> onSave, std::function<void()> onLoad)
+void UIManager::DrawHelpText(TextRenderer* renderer) const
 {
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)screenWidth - 220, 10, 100, 40 }, "Save", onSave
-    ));
+   
+    renderer->DrawSimpleText("Right-click drag: Move | Space: Add Books", { 10, 10 }, 20, BLACK);
 
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)screenHeight - 110, 10, 100, 40 }, "Load", onLoad
-    ));
+  
+    renderer->DrawSimpleText("Shift+Drag: Lock | Shift+Click: Delete", { 10, 35 }, 20, BLACK);
 
+   
+    renderer->DrawSimpleText("Middle Click: Pan | Scroll: Zoom", { 10, 60 }, 20, BLACK);
 
+   
+    renderer->DrawSimpleText("Double Click: Unlock Node", { 10, 85 }, 20, BLACK);
+
+   
+    renderer->DrawSimpleText("V: Unlock FPS | B: Enable VSync", { 10, 110 }, 20, BLACK);
 }
 
-
-
-
-
-// --- PRIV�TN� METODA: Vykreslen� n�pov�dy ---
-void UIManager::DrawHelpText() const
-{
-    DrawText("Right-click and drag to move nodes", 10, 10, 20, BLACK);
-    DrawText("Press SPACE to add 50 new books", 10, 40, 20, BLACK);
-    DrawText("Hold SHIFT while dragging to lock a node", 10, 70, 20, BLACK);
-    DrawText("Middle click to pan around", 10, 100, 20, BLACK);
-    DrawText("Double click a node to unlock it", 10, 130, 20, BLACK);
-    DrawText("Press V to unlock framerate", 10, 160, 20, BLACK);
-    DrawText("Press B to enable VSYNC", 10, 190, 20, BLACK);
-}
-
-// --- PRIV�TN� METODA: Vykreslen� tooltipu ---
-void UIManager::DrawTooltip(Vector2 mousePos) const
+void UIManager::DrawTooltip(Vector2 mousePos, TextRenderer* renderer) const
 {
     if (m_LastHoveredNode && (GetTime() - m_HoverStartTime >= 0.5) && !IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-        // Vykreslen� boxu
+
         DrawRectangleRounded({ mousePos.x + 10, mousePos.y + 10, (float)m_CachedBoxWidth + 20, (float)m_CachedBoxHeight + 20 }, 0.2f, 10, Fade(NookCol::POPUP_BORDER, 0.75f));
         DrawRectangleRounded({ mousePos.x + 10, mousePos.y + 10, (float)m_CachedBoxWidth + 16, (float)m_CachedBoxHeight + 16 }, 0.2f, 10, Fade(NookCol::POPUP_BG, 0.95f));
 
-        const int fontSize = 20;
-        const int padding = 16;
-        const int lineSpacing = 12;
-        int yOffset = 0;
+        float xStart = mousePos.x + 26;
+        float yStart = mousePos.y + 26;
+        float spacing = 32;
 
-        // Vykreslen� textu
-        for (const std::string& line : m_CachedLines) {
-            size_t colonPos = line.find(':');
-
-            // Posun o 10, proto�e box je posunut o 10
-            float xStart = mousePos.x + 10 + padding;
-            float yStart = mousePos.y + 10 + padding + yOffset;
-
-            if (colonPos != std::string::npos) {
-                std::string label = line.substr(0, colonPos + 1);
-                std::string value = line.substr(colonPos + 1);
-
-                DrawTextEx(GetFontDefault(), label.c_str(), {xStart, yStart}, (float)fontSize, 2, NookCol::TEXT_HIGHLIGHT);
-                int labelWidth = MeasureTextEx(GetFontDefault(), label.c_str(), (float)fontSize, 2).x;
-                DrawTextEx(GetFontDefault(), value.c_str(), {xStart + labelWidth, yStart}, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
-            }
-            else {
-                DrawTextEx(GetFontDefault(), line.c_str(), {xStart, yStart}, (float)fontSize, 2, NookCol::TEXT_DEFAULT);
-            }
-            yOffset += fontSize + lineSpacing;
+        for (const auto& line : m_CachedLines) {
+            renderer->DrawSimpleText(line, { xStart, yStart }, 20, NookCol::TEXT_DEFAULT);
+            yStart += spacing;
         }
     }
 }
 
+bool UIManager::IsMouseOverUI() const {
+    for (const auto& w : m_Widgets) {
+        if (w->isVisible && w->isHovered) return true;
+    }
+    return false;
+}
+void UIManager::BuildInterface(
+    std::function<void()> onSave,
+    std::function<void()> onLoad,
+    std::function<void(std::string title, std::string author, std::string genres, float rating, Status status, std::string notes)> onAddBook)
+{
+    // 1. Save/Load Buttons
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
+    ));
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)m_ScreenWidth - 110, 10, 100, 40 }, "Load", onLoad
+    ));
 
+    // 2. "Add Book" Panel
+    float cx = m_ScreenWidth / 2.0f;
+    float cy = m_ScreenHeight / 2.0f;
+    float panelW = 400;
+    float panelH = 550;
+
+    auto panel = std::make_shared<Panel>(
+        Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Add New Book"
+    );
+    panel->isVisible = false;
+
+    // Layout helper variables
+    float startY = -220; // Start higher up
+    float gap = 55;
+    float inputH = 35;
+    float inputW = 360;
+    float xOff = -180;
+
+    // --- INPUT FIELDS ---
+    auto inTitle = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY, inputW, inputH }, "Title");
+    auto inAuthor = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap, inputW, inputH }, "Author");
+    auto inGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres (e.g. SciFi, Horror)");
+    auto inRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating (0.0 - 5.0)");
+    auto inNotes = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, inputH }, "Notes...");
+
+    // --- STATUS TOGGLE BUTTON ---
+    // We use a shared int to track state: 0=ToRead, 1=Reading, 2=Read
+    auto statusState = std::make_shared<int>(0);
+
+    // We create the pointer first so we can capture it in the lambda
+    auto btnStatus = std::make_shared<Button>(
+        Rectangle{ cx + xOff, cy + startY + gap * 5, inputW, 40 },
+        "Status: To Read",
+        []() {}
+    );
+    std::weak_ptr<Button> weakBtn = btnStatus;
+
+    btnStatus->SetOnClick([statusState, weakBtn]() {
+        // Try to lock the pointer (check if button still exists)
+        if (auto btn = weakBtn.lock()) {
+            // Cycle state
+            *statusState = (*statusState + 1) % 3;
+
+            // Update Text
+            if (*statusState == 0) btn->SetText("Status: To Read");
+            else if (*statusState == 1) btn->SetText("Status: Reading");
+            else btn->SetText("Status: Read");
+        }
+        });
+    // --- CREATE BUTTON ---
+    auto btnCreate = std::make_shared<Button>(
+        Rectangle{ cx + xOff, cy + startY + gap * 7, 100, 40 }, "Create",
+        [panel, inTitle, inAuthor, inGenres, inRating, inNotes, statusState, onAddBook]() {
+            std::string t = inTitle->GetText();
+            std::string a = inAuthor->GetText();
+            std::string g = inGenres->GetText();
+            std::string rStr = inRating->GetText();
+            std::string n = inNotes->GetText();
+
+            // Minimal validation
+            if (!t.empty() && !a.empty()) {
+                // Parse Rating safely
+                float r = 0.0f;
+                try { r = std::stof(rStr); }
+                catch (...) { r = 0.0f; }
+
+                // Map state int to Enum
+                Status s = Status::ToRead;
+                if (*statusState == 1) s = Status::Reading;
+                if (*statusState == 2) s = Status::Read;
+
+                // Call Application Logic
+                onAddBook(t, a, g, r, s, n);
+
+                // Clear and Hide
+                inTitle->Clear(); inAuthor->Clear(); inGenres->Clear();
+                inRating->Clear(); inNotes->Clear();
+                panel->isVisible = false;
+            }
+        }
+    );
+
+    // --- CANCEL BUTTON ---
+    auto btnCancel = std::make_shared<Button>(
+        Rectangle{ cx + 80, cy + startY + gap * 7, 100, 40 }, "Cancel",
+        // Capture all input fields so we can clear them
+        [panel, inTitle, inAuthor, inGenres, inRating, inNotes]() {
+            // 1. Clear all fields
+            inTitle->Clear();
+            inAuthor->Clear();
+            inGenres->Clear();
+            inRating->Clear();
+            inNotes->Clear();
+
+            // 2. Hide the panel
+            panel->isVisible = false;
+        }
+    );
+
+    // Add children to panel
+    panel->AddChild(inTitle);
+    panel->AddChild(inAuthor);
+    panel->AddChild(inGenres);
+    panel->AddChild(inRating);
+    panel->AddChild(inNotes);
+    panel->AddChild(btnStatus);
+    panel->AddChild(btnCreate);
+    panel->AddChild(btnCancel);
+
+    // 3. Open Button
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "Add Book",
+        [panel]() { panel->isVisible = true; }
+    ));
+
+    // Add panel last so it draws on top
+    m_Widgets.push_back(panel);
+}

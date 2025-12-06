@@ -2,18 +2,13 @@
 #include <iostream>
 
 const std::string GraphManager::getGenreNameByNodeId(int nodeId) const {
-    auto genreOpt = getGenreByNodeId(nodeId);
-    if (genreOpt) {
-        return genreToString(*genreOpt);
-    }
-    return "Unknown Genre";
+    auto opt = getGenreByNodeId(nodeId);
+    return opt.value_or("Unknown");
 }
 
-const std::optional<Genre> GraphManager::getGenreByNodeId(int nodeId) const {
-    for (const auto& [genre, info] : m_Genres) {
-        if (info.nodeId == nodeId) {
-            return genre;
-        }
+const std::optional<std::string> GraphManager::getGenreByNodeId(int nodeId) const {
+    for (const auto& [name, info] : m_Genres) {
+        if (info.nodeId == nodeId) return name;
     }
     return std::nullopt;
 }
@@ -30,16 +25,20 @@ Node* GraphManager::getNodeAtPosition(Vector2 mousePos)
 }
 
 void GraphManager::resolveNodeOverlaps(float padding) {
+
+
+   
+
     m_GraphLayout.resolveNodeOverlaps(padding, m_Nodes);
 
     std::unordered_map<int, std::vector<int>> bookToGenreMap;
 
     for (const auto& book : m_BookManager.getBooks()) {
         std::vector<int> connectedGenreNodeIds;
-        for (Genre genre : book.getGenres()) {
-            auto genreIt = m_Genres.find(genre);
-            if (genreIt != m_Genres.end()) {
-                connectedGenreNodeIds.push_back(genreIt->second.nodeId);
+        for (const auto& genreStr : book.getGenres()) {
+            auto it = m_Genres.find(genreStr);
+            if (it != m_Genres.end()) {
+                connectedGenreNodeIds.push_back(it->second.nodeId);
             }
         }
         bookToGenreMap[book.getId()] = connectedGenreNodeIds;
@@ -53,6 +52,8 @@ void GraphManager::resolveNodeOverlaps(float padding) {
     }
 
     m_GraphLayout.applySpringConstraints(m_Nodes, bookToGenreMap, genreToBookCount, 750.0f, 0.5f);
+
+  
 }
 
 
@@ -86,30 +87,38 @@ float GraphManager::calculateCircleRadius(int nodeCount, float minRadius) const
     return std::max(minRadius, (nodeCount * 2.0f * 100.0f) / (2.0f * PI)); 
 }
 
-void GraphManager::placeGenreNodes(const std::unordered_set<Genre>& genres, const std::unordered_map<Genre, int>& genreIdMap) {
+void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres, const std::unordered_map<std::string, int>& genreIdMap) {
     Vector2 canvasCenter = { m_CanvasSize.x / 2.0f, m_CanvasSize.y / 2.0f };
     float nodeRadius = 100.0f;
+
+    // Calculate the radius of the large circle on which genres will be placed
     float genreCircleRadius = calculateCircleRadius((int)genres.size(), m_CanvasSize.x / 3.0f);
 
     int i = 0;
-    for (const auto& genre : genres) {
-        float angle = 2 * PI * i++ / genres.size();
+    for (const auto& genreStr : genres) {
+        // Distribute nodes evenly around the circle
+        float angle = 2.0f * PI * i++ / genres.size();
         Vector2 pos = {
             canvasCenter.x + genreCircleRadius * cos(angle),
             canvasCenter.y + genreCircleRadius * sin(angle)
         };
 
-        // Get the existing ID from genreIdMap, if it exists
-        auto it = genreIdMap.find(genre);
+        // Get the existing ID from genreIdMap (created in ConnectionManager)
+        auto it = genreIdMap.find(genreStr);
         if (it == genreIdMap.end()) {
-            std::cerr << "Warning: Genre ID not found for genre " << genreToString(genre) << "\n";
-            continue;  // skip or handle this case as needed
+            std::cerr << "Warning: Genre ID not found for genre " << genreStr << "\n";
+            continue;
         }
         int genreId = it->second;
 
+        // Make genre nodes slightly larger than book nodes
         float genreRadius = nodeRadius * 1.5f;
+
+        // Add the node to the simulation
         m_Nodes.push_back({ genreId, NodeType::Genre, pos, genreRadius });
-        m_Genres[genre] = { genreId, pos };
+
+        // Store info for the renderer/layout
+        m_Genres[genreStr] = { genreId, pos };
     }
 }
 
@@ -120,20 +129,26 @@ void GraphManager::placeBookNodes() {
     float offsetDistance = 250.0f;
 
     static std::default_random_engine rng(std::random_device{}());
-    std::uniform_real_distribution<float> distAngle(0.0f, 2 * PI);
+    std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * PI);
 
     for (const auto& book : m_BookManager.getBooks()) {
         Vector2 avgPos = {};
         int count = 0;
-        for (Genre genre : book.getGenres()) {
-            auto it = m_Genres.find(genre);
+
+        // Iterate over the book's genres (now strings)
+        for (const auto& genreStr : book.getGenres()) {
+            // Find the genre node position in the map (keys are now strings)
+            auto it = m_Genres.find(genreStr);
             if (it != m_Genres.end()) {
                 avgPos = Vector2Add(avgPos, it->second.position);
                 count++;
             }
         }
+
+        // If the book has genres, place it near them; otherwise, place it near the center
         avgPos = (count > 0) ? Vector2Scale(avgPos, 1.0f / count) : canvasCenter;
 
+        // Add some random offset so nodes don't stack perfectly on top of each other
         float angle = distAngle(rng);
         Vector2 pos = {
             avgPos.x + offsetDistance * cos(angle),
@@ -152,8 +167,8 @@ bool GraphManager::isNodeVisible(const Node& node, const Rectangle& viewRect) {
         node.position.y - node.radius > viewRect.y + viewRect.height);
 }
 
-GraphManager::GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize)
-    : m_BookManager(bm), m_ConnectionManager(cm), m_NodeRenderer(bm), m_CanvasSize(canvasSize)
+GraphManager::GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize, TextRenderer* tr)
+    : m_BookManager(bm), m_ConnectionManager(cm), m_NodeRenderer(bm, tr), m_CanvasSize(canvasSize)
 {
 }
 

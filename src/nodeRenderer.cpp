@@ -5,17 +5,18 @@
 #include <iostream>
 
 
-static std::optional<Genre> findGenreByNodeId(const std::unordered_map<Genre, GenreInfo>& genres, int nodeId) {
-    for (const auto& [genre, info] : genres) {
-        if (info.nodeId == nodeId) {
-            return genre;
-        }
+static std::optional<std::string> findGenreByNodeId(const std::unordered_map<std::string, GenreInfo>& genres, int nodeId) {
+    for (const auto& [name, info] : genres) {
+        if (info.nodeId == nodeId) return name;
     }
     return std::nullopt;
 }
 
-void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_map<Genre, GenreInfo>& genres)
+void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_map<std::string, GenreInfo>& genres)
 {
+
+    const float BASE_FONT_SIZE = 20.0f;
+
     if (node.type == NodeType::Book) {
         const Book* book = m_BookManager.findBookById(node.id);
         if(!book) return; 
@@ -25,19 +26,42 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
         
        
             DrawCircleV(node.position, node.radius, color);
-            if (zoom >= 0.4f)
-                m_TextRenderer.drawTextCentered(book->getTitle(), node.position, node.radius, NookCol::TEXT_ONNODE);
+            if (zoom >= 0.4f && m_TextRenderer) {
+              
+                float dynamicFontSize = BASE_FONT_SIZE / zoom;
+                if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
+
+                m_TextRenderer->DrawTextFitted(
+                    book->getTitle(),
+                    node.position,
+                    node.radius * 1.8f, // Max width (90% of diameter)
+                    dynamicFontSize,
+                    NookCol::TEXT_ONNODE
+                );
+            }
         
     }
     else if (node.type == NodeType::Genre) {
-        auto genreOpt = findGenreByNodeId(genres, node.id);
-        if (!genreOpt) return; // genre not found for this node id
+        auto genreNameOpt = findGenreByNodeId(genres, node.id);
+        if (!genreNameOpt) return;
 
-        Genre genre = *genreOpt;
+        std::string genreName = *genreNameOpt;
+
         DrawCircleV(node.position, node.radius, NookCol::GENRE);
 
-        if (zoom >= 0.4f)
-            m_TextRenderer.drawTextCentered(genreToString(genre), node.position, node.radius, NookCol::TEXT_ONNODE);
+        if (zoom >= 0.1f && m_TextRenderer) {
+            
+            float dynamicFontSize = BASE_FONT_SIZE / zoom;
+            if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
+
+            m_TextRenderer->DrawTextFitted(
+                genreName,
+                node.position,
+                node.radius * 1.8f,
+                dynamicFontSize,
+                NookCol::TEXT_ONNODE
+            );
+        }
     }
 }
 

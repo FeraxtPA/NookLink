@@ -21,11 +21,11 @@ public:
 
     void removeEdgesConnectedToNode(int nodeId);
 
-    const std::unordered_set<Genre>& getExistingGenres();
+    const std::unordered_set<std::string>& getExistingGenres() const { return m_ExistingGenres; }
    
     const std::vector<Edge>& getEdges() const { return m_Edges; }
 
-    const std::unordered_map<Genre, int>& getGenreIdMap() const { return m_GenreIdMap; }
+    const std::unordered_map<std::string, int>& getGenreIdMap() const { return m_GenreIdMap; }
 
 
     //Need to reset all data when loading a new library(åoading a file)
@@ -38,12 +38,10 @@ public:
 
 private:
     std::vector<Edge> m_Edges;
-    std::unordered_set<Genre> m_ExistingGenres;
-    std::unordered_map<Genre, int> m_GenreIdMap;
+    std::unordered_set<std::string> m_ExistingGenres;
+    std::unordered_map<std::string, int> m_GenreIdMap;
 
     int m_baseGenreId = -1;
 
-    void AddBookToBookEdges(const std::vector<Book>& books);
-    void AssignGenreIds(const std::vector<Book>& books);
-    void AddBookToGenreEdges(const std::vector<Book>& books);
+  
 };

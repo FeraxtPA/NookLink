@@ -17,7 +17,11 @@ void Application::Initialize()
     SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(m_ScreenSize.x, m_ScreenSize.y, "NookLink");
 
-    m_GraphManager = std::make_unique<GraphManager>(m_BookManager, m_ConnectionManager, m_CanvasSize);
+
+    m_TextRenderer = std::make_unique<TextRenderer>();
+
+
+    m_GraphManager = std::make_unique<GraphManager>(m_BookManager, m_ConnectionManager, m_CanvasSize, m_TextRenderer.get());
     m_CameraHandler = std::make_unique<CameraHandler>(m_ScreenSize, m_CanvasSize);
 
     InitBookManager();
@@ -39,7 +43,36 @@ void Application::Initialize()
 			m_GraphManager->clearGenresAndConnections();
 			m_GraphManager->initializePositions();
 			m_LayoutDirty = true;
-		}
+		},
+        [this](std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
+            std::cout << "Adding book: " << title << std::endl;
+
+            // 1. Create Book
+            Book newBook(title, author, status);
+            newBook.setRating(rating);
+            newBook.setNotes(notes);
+
+            // 2. Parse Genres (String split by comma)
+            std::stringstream ss(genreStr);
+            std::string segment;
+            while (std::getline(ss, segment, ',')) {
+                // Trim leading/trailing spaces
+                size_t first = segment.find_first_not_of(' ');
+                if (std::string::npos != first) {
+                    size_t last = segment.find_last_not_of(' ');
+                    std::string cleanGenre = segment.substr(first, (last - first + 1));
+
+                    // Add the string directly!
+                    newBook.addGenre(cleanGenre);
+                }
+            }
+
+            // 3. Add to System
+            m_BookManager.addBook(newBook);
+            m_GraphManager->initializePositions();
+            m_LayoutDirty = true;
+            m_SettleIterations = 0;
+        }
 	);
     
     SetTargetFPS(60);
@@ -63,41 +96,41 @@ void Application::Shutdown()
 void Application::InitBookManager()
 {
     Book book1("1984", "George Orwell", Status::Read);
-    book1.addGenre(Genre::Dystopian);
-    book1.addGenre(Genre::ScienceFiction);
-    book1.addGenre(Genre::ClassicLiterature);
+    book1.addGenre("Dystopian");
+    book1.addGenre("ScienceFiction");
+    book1.addGenre("ClassicLiterature");
     book1.setRating(3.00f);
 
     Book book2("Brave New World", "Aldous Huxley", Status::ToRead);
-    book2.addGenre(Genre::Dystopian);
-    book2.addGenre(Genre::ScienceFiction);
+    book2.addGenre("Dystopian");
+    book2.addGenre("ScienceFiction");
     book2.setRating(0.00f);
 
     Book book3("The Hobbit", "J.R.R. Tolkien", Status::Read);
-    book3.addGenre(Genre::Fantasy);
-    book3.addGenre(Genre::Adventure);
+    book3.addGenre("Fantasy");
+    book3.addGenre("Adventure");
     book3.setRating(4.50f);
     book3.setNotes("An epic fantasy adventure set in Middle-earth.\nA prequel to The Lord of the Rings.\n- Bilbo's journey begins in the Shire.\n- Encounters with trolls, goblins, and Smaug the dragon.\n- Themes of courage, friendship, and the hero's journey.");
 
     Book book4("The Name of the Wind", "Patrick Rothfuss", Status::Reading);
-    book4.addGenre(Genre::Fantasy);
-    book4.addGenre(Genre::DarkFantasy);
+    book4.addGenre("Fantasy");
+    book4.addGenre("DarkFantasy");
     book4.setRating(1.25f);
 
     Book book5("A Brief History of Time", "Stephen Hawking", Status::Read);
-    book5.addGenre(Genre::Science);
+    book5.addGenre("Science");
     book5.setRating(2.74f); 
 
     Book book6("Dune", "Frank Herbert", Status::Read);
-    book6.addGenre(Genre::ScienceFiction);
+    book6.addGenre("ScienceFiction");
     book6.setRating(5.00f);
 
     Book book7("Foundation", "Isaac Asimov", Status::ToRead);
-    book7.addGenre(Genre::ScienceFiction);
+    book7.addGenre("ScienceFicton");
     book7.setRating(3.75f);
 
     Book book8("Mistborn: The Final Empire", "Brandon Sanderson", Status::Reading);
-    book8.addGenre(Genre::Fantasy);
+    book8.addGenre("Fantasy");
     book8.setRating(4.49f); 
 
     m_BookManager.addBook(book1);
@@ -132,7 +165,7 @@ void Application::Draw()
     m_CameraHandler->endMode();
 
    
-    m_UIManager->Draw(GetMousePosition(),m_GraphManager.get(),m_BookManager);
+    m_UIManager->Draw(GetMousePosition(),m_GraphManager.get(),m_BookManager, m_TextRenderer.get());
 
     EndDrawing();
 }
@@ -187,13 +220,13 @@ void Application::HandleInput(Vector2 worldMousePos)
         }
 
         //Spawn books and genre for testing
-        if (IsKeyPressed(KEY_SPACE))
+        if (IsKeyPressed(KEY_M))
         {
             for (int i = 0; i < 50; i++)
             {
 
                 Book newBook("New Book", "Author", Status::ToRead);
-                newBook.addGenre(Genre::History);
+                newBook.addGenre("History");
 
                 int newBookId = m_BookManager.addBook(newBook);
             }
@@ -279,8 +312,7 @@ void Application::Update()
     
     Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), m_CameraHandler->getCamera());
 
-    //For panning and zooming
-    m_CameraHandler->update();
+    
 
    
     // Check for user interaction
@@ -301,6 +333,7 @@ void Application::Update()
         m_UpdateInterval -= GetFrameTime();
         if (m_UpdateInterval <= 0.0f) {
 
+            
             m_GraphManager->resolveNodeOverlaps(25.0f);
             m_UpdateInterval = m_UpdateIntervalInitial;
             m_SettleIterations++;
@@ -312,15 +345,19 @@ void Application::Update()
         }
     }
 
-    
-    HandleInput(worldMousePos);
+    if (!m_UIManager->IsMouseOverUI())
+    {
+        m_CameraHandler->update();
+        HandleInput(worldMousePos); 
+    }
+   
 
     // Update UI
     m_UIManager->Update(
         worldMousePos,
         GetMousePosition(),
         m_BookManager,
-        m_GraphManager.get());
+        m_GraphManager.get(), m_TextRenderer.get());
 
 }
 

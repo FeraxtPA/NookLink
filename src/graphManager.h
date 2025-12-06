@@ -18,7 +18,7 @@
 
 class GraphManager {
 public:
-    GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize);
+    GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize, TextRenderer* tr);
       
     void initializePositions();
    
@@ -26,7 +26,7 @@ public:
 
     const Rectangle getCameraViewRect(const Camera2D& camera, Vector2 screenDimensions);
 
-    const std::optional<Genre> getGenreByNodeId(int nodeId) const;
+    const std::optional<std::string> getGenreByNodeId(int nodeId) const;
 
     bool isNodeVisible(const Node& node, const Rectangle& viewRect);
 
@@ -44,7 +44,7 @@ public:
     void resolveNodeOverlaps(float padding = 10.0f);
  
     Node* getNodeAtPosition(Vector2 mousePos);
-    const std::string getGenreNameByNodeId(int nodeId) const;
+    const std::string getGenreNameByNodeId(int nodeId) const; 
 
     void clearGenresAndConnections() { m_ConnectionManager.Clear(); }
 private:
@@ -54,7 +54,7 @@ private:
     NodeRenderer m_NodeRenderer;
     GraphLayout m_GraphLayout;
     
-    std::unordered_map<Genre, GenreInfo> m_Genres;
+    std::unordered_map<std::string, GenreInfo> m_Genres;
     std::unordered_map<int, Node*> m_NodeIdMap;
 
     int m_GenreIdBase = -1;
@@ -65,7 +65,7 @@ private:
 
     float calculateCircleRadius(int nodeCount, float minRadius) const;
 
-    void placeGenreNodes(const std::unordered_set<Genre>& genres, const std::unordered_map<Genre, int>& genreIdMap);
+    void placeGenreNodes(const std::unordered_set<std::string>& genres, const std::unordered_map<std::string, int>& genreIdMap);
 
     void placeBookNodes();
 

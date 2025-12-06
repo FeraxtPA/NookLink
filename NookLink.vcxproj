@@ -159,6 +159,8 @@
     <ClCompile Include="src\textRenderer.cpp" />
     <ClCompile Include="src\uiManager.cpp" />
     <ClCompile Include="src\UI\button.cpp" />
+    <ClCompile Include="src\UI\panel.cpp" />
+    <ClCompile Include="src\UI\textInput.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\application.h" />
@@ -167,13 +169,14 @@
     <ClInclude Include="src\cameraHandler.h" />
     <ClInclude Include="src\colors.h" />
     <ClInclude Include="src\connectionManager.h" />
-    <ClInclude Include="src\genres.h" />
     <ClInclude Include="src\graphLayout.h" />
     <ClInclude Include="src\graphManager.h" />
     <ClInclude Include="src\nodeRenderer.h" />
     <ClInclude Include="src\textRenderer.h" />
     <ClInclude Include="src\uiManager.h" />
     <ClInclude Include="src\UI\button.h" />
+    <ClInclude Include="src\UI\panel.h" />
+    <ClInclude Include="src\UI\textInput.h" />
     <ClInclude Include="src\UI\widget.h" />
   </ItemGroup>
   <ItemGroup>

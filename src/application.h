@@ -10,6 +10,7 @@
 #include <vector>
 #include <filesystem>
 #include <memory>
+#include "textRenderer.h"
 
 class Application
 {
@@ -26,7 +27,7 @@ private:
 	Vector2 m_CanvasSize{ 2000,2000 };
 
 	
-
+	std::unique_ptr<TextRenderer> m_TextRenderer; 
 	BookManager m_BookManager{};
 	ConnectionManager m_ConnectionManager{};
 	std::unique_ptr<GraphManager> m_GraphManager{};
