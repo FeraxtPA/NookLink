@@ -71,16 +71,28 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
         graphRenderer->setSearchQuery(m_SearchBar->GetText());
     }
 
-    // 2. Update All Widgets (Buttons, Checkboxes, Panels)
-    // We do this EARLY so we can react to their changes below
+
+    if (m_FilterPanel->isVisible && graphRenderer) {
+      
+
+        // Ideally, add a boolean `m_FilterPanelDirty` to UIManager.
+        // Set it to true when you Add/Edit a book.
+        static bool builtOnce = false;
+        if (!builtOnce  /*|| dirtyBool*/) {
+            RebuildFilterPanel(graphRenderer);
+            builtOnce = true;
+        }
+    }
+
+    
     for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
         (*it)->Update();
     }
 
-    // 3. LOTTERY LOGIC
+    // lottery
     if (m_IsLotteryRolling)
     {
-        // --- ANIMATION PHASE ---
+        // animation
         float dt = GetFrameTime();
         m_LotteryTimer -= dt;
         m_LotterySpeedTimer -= dt;
@@ -94,23 +106,23 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
             }
         }
 
-        // --- FINISH PHASE ---
+        // picking winner
         if (m_LotteryTimer <= 0.0f) {
-            m_IsLotteryRolling = false; // Stop rolling
+            m_IsLotteryRolling = false;
 
             try {
                 const Book& winnerConst = bookManager.getRandomBookToBeRead();
-                m_LotteryWinnerId = winnerConst.getId(); // STORE WINNER ID
-                m_LastLotteryCheckState = m_LotteryAutoRead->checked; // Sync state
+                m_LotteryWinnerId = winnerConst.getId(); 
+                m_LastLotteryCheckState = m_LotteryAutoRead->checked; 
 
-                // Apply Initial Checkbox State
+                // maybe useless since it doesnt do anything since isrolling is set to false earilier
                 if (m_LotteryAutoRead->checked) {
                     Book* winnerMutable = bookManager.getBookById(m_LotteryWinnerId);
                     if (winnerMutable) winnerMutable->setStatus(Status::Reading);
                     if (graphRenderer) graphRenderer->initializePositions();
                 }
 
-                // Initial Text Set
+                //Initial text
                 std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
                 m_LotteryText->SetText(
                     "WINNER!\n\n" +
@@ -126,29 +138,30 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
             m_LotteryCloseBtn->isVisible = true;
         }
     }
-    // 4. POST-LOTTERY INTERACTION (The Fix)
-    // This runs when the animation is done but the panel is still open
+    
+    // Handling after lotterry is done animating
     else if (m_LotteryPanel->isVisible && m_LotteryWinnerId != -1)
     {
-        // Check if user toggled the checkbox THIS FRAME
+        
         if (m_LotteryAutoRead->checked != m_LastLotteryCheckState)
         {
-            m_LastLotteryCheckState = m_LotteryAutoRead->checked; // Update sync
+            m_LastLotteryCheckState = m_LotteryAutoRead->checked; 
 
             Book* winner = bookManager.getBookById(m_LotteryWinnerId);
             if (winner) {
-                // Update Status based on checkbox
+                
+                //update status
                 if (m_LotteryAutoRead->checked) {
                     winner->setStatus(Status::Reading);
                 }
                 else {
-                    winner->setStatus(Status::ToRead); // Revert if unchecked
+                    winner->setStatus(Status::ToRead); // revert if not checked
                 }
 
-                // Rebuild Graph immediately
+                
                 if (graphRenderer) graphRenderer->initializePositions();
 
-                // Update Text Feedback
+                // Maybe useless aswell since its set earlier needs testing
                 std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
                 m_LotteryText->SetText(
                     "WINNER!\n\n" +
@@ -160,7 +173,7 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
         }
     }
 
-    // 5. Tooltip & Cursor Finalize
+    
     if (!IsMouseOverUI()) {
         UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
     }
@@ -171,6 +184,92 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
 
 
 
+void UIManager::RebuildFilterPanel(GraphManager* gm)
+{
+    if (!m_FilterPanel || !gm) return;
+
+    // Clear existing children (except maybe a title/close button if you hardcoded them)
+    // For this implementation, we assume Panel has a ClearChildren or we just replace the vector.
+    // Since `Panel` class wasn't fully provided, let's assume we can access its widget list 
+    // or we just re-create the widgets vector.
+
+    // Assuming Panel::m_Children is accessible or we add a method `ClearChildren()` to Panel.
+    // Let's assume we added `void ClearChildren()` to Panel.h
+    m_FilterPanel->ClearChildren();
+
+    float startX = m_FilterPanel->bounds.x + 20;
+    float startY = m_FilterPanel->bounds.y + 50;
+    float gap = 30;
+
+    float panelX = m_FilterPanel->bounds.x;
+    float panelY = m_FilterPanel->bounds.y;
+    float panelW = m_FilterPanel->bounds.width;
+
+    std::cout << panelX << ", " << panelY << ", " << panelW << "\n";
+
+    auto closeBtn = std::make_shared<Button>(
+        // Position: Top-Right corner of the panel
+        Rectangle{ (panelX + panelW/2 - 30), m_FilterPanel->bounds.height, 60, 30},
+        "Close",
+        [this]() {
+            if (m_FilterPanel) m_FilterPanel->isVisible = false;
+        }
+    );
+    m_FilterPanel->AddChild(closeBtn);
+
+    auto addStatusBox = [&](std::string label, Status s) {
+        bool isVisible = gm->isStatusVisible(s);
+
+        auto cb = std::make_shared<Checkbox>(
+            Rectangle{ startX, startY, 20, 20 },
+            label,
+            isVisible, // Initial checked state
+            [gm, s](bool checked) {
+                
+
+                bool currentlyHidden = !gm->isStatusVisible(s);
+
+                // If logic mismatch, toggle it.
+                if (checked == currentlyHidden) {
+                    gm->toggleStatusVisibility(s);
+                }
+            }
+        );
+        m_FilterPanel->AddChild(cb);
+        startY += gap;
+        };
+
+    addStatusBox("Show 'To Read'", Status::ToRead);
+    addStatusBox("Show 'Reading'", Status::Reading);
+    addStatusBox("Show 'Read'", Status::Read);
+
+    startY += 10; // Extra spacing
+
+    // genres doesnt work as intended
+    /*
+    std::vector<std::string> genres = gm->getAllGenreNames();
+    std::sort(genres.begin(), genres.end()); // Alphabetical order
+
+    for (const auto& genre : genres) {
+        bool isVisible = gm->isGenreVisible(genre);
+
+        auto cb = std::make_shared<Checkbox>(
+            Rectangle{ startX, startY, 20, 20 },
+            genre,
+            isVisible,
+            [gm, genre](bool checked) {
+                bool currentlyHidden = !gm->isGenreVisible(genre);
+                if (checked == currentlyHidden) {
+                    gm->toggleGenreVisibility(genre);
+                }
+            }
+        );
+        m_FilterPanel->AddChild(cb);
+        startY += gap;
+    }
+    */
+}
+
 void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
 {
     if (m_LastHoveredNode == nullptr || m_CachedTooltipText.empty() == false || textRenderer == nullptr) return;
@@ -178,7 +277,7 @@ void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const Book
     if (m_LastHoveredNode->type == NodeType::Book) {
         const Book* b = bookManager.findBookById(m_LastHoveredNode->id);
         if (b) {
-            // Using accumulate to join strings
+            
             std::string genres = "";
             for (size_t i = 0; i < b->getGenres().size(); ++i) {
                 genres += b->getGenres()[i] + (i < b->getGenres().size() - 1 ? ", " : "");
@@ -279,9 +378,8 @@ void UIManager::BuildInterface(
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
 {
-    // ============================================================
-    // 1. TOP BAR BUTTONS (Save / Load / Random)
-    // ============================================================
+    
+    //Save and load
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
     ));
@@ -306,7 +404,49 @@ void UIManager::BuildInterface(
         Rectangle{ (float)m_ScreenWidth / 2.0f - 150.0f, 10, 300, 40 },
         "Search Books/Authors..."
     );
-    m_Widgets.push_back(m_SearchBar); // Don't forget to register it!
+    m_Widgets.push_back(m_SearchBar); 
+
+
+
+ 
+
+  
+
+    m_FilterPanel = std::make_shared<Panel>(
+        Rectangle{ 1660, 60, 250, (float)m_ScreenHeight - 80 },
+        "Filter Graph"
+    );
+    m_FilterPanel->isVisible = false;
+
+
+    auto closeFilterBtn = std::make_shared<Button>(
+		Rectangle{ 1660 + 50, 60 + 10, 20, 20 },
+		"Close",
+		[this]() {
+			if (m_FilterPanel) {
+				m_FilterPanel->isVisible = false;
+			}
+		}
+	);
+
+    m_FilterPanel->AddChild(closeFilterBtn);
+
+
+    m_Widgets.push_back(m_FilterPanel);
+
+
+    //Filter button
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ 1250, 10, 120, 40 }, "Filter View",
+        [this]() {
+            // Toggle visibility of the filter panel
+            if (m_FilterPanel) {
+                m_FilterPanel->isVisible = !m_FilterPanel->isVisible;
+
+            }
+        }
+    ));
+   
 
     // ============================================================
     // 2. ADD BOOK PANEL
@@ -496,11 +636,8 @@ void UIManager::BuildInterface(
     m_LotteryPanel->AddChild(m_LotteryAutoRead);
     m_LotteryPanel->AddChild(m_LotteryCloseBtn);
 
-    // ============================================================
-    // 5. REGISTER WIDGETS
-    // ============================================================
-
-    // "Pick Random Read" Button (Top Bar)
+ 
+    // "Pick Random Read" 
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 540, 10, 150, 40 }, "Next Read",
         [this]() {
@@ -514,13 +651,13 @@ void UIManager::BuildInterface(
         }
     ));
 
-    // "Add Book" Button (Top Bar)
+    // "Add Book"
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "+ Add Book",
         [addPanel]() { addPanel->isVisible = true; }
     ));
 
-    // Panels (Order matters for drawing on top)
+    // Panels 
     m_Widgets.push_back(addPanel);
     m_Widgets.push_back(m_EditPanel);
     m_Widgets.push_back(m_LotteryPanel);

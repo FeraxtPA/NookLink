@@ -18,7 +18,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
 {
     const float BASE_FONT_SIZE = 20.0f;
 
-    // Calculate transparency: 0.1 (10%) if dimmed, 1.0 (100%) otherwise
+    
     float alpha = isDimmed ? 0.1f : 1.0f;
 
     if (node.type == NodeType::Book) {
@@ -42,7 +42,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
                 node.position,
                 node.radius * 1.8f, // Max Width = 90%
                 dynamicFontSize,
-                textColor // Use faded text color
+                textColor 
             );
         }
 
@@ -53,7 +53,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
 
         std::string genreName = *genreNameOpt;
 
-        // Apply transparency to Genre colors
+       
         Color genreColor = Fade(NookCol::GENRE, alpha);
         Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
 
@@ -69,7 +69,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
                 node.position,
                 node.radius * 1.8f,
                 dynamicFontSize,
-                textColor // Use faded text color
+                textColor 
             );
         }
     }

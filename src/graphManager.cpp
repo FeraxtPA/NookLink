@@ -102,14 +102,14 @@ void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres
     int i = 0;
     for (const auto& genreStr : genres) {
 
-        // Default Calculation (Circle)
+       
         float angle = 2.0f * PI * i++ / genres.size();
         Vector2 pos = {
             canvasCenter.x + genreCircleRadius * cos(angle),
             canvasCenter.y + genreCircleRadius * sin(angle)
         };
 
-        // CHECK: If we have an old position for this genre, use it instead!
+        
         if (oldPositions.find(genreStr) != oldPositions.end()) {
             pos = oldPositions.at(genreStr);
         }
@@ -139,13 +139,13 @@ void GraphManager::placeBookNodes(const std::unordered_map<int, Vector2>& oldPos
 
     for (const auto& book : m_BookManager.getBooks()) {
 
-        // 1. Check if we have an old position
+        
         if (oldPositions.find(book.getId()) != oldPositions.end()) {
             m_Nodes.push_back({ book.getId(), NodeType::Book, oldPositions.at(book.getId()), nodeRadius });
             continue; // Skip the rest of the calculation logic for this book
         }
 
-        // 2. If new, calculate default position (Weighted Center)
+        // New position
         Vector2 avgPos = {};
         int count = 0;
 
@@ -194,7 +194,7 @@ void GraphManager::initializePositions()
             oldBookPos[node.id] = node.position;
         }
         else if (node.type == NodeType::Genre) {
-            // We use Genre Name as key because IDs might change if rebuilt
+            
             auto nameOpt = getGenreByNodeId(node.id);
             if (nameOpt.has_value()) {
                 oldGenrePos[nameOpt.value()] = node.position;
@@ -219,7 +219,7 @@ void GraphManager::removeNodeById(int id) {
 
     
     auto removeSingleNode = [&](int targetId) {
-        // 1. Remove from m_Nodes vector
+       
         m_Nodes.erase(
             std::remove_if(m_Nodes.begin(), m_Nodes.end(),
                 [targetId](const Node& node) { return node.id == targetId; }),
@@ -299,8 +299,7 @@ std::string statusEnumToString(Status s) {
 void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
     bool searchActive = !m_SearchQuery.empty();
 
-    // --- 1. DEFINE RULE STRUCTURE ---
-    // Instead of one global mode, we create a struct to hold a single condition.
+    //Rules for  searching, should be moved out to a different function/class parser
     enum class RuleType { Text, RatingGreater, RatingLower, RatingEqual, Status, Genre };
 
     struct FilterRule {
@@ -311,24 +310,24 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
 
     std::vector<FilterRule> rules;
 
-    // --- 2. PARSE SEARCH STRING (Split by '|') ---
+    //Parsing on "|"
     if (searchActive) {
         std::stringstream ss(m_SearchQuery);
         std::string segment;
 
         while (std::getline(ss, segment, '|')) {
-            // A. Trim Whitespace
+            // Trim Whitespace
             size_t first = segment.find_first_not_of(" ");
             if (first == std::string::npos) continue; // Skip empty segments
             size_t last = segment.find_last_not_of(" ");
             segment = segment.substr(first, (last - first + 1));
 
-            // B. Convert to Lowercase
+            //Convert to Lowercase
             std::transform(segment.begin(), segment.end(), segment.begin(), ::tolower);
 
             FilterRule rule;
 
-            // C. Determine Rule Type
+            // Determine Rule Type
             // Check for "rating >"
             if (segment.find("r>") != std::string::npos || segment.find("rating>") != std::string::npos) {
                 rule.type = RuleType::RatingGreater;
@@ -379,11 +378,12 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
         }
     }
 
-    // --- 3. DRAW LOOP ---
+    
     for (const auto& node : m_Nodes) {
         if (!isNodeVisible(node, viewRect)) continue;
 
         if(!node.visible) continue;
+       
         bool isDimmed = false;
 
         if (searchActive && !rules.empty()) {
@@ -394,7 +394,7 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
             for (const auto& rule : rules) {
                 bool ruleMatch = false;
 
-                // --- NODE TYPE: BOOK ---
+                
                 if (node.type == NodeType::Book) {
                     const Book* b = m_BookManager.findBookById(node.id);
                     if (b) {
@@ -409,7 +409,7 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
                         }
                         else if (rule.type == RuleType::Status) {
                             std::string s = statusEnumToString(b->getStatus());
-                            // Case-insensitive check handled by earlier lowercasing of rule
+                           
                             std::transform(s.begin(), s.end(), s.begin(), ::tolower);
                             if (s.find(rule.stringVal) != std::string::npos) ruleMatch = true;
                         }
@@ -435,10 +435,9 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
                         }
                     }
                 }
-                // --- NODE TYPE: GENRE ---
+               
                 else if (node.type == NodeType::Genre) {
-                    // Logic: If looking for status/rating, a Genre node generally fails 
-                    // (unless you want to keep them visible, but strict AND logic implies hiding them)
+                 
 
                     if (rule.type == RuleType::Genre || rule.type == RuleType::Text) {
                         std::string g = getGenreNameByNodeId(node.id);
@@ -447,10 +446,10 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
                     }
                 }
 
-                // CHECK: Did this rule fail?
+              
                 if (!ruleMatch) {
                     matchesAll = false;
-                    break; // Stop checking other rules for this node
+                    break; 
                 }
             }
 
@@ -464,20 +463,20 @@ void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
 void GraphManager::recalculateVisibility()
 {
     for (auto& node : m_Nodes) {
-        // Default to visible
+       
         node.visible = true;
 
         if (node.type == NodeType::Book) {
             const Book* b = m_BookManager.findBookById(node.id);
             if (!b) continue;
 
-            // 1. Check Status
+            
             if (m_HiddenStatuses.count(b->getStatus())) {
                 node.visible = false;
-                continue; // No need to check genre if already hidden
+                continue; 
             }
 
-            // 2. Check Genre (Hide book if *any* of its genres are hidden)
+            // Check Genre (Hide book if *any* of its genres are hidden)
             // Alternatively: Hide only if *all* genres are hidden. 
             // Below implements "Hide if any genre matches the blocklist"
             for (const auto& g : b->getGenres()) {
@@ -488,7 +487,7 @@ void GraphManager::recalculateVisibility()
             }
         }
         else if (node.type == NodeType::Genre) {
-            // 3. Check Genre Nodes
+           
             std::string genreName = getGenreNameByNodeId(node.id);
             if (m_HiddenGenres.count(genreName)) {
                 node.visible = false;

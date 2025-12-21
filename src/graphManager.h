@@ -32,6 +32,20 @@ public:
 
     void updateGenrePosition(int nodeId, Vector2 newPos);
 
+    std::vector<std::string> getAllGenreNames() const {
+        std::vector<std::string> names;
+        for (const auto& pair : m_Genres) {
+            names.push_back(pair.first);
+        }
+        return names;
+    }
+
+    bool isStatusVisible(Status s) const {
+        return m_HiddenStatuses.find(s) == m_HiddenStatuses.end();
+    }
+    bool isGenreVisible(const std::string& g) const {
+        return m_HiddenGenres.find(g) == m_HiddenGenres.end();
+    }
 
     void setSearchQuery(std::string q) { m_SearchQuery = q; }
     void drawNodes(float zoom, const Rectangle& viewRect);
@@ -44,7 +58,7 @@ public:
     }
 
     void toggleGenreVisibility(const std::string& genre) {
-        // Normalize string if needed (lowercase)
+      
         if (m_HiddenGenres.count(genre)) m_HiddenGenres.erase(genre);
         else m_HiddenGenres.insert(genre);
 

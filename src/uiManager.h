@@ -77,6 +77,9 @@ private:
     int m_EditingBookId = -1;
     std::shared_ptr<int> m_EditStatusState;
 
+    std::shared_ptr<Panel> m_FilterPanel;
+    void RebuildFilterPanel(GraphManager* graphManager);
+
     void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer);
     void DrawHelpText(TextRenderer* renderer) const;
     void DrawTooltip(Vector2 mousePos, TextRenderer* renderer) const;

@@ -14,7 +14,7 @@ void Panel::Update() {
 
     Vector2 mouse = GetMousePosition();
 
-    // 1. Handle Active Dragging
+    // Dragging Logic
     if (isDragging) {
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             isDragging = false;
@@ -41,7 +41,8 @@ void Panel::Update() {
             Widget::DesiredCursor = MOUSE_CURSOR_RESIZE_ALL;
         }
     }
-    // 2. Handle Hover & Click interactions
+    
+    // Clicking, Hovering Logic
     else {
         // Define the Title Bar area (Top 40 pixels)
         Rectangle titleBar = { bounds.x, bounds.y, bounds.width, 40 };
@@ -58,17 +59,16 @@ void Panel::Update() {
             }
         }
         else if (CheckCollisionPointRec(mouse, bounds)) {
-            // Normal hover over the body
+           
             isHovered = true;
-            // Only set cursor if not set by a child later
-            // Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT; 
+           
         }
         else {
             isHovered = false;
         }
     }
 
-    // 3. Update Children
+    // Update Children
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
         (*it)->Update();
     }
@@ -80,7 +80,7 @@ void Panel::Draw(TextRenderer* renderer) {
     // Background
     DrawRectangleRec(bounds, Fade(LIGHTGRAY, 0.95f));
 
-    // Draw Title Bar Background (Visual cue for dragging)
+    // Draw Title Bar 
     DrawRectangle((int)bounds.x, (int)bounds.y, (int)bounds.width, 40, Fade(GRAY, 0.4f));
 
     // Border

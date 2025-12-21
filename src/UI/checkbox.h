@@ -1,13 +1,15 @@
 #pragma once
 #include "Widget.h"
 #include <string>
+#include <functional>
 
 class Checkbox : public Widget {
 public:
     bool checked = false;
     std::string label;
+    std::function<void(bool)> onChange; 
 
-    Checkbox(Rectangle r, std::string l, bool initial = false);
+    Checkbox(Rectangle r, std::string l, bool initial = false, std::function<void(bool)> onChangeCallback = nullptr);
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;

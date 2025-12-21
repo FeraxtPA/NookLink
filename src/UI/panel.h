@@ -8,11 +8,14 @@ class Panel : public Widget {
 public:
     Panel(Rectangle r, std::string t);
 
-    // Add a widget to the panel
+   
     void AddChild(std::shared_ptr<Widget> widget);
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;
+
+    void ClearChildren(){ 		children.clear();
+	}
 
 private:
     std::vector<std::shared_ptr<Widget>> children;

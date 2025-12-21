@@ -15,6 +15,7 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
             float dist = Vector2Length(delta);
 
 
+            // Prevent laying on top of each other
             if (dist < 0.01f) {
                 // Create a random small vector
                 float angle = (float)(rand() % 360) * DEG2RAD;
