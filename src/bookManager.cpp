@@ -4,6 +4,7 @@
 #include <fstream>    
 #include <iostream>  
 #include "../include/nlohmann/json.hpp" 
+#include <random>
 
 int BookManager::addBook(const Book& book)
 {
@@ -24,6 +25,17 @@ void BookManager::removeBook(int id)
 void BookManager::removeBook(const Book& book)
 {
 	removeBook(book.getId());
+}
+
+const std::vector<Book>& BookManager::getBooksToBeRead()
+{	
+	toBeReadBooks.clear();
+	for (const auto& book : m_Books) {
+		if (book.getStatus() == Status::ToRead) {
+			toBeReadBooks.push_back(book);
+		}
+	}
+	return toBeReadBooks;
 }
 
 Book* BookManager::getBookById(int id) {
@@ -49,6 +61,22 @@ const Book* BookManager::findBookById(int id) const
 		return nullptr;
 	}
 	
+}
+
+const Book& BookManager::getRandomBookToBeRead()
+{
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+
+	const auto& toBeReadBooks = getBooksToBeRead();
+
+	if (toBeReadBooks.empty()) {
+		throw std::runtime_error("No books available to be read.");
+	}
+	std::uniform_int_distribution<> dis(0, static_cast<int>(toBeReadBooks.size()) - 1);
+
+	auto randomIndex = dis(gen);
+	return toBeReadBooks[randomIndex];
 }
 
 void BookManager::saveBooksToFile(const std::string& filename) const

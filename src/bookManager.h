@@ -24,17 +24,20 @@ public:
 	void removeBook(const Book& book);
 
 	const std::vector<Book>& getBooks() const { return m_Books; }
-		
+	
+
 	Book* getBookById(int id);
 	const Book* findBookById(int id) const;
 
+	const Book& getRandomBookToBeRead();
 
 	void saveBooksToFile(const std::string& filename) const;
 	void loadBooksFromFile(const std::string& filename);
 
 private:
 	std::vector<Book> m_Books;
-
+	std::vector<Book> toBeReadBooks;
+	const std::vector<Book>& getBooksToBeRead();
 	int m_NextId = 1;
 
 };

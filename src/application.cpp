@@ -343,6 +343,12 @@ void Application::HandleInput(Vector2 worldMousePos)
         }
     }
 
+    if (IsKeyPressed(KEY_R))
+    {
+        
+        std::cout << "Random book to be read: " << m_BookManager.getRandomBookToBeRead().getTitle() << std::endl;
+    }
+
 }
 
 void Application::Update()
