@@ -15,6 +15,7 @@
 #include "UI/textInput.h"
 #include "UI/textBox.h"  // Added
 #include "UI/button.h"
+#include "UI/checkbox.h"
 
 class UIManager {
 public:
@@ -54,6 +55,21 @@ private:
     std::shared_ptr<TextInput> m_EditGenres;
     std::shared_ptr<TextInput> m_EditRating;
 
+    std::shared_ptr<Panel> m_LotteryPanel;
+    std::shared_ptr<TextBox> m_LotteryText;
+    std::shared_ptr<Button> m_LotteryCloseBtn;
+    std::shared_ptr<Checkbox> m_LotteryAutoRead;
+
+
+    bool m_IsLotteryRolling = false;
+    float m_LotteryTimer = 0.0f;
+    float m_LotterySpeedTimer = 0.0f;
+
+    int m_LotteryWinnerId = -1;
+    bool m_LastLotteryCheckState = false;
+
+  
+    std::shared_ptr<TextInput> m_SearchBar;
    
     std::shared_ptr<TextBox> m_EditNotes;
 

@@ -44,6 +44,7 @@ void Application::Initialize()
 			m_GraphManager->clearGenresAndConnections();
 			m_GraphManager->initializePositions();
 			m_LayoutDirty = true;
+           
 		},
         [this](std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
             std::cout << "Adding book: " << title << std::endl;
@@ -128,7 +129,7 @@ void Application::Shutdown()
 
 void Application::InitBookManager()
 {
-    Book book1("1984", "George Orwell", Status::Read);
+    Book book1("1984", "George Orwell", Status::ToRead);
     book1.addGenre("Dystopian");
     book1.addGenre("ScienceFiction");
     book1.addGenre("ClassicLiterature");
@@ -154,12 +155,12 @@ void Application::InitBookManager()
     book5.addGenre("Science");
     book5.setRating(2.74f); 
 
-    Book book6("Dune", "Frank Herbert", Status::Read);
+    Book book6("Dune", "Frank Herbert", Status::ToRead);
     book6.addGenre("ScienceFiction");
     book6.setRating(5.00f);
 
     Book book7("Foundation", "Isaac Asimov", Status::ToRead);
-    book7.addGenre("ScienceFicton");
+    book7.addGenre("ScienceFiction");
     book7.setRating(3.75f);
 
     Book book8("Mistborn: The Final Empire", "Brandon Sanderson", Status::Reading);
@@ -189,12 +190,9 @@ void Application::Draw()
     
     m_GraphManager->drawEdges(m_CameraHandler->getCamera().zoom, viewRect);
 
-    for (const auto& node : m_GraphManager->getNodes()) {
-        if (m_GraphManager->isNodeVisible(node, viewRect)) {
-            
-            m_GraphManager->drawNode(node, m_CameraHandler->getCamera().zoom);
-        }
-    }
+ 
+    m_GraphManager->drawNodes(m_CameraHandler->getCamera().zoom, viewRect);
+
     m_CameraHandler->endMode();
 
    

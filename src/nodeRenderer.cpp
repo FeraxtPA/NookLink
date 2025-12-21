@@ -12,34 +12,40 @@ static std::optional<std::string> findGenreByNodeId(const std::unordered_map<std
     return std::nullopt;
 }
 
-void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_map<std::string, GenreInfo>& genres)
+void NodeRenderer::drawNode(const Node& node, float zoom,
+    const std::unordered_map<std::string, GenreInfo>& genres,
+    bool isDimmed)
 {
-
     const float BASE_FONT_SIZE = 20.0f;
+
+    // Calculate transparency: 0.1 (10%) if dimmed, 1.0 (100%) otherwise
+    float alpha = isDimmed ? 0.1f : 1.0f;
 
     if (node.type == NodeType::Book) {
         const Book* book = m_BookManager.findBookById(node.id);
-        if(!book) return; 
-        Color color = getStatusColor(book->getStatus());
-       
+        if (!book) return;
 
-        
-       
-            DrawCircleV(node.position, node.radius, color);
-            if (zoom >= 0.4f && m_TextRenderer) {
-              
-                float dynamicFontSize = BASE_FONT_SIZE / zoom;
-                if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
+        // Get original color and apply transparency
+        Color baseColor = getStatusColor(book->getStatus());
+        Color nodeColor = Fade(baseColor, alpha);
+        Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
 
-                m_TextRenderer->DrawTextFitted(
-                    book->getTitle(),
-                    node.position,
-                    node.radius * 1.8f, // Max Width = 90%
-                    dynamicFontSize,
-                    NookCol::TEXT_ONNODE
-                );
-            }
-        
+        DrawCircleV(node.position, node.radius, nodeColor);
+
+        if (zoom >= 0.4f && m_TextRenderer) {
+
+            float dynamicFontSize = BASE_FONT_SIZE / zoom;
+            if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
+
+            m_TextRenderer->DrawTextFitted(
+                book->getTitle(),
+                node.position,
+                node.radius * 1.8f, // Max Width = 90%
+                dynamicFontSize,
+                textColor // Use faded text color
+            );
+        }
+
     }
     else if (node.type == NodeType::Genre) {
         auto genreNameOpt = findGenreByNodeId(genres, node.id);
@@ -47,10 +53,14 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
 
         std::string genreName = *genreNameOpt;
 
-        DrawCircleV(node.position, node.radius, NookCol::GENRE);
+        // Apply transparency to Genre colors
+        Color genreColor = Fade(NookCol::GENRE, alpha);
+        Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
+
+        DrawCircleV(node.position, node.radius, genreColor);
 
         if (zoom >= 0.1f && m_TextRenderer) {
-            
+
             float dynamicFontSize = BASE_FONT_SIZE / zoom;
             if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
 
@@ -59,7 +69,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
                 node.position,
                 node.radius * 1.8f,
                 dynamicFontSize,
-                NookCol::TEXT_ONNODE
+                textColor // Use faded text color
             );
         }
     }
@@ -67,6 +77,8 @@ void NodeRenderer::drawNode(const Node& node, float zoom, const std::unordered_m
 
 
 const float NODE_VISIBILITY_MARGIN = 100.0f;
+
+
 
 
 

@@ -31,8 +31,11 @@ public:
     std::string GetText() const { return text; }
     void SetText(const std::string& t) { text = t; cursorIndex = (int)t.length(); scrollY = 0.0f; }
     void Clear() { text.clear(); cursorIndex = 0; scrollY = 0.0f; isFocused = false; }
+    void SetEditable(bool editable) { isEditable = editable; }
 
 private:
+
+    bool isEditable = true;
     void MoveLeft(bool jumpWord);
     void MoveRight(bool jumpWord);
     void HandleKeyRepeat(int key, bool jumpWord, void (TextBox::* moveFunc)(bool));

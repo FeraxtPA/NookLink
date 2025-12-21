@@ -54,9 +54,9 @@ MouseCursor Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
 void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer)
 {
     m_LastMousePos = mousePos;
-
     Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
 
+    // 1. Graph Interaction
     if (graphRenderer != nullptr) {
         Node* newlyHovered = graphRenderer->getNodeAtPosition(worldMousePos);
         if (newlyHovered != m_LastHoveredNode) {
@@ -66,27 +66,110 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
         }
     }
 
-    // Update Widgets
-    // Reverse order so top-most panels capture input first
+    //Seach bar functionality
+    if (graphRenderer) {
+        graphRenderer->setSearchQuery(m_SearchBar->GetText());
+    }
+
+    // 2. Update All Widgets (Buttons, Checkboxes, Panels)
+    // We do this EARLY so we can react to their changes below
     for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
         (*it)->Update();
     }
-    if (!IsMouseOverUI())
+
+    // 3. LOTTERY LOGIC
+    if (m_IsLotteryRolling)
     {
-        
+        // --- ANIMATION PHASE ---
+        float dt = GetFrameTime();
+        m_LotteryTimer -= dt;
+        m_LotterySpeedTimer -= dt;
+
+        if (m_LotterySpeedTimer <= 0.0f && m_LotteryTimer > 0.0f) {
+            m_LotterySpeedTimer = 0.05f;
+            const auto& allBooks = bookManager.getBooks();
+            if (!allBooks.empty()) {
+                int r = GetRandomValue(0, (int)allBooks.size() - 1);
+                m_LotteryText->SetText("... " + allBooks[r].getTitle() + " ...");
+            }
+        }
+
+        // --- FINISH PHASE ---
+        if (m_LotteryTimer <= 0.0f) {
+            m_IsLotteryRolling = false; // Stop rolling
+
+            try {
+                const Book& winnerConst = bookManager.getRandomBookToBeRead();
+                m_LotteryWinnerId = winnerConst.getId(); // STORE WINNER ID
+                m_LastLotteryCheckState = m_LotteryAutoRead->checked; // Sync state
+
+                // Apply Initial Checkbox State
+                if (m_LotteryAutoRead->checked) {
+                    Book* winnerMutable = bookManager.getBookById(m_LotteryWinnerId);
+                    if (winnerMutable) winnerMutable->setStatus(Status::Reading);
+                    if (graphRenderer) graphRenderer->initializePositions();
+                }
+
+                // Initial Text Set
+                std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
+                m_LotteryText->SetText(
+                    "WINNER!\n\n" +
+                    winnerConst.getTitle() + "\n" +
+                    "by " + winnerConst.getAuthor() + "\n" +
+                    statusMsg
+                );
+            }
+            catch (const std::exception& e) {
+                m_LotteryText->SetText("No books found with status 'To Read'!");
+                m_LotteryWinnerId = -1;
+            }
+            m_LotteryCloseBtn->isVisible = true;
+        }
+    }
+    // 4. POST-LOTTERY INTERACTION (The Fix)
+    // This runs when the animation is done but the panel is still open
+    else if (m_LotteryPanel->isVisible && m_LotteryWinnerId != -1)
+    {
+        // Check if user toggled the checkbox THIS FRAME
+        if (m_LotteryAutoRead->checked != m_LastLotteryCheckState)
+        {
+            m_LastLotteryCheckState = m_LotteryAutoRead->checked; // Update sync
+
+            Book* winner = bookManager.getBookById(m_LotteryWinnerId);
+            if (winner) {
+                // Update Status based on checkbox
+                if (m_LotteryAutoRead->checked) {
+                    winner->setStatus(Status::Reading);
+                }
+                else {
+                    winner->setStatus(Status::ToRead); // Revert if unchecked
+                }
+
+                // Rebuild Graph immediately
+                if (graphRenderer) graphRenderer->initializePositions();
+
+                // Update Text Feedback
+                std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
+                m_LotteryText->SetText(
+                    "WINNER!\n\n" +
+                    winner->getTitle() + "\n" +
+                    "by " + winner->getAuthor() + "\n" +
+                    statusMsg
+                );
+            }
+        }
+    }
+
+    // 5. Tooltip & Cursor Finalize
+    if (!IsMouseOverUI()) {
         UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
     }
-
-    if (!IsMouseOverUI())
-    {
+    if (!IsMouseOverUI()) {
         SetMouseCursor(Widget::DesiredCursor);
     }
-
-    
-
-    
-    
 }
+
+
 
 void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
 {
@@ -196,7 +279,9 @@ void UIManager::BuildInterface(
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
 {
-    
+    // ============================================================
+    // 1. TOP BAR BUTTONS (Save / Load / Random)
+    // ============================================================
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
     ));
@@ -204,7 +289,7 @@ void UIManager::BuildInterface(
         Rectangle{ (float)m_ScreenWidth - 110, 10, 100, 40 }, "Load", onLoad
     ));
 
-    // Layout
+    // Layout Variables
     float cx = m_ScreenWidth / 2.0f;
     float cy = m_ScreenHeight / 2.0f;
     float panelW = 400;
@@ -215,27 +300,36 @@ void UIManager::BuildInterface(
     float inputW = 360;
     float xOff = -180;
 
-    //Book Add Panel
+
+    // Search bar
+    m_SearchBar = std::make_shared<TextInput>(
+        Rectangle{ (float)m_ScreenWidth / 2.0f - 150.0f, 10, 300, 40 },
+        "Search Books/Authors..."
+    );
+    m_Widgets.push_back(m_SearchBar); // Don't forget to register it!
+
+    // ============================================================
+    // 2. ADD BOOK PANEL
+    // ============================================================
     auto addPanel = std::make_shared<Panel>(
         Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Add New Book"
     );
     addPanel->isVisible = false;
 
+    // Inputs
     auto inTitle = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY, inputW, inputH }, "Title");
     auto inAuthor = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap, inputW, inputH }, "Author");
     auto inGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres (e.g. SciFi, Horror)");
     auto inRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating (0.0 - 5.0)");
-
-    //Text Box for notes
     auto inNotes = std::make_shared<TextBox>(
         Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
         "Notes"
     );
 
-    // Add Status Button
+    // Status Button
     auto addStatusState = std::make_shared<int>(0);
     auto btnAddStatus = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status: To Read", []() {} 
+        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status: To Read", []() {}
     );
 
     std::weak_ptr<Button> weakAddBtn = btnAddStatus;
@@ -248,6 +342,7 @@ void UIManager::BuildInterface(
         }
         });
 
+    // Create Button
     auto btnCreate = std::make_shared<Button>(
         Rectangle{ cx + xOff, cy + startY + gap * 8, 100, 40 }, "Create",
         [addPanel, inTitle, inAuthor, inGenres, inRating, inNotes, addStatusState, onAddBook]() {
@@ -268,7 +363,7 @@ void UIManager::BuildInterface(
 
                 onAddBook(t, a, g, r, s, n);
 
-                
+                // Clear & Hide
                 inTitle->Clear(); inAuthor->Clear(); inGenres->Clear();
                 inRating->Clear(); inNotes->Clear();
                 addPanel->isVisible = false;
@@ -276,6 +371,7 @@ void UIManager::BuildInterface(
         }
     );
 
+    // Cancel Button
     auto btnCancelAdd = std::make_shared<Button>(
         Rectangle{ cx + 80, cy + startY + gap * 8, 100, 40 }, "Cancel",
         [addPanel, inTitle, inAuthor, inGenres, inRating, inNotes]() {
@@ -294,18 +390,19 @@ void UIManager::BuildInterface(
     addPanel->AddChild(btnCreate);
     addPanel->AddChild(btnCancelAdd);
 
-    // Edit book panel
+    // ============================================================
+    // 3. EDIT BOOK PANEL
+    // ============================================================
     m_EditPanel = std::make_shared<Panel>(
         Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Edit Book Details"
     );
     m_EditPanel->isVisible = false;
 
+    // Member Inputs
     m_EditTitle = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY, inputW, inputH }, "Title");
     m_EditAuthor = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap, inputW, inputH }, "Author");
     m_EditGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres");
     m_EditRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating");
-
-    //Text box for notes
     m_EditNotes = std::make_shared<TextBox>(
         Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
         "Notes"
@@ -368,12 +465,63 @@ void UIManager::BuildInterface(
     m_EditPanel->AddChild(btnUpdate);
     m_EditPanel->AddChild(btnCancelEdit);
 
-    
+    // ============================================================
+    // 4. LOTTERY / RANDOM PICKER PANEL
+    // ============================================================
+    // Create the Panel
+    m_LotteryPanel = std::make_shared<Panel>(
+        Rectangle{ cx - 200, cy - 150, 400, 350 }, "Next Read Lottery"
+    );
+    m_LotteryPanel->isVisible = false;
+
+    // Create Text Display for Animation/Result
+    m_LotteryText = std::make_shared<TextBox>(
+        Rectangle{ cx - 180, cy - 100, 360, 180 }, "..."
+    );
+    m_LotteryText->SetEditable(false);
+
+    m_LotteryAutoRead = std::make_shared<Checkbox>(
+        Rectangle{ cx - 180, cy + 90, 20, 20 }, // Position below text box
+        "Set status to 'Reading' automatically"
+    );
+
+    // Close Button (Hidden until winner is picked)
+    m_LotteryCloseBtn = std::make_shared<Button>(
+        Rectangle{ cx - 50, cy + 130, 100, 40 }, "Close!",
+        [this]() { m_LotteryPanel->isVisible = false; }
+    );
+    m_LotteryCloseBtn->isVisible = false;
+
+    m_LotteryPanel->AddChild(m_LotteryText);
+    m_LotteryPanel->AddChild(m_LotteryAutoRead);
+    m_LotteryPanel->AddChild(m_LotteryCloseBtn);
+
+    // ============================================================
+    // 5. REGISTER WIDGETS
+    // ============================================================
+
+    // "Pick Random Read" Button (Top Bar)
     m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "Add Book",
+        Rectangle{ (float)m_ScreenWidth - 540, 10, 150, 40 }, "Next Read",
+        [this]() {
+            // Initialize Lottery State
+            m_LotteryPanel->isVisible = true;
+            m_IsLotteryRolling = true;
+            m_LotteryTimer = 2.0f; // Spin for 2 seconds
+            m_LotterySpeedTimer = 0.0f;
+            m_LotteryCloseBtn->isVisible = false;
+            m_LotteryText->SetText("Spinning...");
+        }
+    ));
+
+    // "Add Book" Button (Top Bar)
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "+ Add Book",
         [addPanel]() { addPanel->isVisible = true; }
     ));
 
+    // Panels (Order matters for drawing on top)
     m_Widgets.push_back(addPanel);
     m_Widgets.push_back(m_EditPanel);
+    m_Widgets.push_back(m_LotteryPanel);
 }

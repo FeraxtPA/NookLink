@@ -14,7 +14,7 @@
 #include "graphLayout.h"
 #include "rlgl.h"
 #include <optional>
-
+#include <set>
 
 class GraphManager {
 public:
@@ -31,6 +31,27 @@ public:
     bool isNodeVisible(const Node& node, const Rectangle& viewRect);
 
     void updateGenrePosition(int nodeId, Vector2 newPos);
+
+
+    void setSearchQuery(std::string q) { m_SearchQuery = q; }
+    void drawNodes(float zoom, const Rectangle& viewRect);
+
+    void toggleStatusVisibility(Status status) {
+        if (m_HiddenStatuses.count(status)) m_HiddenStatuses.erase(status);
+        else m_HiddenStatuses.insert(status);
+
+        recalculateVisibility(); // Update the nodes immediately
+    }
+
+    void toggleGenreVisibility(const std::string& genre) {
+        // Normalize string if needed (lowercase)
+        if (m_HiddenGenres.count(genre)) m_HiddenGenres.erase(genre);
+        else m_HiddenGenres.insert(genre);
+
+        recalculateVisibility();
+    }
+
+    void recalculateVisibility(); 
 
     void drawNode(const Node& node, float zoom);
     void drawEdges(float zoom,const Rectangle& viewRect);
@@ -63,12 +84,19 @@ private:
     Node* draggedNode = nullptr;
     Vector2 m_CanvasSize;
 
+    std::set<Status> m_HiddenStatuses; 
+    std::set<std::string> m_HiddenGenres;
+
+    std::string m_SearchQuery; 
+
     void resetNodeState();
 
     float calculateCircleRadius(int nodeCount, float minRadius) const;
 
-    void placeGenreNodes(const std::unordered_set<std::string>& genres, const std::unordered_map<std::string, int>& genreIdMap);
+    void placeGenreNodes(const std::unordered_set<std::string>& genres,
+        const std::unordered_map<std::string, int>& genreIdMap,
+        const std::unordered_map<std::string, Vector2>& oldPositions = {});
 
-    void placeBookNodes();
+    void placeBookNodes(const std::unordered_map<int, Vector2>& oldPositions = {});
 
 };

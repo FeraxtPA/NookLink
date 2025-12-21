@@ -17,4 +17,7 @@ public:
 private:
     std::vector<std::shared_ptr<Widget>> children;
     std::string title;
+
+    bool isDragging = false;
+    Vector2 dragOffset = { 0, 0 };
 };

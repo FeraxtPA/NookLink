@@ -14,6 +14,14 @@ void GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& m_Nodes)
             Vector2 delta = Vector2Subtract(b.position, a.position);
             float dist = Vector2Length(delta);
 
+
+            if (dist < 0.01f) {
+                // Create a random small vector
+                float angle = (float)(rand() % 360) * DEG2RAD;
+                delta = { cos(angle), sin(angle) };
+                dist = 1.0f; // Fake distance to ensure math works below
+            }
+
             if (dist < totalRadius && dist > 0.001f) {
                 Vector2 direction = Vector2Normalize(delta);
                 float overlap = totalRadius - dist;

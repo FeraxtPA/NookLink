@@ -77,12 +77,15 @@ void TextBox::Update() {
     isHovered = CheckCollisionPointRec(mouse, bounds);
 
   
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        bool wasFocused = isFocused;
-        isFocused = isHovered;
+    if (isEditable)
+    { 
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            bool wasFocused = isFocused;
+            isFocused = isHovered;
        
-        if (isFocused && !wasFocused) cursorIndex = (int)text.length();
-    }
+            if (isFocused && !wasFocused) cursorIndex = (int)text.length();
+        }
+    
 
     
     
@@ -91,8 +94,11 @@ void TextBox::Update() {
         float wheel = GetMouseWheelMove();
         if (wheel != 0) scrollY -= wheel * 20.0f;
     }
+    }
 
    
+    if (isEditable)
+    { 
     if (isFocused) {
 
 
@@ -148,6 +154,7 @@ void TextBox::Update() {
             cursorIndex++;
         }
 
+    }
     }
     else if (isHovered) {
         Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND;

@@ -1,6 +1,8 @@
 #include "graphManager.h"
 #include <iostream>
 
+#include <sstream>
+
 const std::string GraphManager::getGenreNameByNodeId(int nodeId) const {
     auto opt = getGenreByNodeId(nodeId);
     return opt.value_or("Unknown");
@@ -87,7 +89,10 @@ float GraphManager::calculateCircleRadius(int nodeCount, float minRadius) const
     return std::max(minRadius, (nodeCount * 2.0f * 100.0f) / (2.0f * PI)); 
 }
 
-void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres, const std::unordered_map<std::string, int>& genreIdMap) {
+void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres,
+    const std::unordered_map<std::string, int>& genreIdMap,
+    const std::unordered_map<std::string, Vector2>& oldPositions)
+{
     Vector2 canvasCenter = { m_CanvasSize.x / 2.0f, m_CanvasSize.y / 2.0f };
     float nodeRadius = 100.0f;
 
@@ -96,14 +101,19 @@ void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres
 
     int i = 0;
     for (const auto& genreStr : genres) {
-        // Distribute nodes evenly around the circle
+
+        // Default Calculation (Circle)
         float angle = 2.0f * PI * i++ / genres.size();
         Vector2 pos = {
             canvasCenter.x + genreCircleRadius * cos(angle),
             canvasCenter.y + genreCircleRadius * sin(angle)
         };
 
-        // Get the existing ID from genreIdMap (created in ConnectionManager)
+        // CHECK: If we have an old position for this genre, use it instead!
+        if (oldPositions.find(genreStr) != oldPositions.end()) {
+            pos = oldPositions.at(genreStr);
+        }
+
         auto it = genreIdMap.find(genreStr);
         if (it == genreIdMap.end()) {
             std::cerr << "Warning: Genre ID not found for genre " << genreStr << "\n";
@@ -111,19 +121,15 @@ void GraphManager::placeGenreNodes(const std::unordered_set<std::string>& genres
         }
         int genreId = it->second;
 
-        // Make genre nodes slightly larger than book nodes
         float genreRadius = nodeRadius * 1.5f;
 
-        // Add the node to the simulation
         m_Nodes.push_back({ genreId, NodeType::Genre, pos, genreRadius });
-
-        // Store info for the renderer/layout
         m_Genres[genreStr] = { genreId, pos };
     }
 }
 
 
-void GraphManager::placeBookNodes() {
+void GraphManager::placeBookNodes(const std::unordered_map<int, Vector2>& oldPositions) {
     Vector2 canvasCenter = { m_CanvasSize.x / 2.0f, m_CanvasSize.y / 2.0f };
     float nodeRadius = 100.0f;
     float offsetDistance = 250.0f;
@@ -132,12 +138,18 @@ void GraphManager::placeBookNodes() {
     std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * PI);
 
     for (const auto& book : m_BookManager.getBooks()) {
+
+        // 1. Check if we have an old position
+        if (oldPositions.find(book.getId()) != oldPositions.end()) {
+            m_Nodes.push_back({ book.getId(), NodeType::Book, oldPositions.at(book.getId()), nodeRadius });
+            continue; // Skip the rest of the calculation logic for this book
+        }
+
+        // 2. If new, calculate default position (Weighted Center)
         Vector2 avgPos = {};
         int count = 0;
 
-       
         for (const auto& genreStr : book.getGenres()) {
-            // Find the genre node position in the map (keys are now strings)
             auto it = m_Genres.find(genreStr);
             if (it != m_Genres.end()) {
                 avgPos = Vector2Add(avgPos, it->second.position);
@@ -145,10 +157,8 @@ void GraphManager::placeBookNodes() {
             }
         }
 
-        // If the book has genres, place it near them; otherwise, place it near the center
         avgPos = (count > 0) ? Vector2Scale(avgPos, 1.0f / count) : canvasCenter;
 
-        // Add some random offset 
         float angle = distAngle(rng);
         Vector2 pos = {
             avgPos.x + offsetDistance * cos(angle),
@@ -175,13 +185,29 @@ GraphManager::GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2
 
 void GraphManager::initializePositions()
 {
+
+    std::unordered_map<int, Vector2> oldBookPos;
+    std::unordered_map<std::string, Vector2> oldGenrePos;
+
+    for (const auto& node : m_Nodes) {
+        if (node.type == NodeType::Book) {
+            oldBookPos[node.id] = node.position;
+        }
+        else if (node.type == NodeType::Genre) {
+            // We use Genre Name as key because IDs might change if rebuilt
+            auto nameOpt = getGenreByNodeId(node.id);
+            if (nameOpt.has_value()) {
+                oldGenrePos[nameOpt.value()] = node.position;
+            }
+        }
+    }
+
     m_ConnectionManager.updateConnections(m_BookManager.getBooks());
 
     resetNodeState();
 
-    placeGenreNodes(m_ConnectionManager.getExistingGenres(), m_ConnectionManager.getGenreIdMap());
-
-    placeBookNodes();
+    placeGenreNodes(m_ConnectionManager.getExistingGenres(), m_ConnectionManager.getGenreIdMap(), oldGenrePos);
+    placeBookNodes(oldBookPos);
 
     for (auto& node : m_Nodes) {
         m_NodeIdMap[node.id] = &node;
@@ -259,6 +285,217 @@ const Rectangle GraphManager::getCameraViewRect(const Camera2D& camera, Vector2 
     return { left, top, width, height };
 }
 
+
+
+std::string statusEnumToString(Status s) {
+    switch (s) {
+    case Status::ToRead: return "to read";
+    case Status::Reading: return "reading";
+    case Status::Read: return "read";
+    default: return "";
+    }
+}
+
+void GraphManager::drawNodes(float zoom, const Rectangle& viewRect) {
+    bool searchActive = !m_SearchQuery.empty();
+
+    // --- 1. DEFINE RULE STRUCTURE ---
+    // Instead of one global mode, we create a struct to hold a single condition.
+    enum class RuleType { Text, RatingGreater, RatingLower, RatingEqual, Status, Genre };
+
+    struct FilterRule {
+        RuleType type = RuleType::Text;
+        float ratingVal = 0.0f;
+        std::string stringVal = ""; // Stores text, status, or genre target
+    };
+
+    std::vector<FilterRule> rules;
+
+    // --- 2. PARSE SEARCH STRING (Split by '|') ---
+    if (searchActive) {
+        std::stringstream ss(m_SearchQuery);
+        std::string segment;
+
+        while (std::getline(ss, segment, '|')) {
+            // A. Trim Whitespace
+            size_t first = segment.find_first_not_of(" ");
+            if (first == std::string::npos) continue; // Skip empty segments
+            size_t last = segment.find_last_not_of(" ");
+            segment = segment.substr(first, (last - first + 1));
+
+            // B. Convert to Lowercase
+            std::transform(segment.begin(), segment.end(), segment.begin(), ::tolower);
+
+            FilterRule rule;
+
+            // C. Determine Rule Type
+            // Check for "rating >"
+            if (segment.find("r>") != std::string::npos || segment.find("rating>") != std::string::npos) {
+                rule.type = RuleType::RatingGreater;
+                size_t pos = segment.find('>');
+                try { rule.ratingVal = std::stof(segment.substr(pos + 1)); }
+                catch (...) {}
+            }
+            // Check for "rating <"
+            else if (segment.find("r<") != std::string::npos || segment.find("rating<") != std::string::npos) {
+                rule.type = RuleType::RatingLower;
+                size_t pos = segment.find('<');
+                try { rule.ratingVal = std::stof(segment.substr(pos + 1)); }
+                catch (...) { rule.ratingVal = 5.0f; }
+            }
+            // Check for "rating =" or "rating :"
+            else if (segment.find("r=") != std::string::npos || segment.find("rating=") != std::string::npos ||
+                segment.find("r:") != std::string::npos || segment.find("rating:") != std::string::npos) {
+                rule.type = RuleType::RatingEqual;
+                size_t pos = segment.find('=');
+                if (pos == std::string::npos) pos = segment.find(':');
+                try { rule.ratingVal = std::stof(segment.substr(pos + 1)); }
+                catch (...) {}
+            }
+            // Check for "status:"
+            else if (segment.find("s:") != std::string::npos) {
+                rule.type = RuleType::Status;
+                size_t pos = segment.find(':');
+                rule.stringVal = segment.substr(pos + 1);
+                // Trim value inside the rule
+                if (rule.stringVal.find_first_not_of(" ") != std::string::npos)
+                    rule.stringVal.erase(0, rule.stringVal.find_first_not_of(" "));
+            }
+            // Check for "genre:"
+            else if (segment.find("g:") != std::string::npos) {
+                rule.type = RuleType::Genre;
+                size_t pos = segment.find(':');
+                rule.stringVal = segment.substr(pos + 1);
+                if (rule.stringVal.find_first_not_of(" ") != std::string::npos)
+                    rule.stringVal.erase(0, rule.stringVal.find_first_not_of(" "));
+            }
+            // Default to Text Search
+            else {
+                rule.type = RuleType::Text;
+                rule.stringVal = segment;
+            }
+
+            rules.push_back(rule);
+        }
+    }
+
+    // --- 3. DRAW LOOP ---
+    for (const auto& node : m_Nodes) {
+        if (!isNodeVisible(node, viewRect)) continue;
+
+        if(!node.visible) continue;
+        bool isDimmed = false;
+
+        if (searchActive && !rules.empty()) {
+
+           
+            bool matchesAll = true;
+
+            for (const auto& rule : rules) {
+                bool ruleMatch = false;
+
+                // --- NODE TYPE: BOOK ---
+                if (node.type == NodeType::Book) {
+                    const Book* b = m_BookManager.findBookById(node.id);
+                    if (b) {
+                        if (rule.type == RuleType::RatingGreater) {
+                            if (b->getRating() >= rule.ratingVal) ruleMatch = true;
+                        }
+                        else if (rule.type == RuleType::RatingLower) {
+                            if (b->getRating() <= rule.ratingVal) ruleMatch = true;
+                        }
+                        else if (rule.type == RuleType::RatingEqual) {
+                            if (std::abs(b->getRating() - rule.ratingVal) < 0.01f) ruleMatch = true;
+                        }
+                        else if (rule.type == RuleType::Status) {
+                            std::string s = statusEnumToString(b->getStatus());
+                            // Case-insensitive check handled by earlier lowercasing of rule
+                            std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+                            if (s.find(rule.stringVal) != std::string::npos) ruleMatch = true;
+                        }
+                        else if (rule.type == RuleType::Genre) {
+                            for (const auto& genreStr : b->getGenres()) {
+                                std::string g = genreStr;
+                                std::transform(g.begin(), g.end(), g.begin(), ::tolower);
+                                if (g.find(rule.stringVal) != std::string::npos) {
+                                    ruleMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (rule.type == RuleType::Text) {
+                            std::string t = b->getTitle();
+                            std::transform(t.begin(), t.end(), t.begin(), ::tolower);
+                            std::string a = b->getAuthor();
+                            std::transform(a.begin(), a.end(), a.begin(), ::tolower);
+                            if (t.find(rule.stringVal) != std::string::npos ||
+                                a.find(rule.stringVal) != std::string::npos) {
+                                ruleMatch = true;
+                            }
+                        }
+                    }
+                }
+                // --- NODE TYPE: GENRE ---
+                else if (node.type == NodeType::Genre) {
+                    // Logic: If looking for status/rating, a Genre node generally fails 
+                    // (unless you want to keep them visible, but strict AND logic implies hiding them)
+
+                    if (rule.type == RuleType::Genre || rule.type == RuleType::Text) {
+                        std::string g = getGenreNameByNodeId(node.id);
+                        std::transform(g.begin(), g.end(), g.begin(), ::tolower);
+                        if (g.find(rule.stringVal) != std::string::npos) ruleMatch = true;
+                    }
+                }
+
+                // CHECK: Did this rule fail?
+                if (!ruleMatch) {
+                    matchesAll = false;
+                    break; // Stop checking other rules for this node
+                }
+            }
+
+            if (!matchesAll) isDimmed = true;
+        }
+
+        m_NodeRenderer.drawNode(node, zoom, m_Genres, isDimmed);
+    }
+}
+
+void GraphManager::recalculateVisibility()
+{
+    for (auto& node : m_Nodes) {
+        // Default to visible
+        node.visible = true;
+
+        if (node.type == NodeType::Book) {
+            const Book* b = m_BookManager.findBookById(node.id);
+            if (!b) continue;
+
+            // 1. Check Status
+            if (m_HiddenStatuses.count(b->getStatus())) {
+                node.visible = false;
+                continue; // No need to check genre if already hidden
+            }
+
+            // 2. Check Genre (Hide book if *any* of its genres are hidden)
+            // Alternatively: Hide only if *all* genres are hidden. 
+            // Below implements "Hide if any genre matches the blocklist"
+            for (const auto& g : b->getGenres()) {
+                if (m_HiddenGenres.count(g)) {
+                    node.visible = false;
+                    break;
+                }
+            }
+        }
+        else if (node.type == NodeType::Genre) {
+            // 3. Check Genre Nodes
+            std::string genreName = getGenreNameByNodeId(node.id);
+            if (m_HiddenGenres.count(genreName)) {
+                node.visible = false;
+            }
+        }
+    }
+}
 
 void GraphManager::drawNode(const Node& node,float zoom) {
 

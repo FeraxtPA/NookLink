@@ -159,6 +159,7 @@
     <ClCompile Include="src\textRenderer.cpp" />
     <ClCompile Include="src\uiManager.cpp" />
     <ClCompile Include="src\UI\button.cpp" />
+    <ClCompile Include="src\UI\checkbox.cpp" />
     <ClCompile Include="src\UI\panel.cpp" />
     <ClCompile Include="src\UI\textBox.cpp" />
     <ClCompile Include="src\UI\textInput.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="src\textRenderer.h" />
     <ClInclude Include="src\uiManager.h" />
     <ClInclude Include="src\UI\button.h" />
+    <ClInclude Include="src\UI\checkbox.h" />
     <ClInclude Include="src\UI\panel.h" />
     <ClInclude Include="src\UI\textBox.h" />
     <ClInclude Include="src\UI\textInput.h" />
