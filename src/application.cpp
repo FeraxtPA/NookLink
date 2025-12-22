@@ -19,6 +19,7 @@ namespace fs = std::filesystem;
 Application::Application()
 {
    
+    
     m_UpdateInterval = m_UpdateIntervalInitial;
     LoadConfig();
     
@@ -55,6 +56,12 @@ void Application::Initialize()
     SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(m_ScreenSize.x, m_ScreenSize.y, "NookLink");
 
+    SetExitKey(KEY_NULL);
+
+    Image icon = LoadImage("assets/icon2.png");
+
+    SetWindowIcon(icon);
+    UnloadImage(icon);
 
     m_TextRenderer = std::make_unique<TextRenderer>();
 

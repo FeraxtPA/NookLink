@@ -389,7 +389,7 @@ void UIManager::BuildInterface(
 
     //Back to menu button
     m_Widgets.push_back(std::make_shared<Button>(
-		Rectangle{ 10, 10, 150, 40 }, "Back to Menu", onBackToMenu
+		Rectangle{ static_cast<float>(m_ScreenWidth - 175), static_cast<float>(m_ScreenHeight -50), 150, 40 }, "Back to Menu", onBackToMenu
 	));
 
     // Layout Variables

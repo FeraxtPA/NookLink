@@ -2,7 +2,7 @@
 
 int main()
 {
-
+    
     Application app;
 
     app.Initialize();
