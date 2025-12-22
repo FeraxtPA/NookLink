@@ -13,7 +13,7 @@
 // UI Components
 #include "UI/panel.h"
 #include "UI/textInput.h"
-#include "UI/textBox.h"  // Added
+#include "UI/textBox.h"  
 #include "UI/button.h"
 #include "UI/checkbox.h"
 
@@ -26,7 +26,9 @@ public:
 
     void BuildInterface(
         std::function<void()> onSave,
+        std::function<void()> onSaveAs,
         std::function<void()> onLoad,
+        std::function<void()> onBackToMenu,
         std::function<void(std::string title, std::string author, std::string genres, float rating, Status status, std::string notes)> onAddBook,
         std::function<void(int id, std::string t, std::string a, std::string g, float r, Status s, std::string n)> onEditBook);
 

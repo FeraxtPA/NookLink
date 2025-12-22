@@ -22,7 +22,7 @@ void TextRenderer::InitFont()
     codepoints[98] = 0x2605; // star
 
     
-    m_Font = LoadFontEx("Assets/DejaVuSans.ttf", 32, codepoints, 99);
+    m_Font = LoadFontEx("Assets/DejaVuSans.ttf", 64, codepoints, 99);
     SetTextureFilter(m_Font.texture, TEXTURE_FILTER_BILINEAR);
 }
 

@@ -147,6 +147,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\tinyfiledialogs\tinyfiledialogs.c" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\book.cpp" />
     <ClCompile Include="src\bookManager.cpp" />
@@ -165,6 +166,8 @@
     <ClCompile Include="src\UI\textInput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\nlohmann\json.hpp" />
+    <ClInclude Include="include\tinyfiledialogs\tinyfiledialogs.h" />
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\book.h" />
     <ClInclude Include="src\bookManager.h" />

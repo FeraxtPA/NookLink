@@ -188,13 +188,7 @@ void UIManager::RebuildFilterPanel(GraphManager* gm)
 {
     if (!m_FilterPanel || !gm) return;
 
-    // Clear existing children (except maybe a title/close button if you hardcoded them)
-    // For this implementation, we assume Panel has a ClearChildren or we just replace the vector.
-    // Since `Panel` class wasn't fully provided, let's assume we can access its widget list 
-    // or we just re-create the widgets vector.
-
-    // Assuming Panel::m_Children is accessible or we add a method `ClearChildren()` to Panel.
-    // Let's assume we added `void ClearChildren()` to Panel.h
+    
     m_FilterPanel->ClearChildren();
 
     float startX = m_FilterPanel->bounds.x + 20;
@@ -374,18 +368,29 @@ bool UIManager::IsMouseOverUI() const {
 
 void UIManager::BuildInterface(
     std::function<void()> onSave,
+    std::function<void()> onSaveAs,
     std::function<void()> onLoad,
+    std::function<void()> onBackToMenu,
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
 {
     
-    //Save and load
+    //Save and load and save as buttons
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
     ));
     m_Widgets.push_back(std::make_shared<Button>(
         Rectangle{ (float)m_ScreenWidth - 110, 10, 100, 40 }, "Load", onLoad
     ));
+
+    m_Widgets.push_back(std::make_shared<Button>(
+        Rectangle{ (float)m_ScreenWidth - 330, 10, 100, 40 }, "Save As", onSaveAs
+    ));
+
+    //Back to menu button
+    m_Widgets.push_back(std::make_shared<Button>(
+		Rectangle{ 10, 10, 150, 40 }, "Back to Menu", onBackToMenu
+	));
 
     // Layout Variables
     float cx = m_ScreenWidth / 2.0f;
@@ -434,10 +439,12 @@ void UIManager::BuildInterface(
 
     m_Widgets.push_back(m_FilterPanel);
 
+    
+
 
     //Filter button
     m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ 1250, 10, 120, 40 }, "Filter View",
+        Rectangle{ 1130, 10, 120, 40 }, "Filter View",
         [this]() {
             // Toggle visibility of the filter panel
             if (m_FilterPanel) {
@@ -639,7 +646,7 @@ void UIManager::BuildInterface(
  
     // "Pick Random Read" 
     m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 540, 10, 150, 40 }, "Next Read",
+        Rectangle{ (float)m_ScreenWidth - 660, 10, 150, 40 }, "Next Read",
         [this]() {
             // Initialize Lottery State
             m_LotteryPanel->isVisible = true;
@@ -653,7 +660,7 @@ void UIManager::BuildInterface(
 
     // "Add Book"
     m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 380, 10, 150, 40 }, "+ Add Book",
+        Rectangle{ (float)m_ScreenWidth - 500, 10, 150, 40 }, "Add Book",
         [addPanel]() { addPanel->isVisible = true; }
     ));
 

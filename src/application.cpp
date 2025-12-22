@@ -1,5 +1,18 @@
+
+
+#define _CRT_SECURE_NO_WARNINGS
 #include "application.h"
 #include "UI/button.h"
+
+
+#include "../include/tinyfiledialogs/tinyfiledialogs.h"
+
+
+#include <filesystem>
+#include <cstdlib> 
+
+namespace fs = std::filesystem;
+
 Application::Application()
 {
    
@@ -10,6 +23,27 @@ Application::Application()
 Application::~Application()
 {
     Shutdown();
+}
+
+
+fs::path getDesktopPath() {
+    const char* homeDir = nullptr;
+
+    // We still need preprocessor directives to find the specific ENV variable key
+#ifdef _WIN32
+    homeDir = std::getenv("USERPROFILE");
+#else
+    homeDir = std::getenv("HOME");
+#endif
+
+    if (homeDir) {
+        // C++17: The '/' operator automatically handles platform-specific separators
+        // (e.g., adds "\\" on Windows, "/" on Linux/Mac)
+        return fs::path(homeDir) / "Desktop";
+    }
+
+    // Fallback: return current working directory or empty path
+    return fs::current_path();
 }
 
 void Application::Initialize()
@@ -24,12 +58,85 @@ void Application::Initialize()
     m_GraphManager = std::make_unique<GraphManager>(m_BookManager, m_ConnectionManager, m_CanvasSize, m_TextRenderer.get());
     m_CameraHandler = std::make_unique<CameraHandler>(m_ScreenSize, m_CanvasSize);
 
-    InitBookManager();
-
-    // Initialize graph with current books and connections
-    m_GraphManager->initializePositions();
-
    
+    float centerX = m_ScreenSize.x / 2.0f;
+    float centerY = m_ScreenSize.y / 2.0f;
+
+    m_BtnNewGraph = std::make_shared<Button>(
+        Rectangle{ centerX - 150, centerY - 60, 300, 50 },
+        "Start New Graph",
+        [this]() {
+            std::cout << "Starting New Graph..." << std::endl;
+            // Option A: Start completely empty
+            m_BookManager = BookManager(); 
+
+            // Option B: Load your demo data (1984, etc.)
+            //InitBookManager();
+
+            m_GraphManager->initializePositions();
+            m_LayoutDirty = true;
+            m_AppState = AppState::Editor; // Switch State
+        }
+    );
+
+
+    m_BtnLoadGraph = std::make_shared<Button>(
+        Rectangle{ centerX - 150, centerY + 20, 300, 50 },
+        "Load From File",
+        [this]() {
+            // 1. Setup paths and filters
+            const char* filters[] = { "*.json" };
+            fs::path initialPath = getDesktopPath();
+
+            // Ensure the directory actually exists before opening dialog; 
+            // otherwise tinyfd might default to a weird location.
+            if (!fs::exists(initialPath)) {
+                initialPath = fs::current_path();
+            }
+
+            // 2. Open the Dialog
+            // We use .string().c_str() to convert the C++ path to the const char* required by tinyfd
+            const char* selection = tinyfd_openFileDialog(
+                "Select a Graph File",
+                initialPath.string().c_str(),
+                1,
+                filters,
+                "JSON Files",
+                0
+            );
+
+            // 3. Check result
+            if (selection) {
+                // Convert immediately to fs::path for safety and power
+                fs::path selectedPath(selection);
+
+                std::cout << "User selected: " << selectedPath << std::endl;
+
+                m_SaveFileName = selectedPath; // Assuming m_SaveFileName is fs::path or std::string
+
+                // 4. Perform the Load
+                if (fs::exists(m_SaveFileName)) {
+                    // Pass generic string to your loader
+                    m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+
+                    m_GraphManager->clearGenresAndConnections();
+                    m_GraphManager->initializePositions();
+                    m_LayoutDirty = true;
+
+                    m_AppState = AppState::Editor;
+                }
+                else {
+                    // This branch is rarely hit if selection is not null, 
+                    // but good for sanity checking.
+                    std::cerr << "Error: File does not exist." << std::endl;
+                }
+            }
+            else {
+                std::cout << "Load cancelled by user." << std::endl;
+            }
+        }
+    );
+
     //Needs to be initialized after font is loaded
     m_UIManager = std::make_unique<UIManager>(m_ScreenSize.x, m_ScreenSize.y);
 
@@ -38,6 +145,32 @@ void Application::Initialize()
 			std::cout << "Saving books to " << m_SaveFileName << "..." << std::endl;
 			m_BookManager.saveBooksToFile(m_SaveFileName.string());
 		},
+        [this]() {
+            const char* filters[] = { "*.json" };
+
+
+            fs::path defaultSavePath = getDesktopPath() / "library.json";
+
+            
+            // Open the "Save As" Dialog
+            // Args: Title, Default File, Num Filters, Filter Patterns, Filter Desc
+            const char* path = tinyfd_saveFileDialog(
+                "Save Library As...",
+                defaultSavePath.string().c_str(),
+                1,
+                filters,
+                "JSON Files"
+            );
+
+            if (path) {
+                m_SaveFileName = path; // Update the app's current file path
+                m_BookManager.saveBooksToFile(m_SaveFileName.string()); // Save immediately
+                std::cout << "Saved As: " << m_SaveFileName << std::endl;
+            }
+            else {
+                std::cout << "Save As cancelled." << std::endl;
+            }
+        },
 		[this]() { // onLoad
 			std::cout << "Loading books from " << m_SaveFileName << "..." << std::endl;
 			m_BookManager.loadBooksFromFile(m_SaveFileName.string());
@@ -45,6 +178,9 @@ void Application::Initialize()
 			m_GraphManager->initializePositions();
 			m_LayoutDirty = true;
            
+		},
+        [this]() { 
+            m_AppState = AppState::StartScreen;
 		},
         [this](std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
             std::cout << "Adding book: " << title << std::endl;
@@ -127,6 +263,25 @@ void Application::Shutdown()
 	CloseWindow();
 }
 
+void Application::UpdateStartScreen()
+{
+    if (m_BtnNewGraph) m_BtnNewGraph->Update();
+    if (m_BtnLoadGraph) m_BtnLoadGraph->Update();
+}
+
+void Application::DrawStartScreen()
+{
+    // Draw Title
+    const char* title = "NookLink";
+    int fontSize = 64;
+    int titleWidth = MeasureText(title, fontSize);
+    m_TextRenderer->DrawTextCentered(title, { m_ScreenSize.x / 2.0f, m_ScreenSize.y / 4.0f }, fontSize, RAYWHITE);
+
+    // Draw Buttons
+    if (m_BtnNewGraph) m_BtnNewGraph->Draw(m_TextRenderer.get());
+    if (m_BtnLoadGraph) m_BtnLoadGraph->Draw(m_TextRenderer.get());
+}
+
 void Application::InitBookManager()
 {
     Book book1("1984", "George Orwell", Status::ToRead);
@@ -180,6 +335,14 @@ void Application::InitBookManager()
 void Application::Draw()
 {
     BeginDrawing();
+
+    if (m_AppState == AppState::StartScreen)
+    {
+        ClearBackground(NookCol::BACKGROUND);
+        DrawStartScreen();
+    }
+    else
+    { 
     ClearBackground(NookCol::BACKGROUND);
 
     m_CameraHandler->beginMode();
@@ -198,6 +361,7 @@ void Application::Draw()
    
     m_UIManager->Draw(GetMousePosition(),m_GraphManager.get(),m_BookManager, m_TextRenderer.get());
 
+    }
     EndDrawing();
 }
 
@@ -352,6 +516,13 @@ void Application::HandleInput(Vector2 worldMousePos)
 void Application::Update()
 {
    
+    if (m_AppState == AppState::StartScreen)
+    {
+        UpdateStartScreen();
+    }
+    else 
+    {
+
     
     Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), m_CameraHandler->getCamera());
 
@@ -401,7 +572,7 @@ void Application::Update()
         GetMousePosition(),
         m_BookManager,
         m_GraphManager.get(), m_TextRenderer.get());
-
+    }
 }
 
 

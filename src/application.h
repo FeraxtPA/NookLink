@@ -12,6 +12,14 @@
 #include <memory>
 #include "textRenderer.h"
 
+#include "UI/button.h"
+
+
+enum class AppState
+{
+	StartScreen,
+	Editor
+};
 class Application
 {
 public:
@@ -51,10 +59,20 @@ private:
 	const float m_DoubleClickThreshold{ 0.3f };
 
 
+	AppState m_AppState{ AppState::StartScreen };
+
+	std::shared_ptr<Button> m_BtnNewGraph;
+	std::shared_ptr<Button> m_BtnLoadGraph;
+
+
 	void Update();
-	
-	void InitBookManager();
 	void Draw();
+
+	void UpdateStartScreen();
+	void DrawStartScreen();
+
+	void InitBookManager();
+	
 	void HandleInput(Vector2 worldMousePos);
 
 
