@@ -64,9 +64,14 @@ private:
 	std::shared_ptr<Button> m_BtnNewGraph;
 	std::shared_ptr<Button> m_BtnLoadGraph;
 
+	std::shared_ptr<Button> m_BtnContinue;
 
 	void Update();
 	void Draw();
+
+
+	void LoadConfig();
+	void SaveConfig();
 
 	void UpdateStartScreen();
 	void DrawStartScreen();

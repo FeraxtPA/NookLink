@@ -11,12 +11,16 @@
 #include <filesystem>
 #include <cstdlib> 
 
+#include <fstream>
+
+
 namespace fs = std::filesystem;
 
 Application::Application()
 {
    
     m_UpdateInterval = m_UpdateIntervalInitial;
+    LoadConfig();
     
 }
 
@@ -61,6 +65,36 @@ void Application::Initialize()
    
     float centerX = m_ScreenSize.x / 2.0f;
     float centerY = m_ScreenSize.y / 2.0f;
+
+
+    std::string btnText = "Continue";
+    if (fs::exists(m_SaveFileName)) {
+        btnText += " (" + m_SaveFileName.filename().string() + ")";
+    }
+
+    m_BtnContinue = std::make_shared<Button>(
+        Rectangle{ centerX - 150, centerY - 140, 300, 50 },
+        btnText, // Uses the dynamic label
+        [this]() {
+            // Case 1: In-memory session exists
+            if (!m_BookManager.getBooks().empty()) {
+                m_AppState = AppState::Editor;
+                return;
+            }
+
+            // Case 2: Load from the dynamic m_SaveFileName
+            if (fs::exists(m_SaveFileName)) {
+                std::cout << "Loading " << m_SaveFileName << "..." << std::endl;
+                m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+
+                m_GraphManager->clearGenresAndConnections();
+                m_GraphManager->initializePositions();
+                m_LayoutDirty = true;
+
+                m_AppState = AppState::Editor;
+            }
+        }
+    );
 
     m_BtnNewGraph = std::make_shared<Button>(
         Rectangle{ centerX - 150, centerY - 60, 300, 50 },
@@ -119,6 +153,8 @@ void Application::Initialize()
                     // Pass generic string to your loader
                     m_BookManager.loadBooksFromFile(m_SaveFileName.string());
 
+                    SaveConfig();
+
                     m_GraphManager->clearGenresAndConnections();
                     m_GraphManager->initializePositions();
                     m_LayoutDirty = true;
@@ -165,6 +201,9 @@ void Application::Initialize()
             if (path) {
                 m_SaveFileName = path; // Update the app's current file path
                 m_BookManager.saveBooksToFile(m_SaveFileName.string()); // Save immediately
+
+                SaveConfig();
+
                 std::cout << "Saved As: " << m_SaveFileName << std::endl;
             }
             else {
@@ -177,10 +216,20 @@ void Application::Initialize()
 			m_GraphManager->clearGenresAndConnections();
 			m_GraphManager->initializePositions();
 			m_LayoutDirty = true;
+            SaveConfig();
+          
            
 		},
         [this]() { 
             m_AppState = AppState::StartScreen;
+            if (m_BtnContinue) {
+                std::string btnText = "Continue";
+                if (fs::exists(m_SaveFileName)) {
+                  
+                    btnText += " (" + m_SaveFileName.filename().string() + ")";
+                }
+                m_BtnContinue->SetText(btnText);
+            }
 		},
         [this](std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
             std::cout << "Adding book: " << title << std::endl;
@@ -259,14 +308,51 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-    
+    if (!m_BookManager.getBooks().empty()) {
+        std::cout << "Auto-saving session to " << m_SaveFileName << "..." << std::endl;
+        m_BookManager.saveBooksToFile(m_SaveFileName.string());
+    }
+
 	CloseWindow();
+}
+
+void Application::LoadConfig()
+{
+    std::ifstream configFile(".nooklink_config");
+    if (configFile.is_open()) {
+        std::string pathStr;
+        if (std::getline(configFile, pathStr) && !pathStr.empty()) {
+            if (fs::exists(pathStr)) {
+                m_SaveFileName = pathStr;
+                std::cout << "Restored last session file: " << m_SaveFileName << std::endl;
+            }
+        }
+        configFile.close();
+    }
+}
+
+void Application::SaveConfig()
+{
+    std::ofstream configFile(".nooklink_config");
+    if (configFile.is_open()) {
+        configFile << m_SaveFileName.string();
+        configFile.close();
+    }
 }
 
 void Application::UpdateStartScreen()
 {
     if (m_BtnNewGraph) m_BtnNewGraph->Update();
     if (m_BtnLoadGraph) m_BtnLoadGraph->Update();
+
+    if (m_BtnContinue) {
+        // Optional: Only enable/show button if data exists or file exists
+        bool canContinue = !m_BookManager.getBooks().empty() || fs::exists(m_SaveFileName);
+
+        // If you implemented an 'isVisible' or 'isEnabled' flag in Button, set it here.
+        // For now, we just update it normally:
+        if (canContinue) m_BtnContinue->Update();
+    }
 }
 
 void Application::DrawStartScreen()
@@ -280,6 +366,12 @@ void Application::DrawStartScreen()
     // Draw Buttons
     if (m_BtnNewGraph) m_BtnNewGraph->Draw(m_TextRenderer.get());
     if (m_BtnLoadGraph) m_BtnLoadGraph->Draw(m_TextRenderer.get());
+
+    bool canContinue = !m_BookManager.getBooks().empty() || fs::exists(m_SaveFileName);
+
+    if (m_BtnContinue && canContinue) {
+        m_BtnContinue->Draw(m_TextRenderer.get());
+    }
 }
 
 void Application::InitBookManager()
