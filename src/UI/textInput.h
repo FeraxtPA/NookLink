@@ -1,5 +1,5 @@
 #pragma once
-#include "Widget.h"
+#include "widget.h"
 #include <string>
 
 class TextInput : public Widget {
