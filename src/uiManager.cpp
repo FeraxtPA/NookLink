@@ -99,7 +99,7 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
 
         if (m_LotterySpeedTimer <= 0.0f && m_LotteryTimer > 0.0f) {
             m_LotterySpeedTimer = 0.05f;
-            const auto& allBooks = bookManager.getBooks();
+            const auto& allBooks = bookManager.getBooksToBeRead();
             if (!allBooks.empty()) {
                 int r = GetRandomValue(0, (int)allBooks.size() - 1);
                 m_LotteryText->SetText("... " + allBooks[r].getTitle() + " ...");
@@ -335,7 +335,7 @@ void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookMa
 
 void UIManager::DrawHelpText(TextRenderer* renderer) const
 {
-    renderer->DrawSimpleText("Right-click drag: Move | Space: Add Books", { 10, 10 }, 20, BLACK);
+    renderer->DrawSimpleText("Right-click drag: Move | Space: Add Books", { 10, 10 }, 20, WHITE);
     renderer->DrawSimpleText("Shift+Drag: Lock | Shift+Click: Delete", { 10, 35 }, 20, BLACK);
     renderer->DrawSimpleText("Middle Click: Pan | Scroll: Zoom", { 10, 60 }, 20, BLACK);
     renderer->DrawSimpleText("Double Click: Unlock Node | 'E': Edit Node", { 10, 85 }, 20, BLACK);

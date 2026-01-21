@@ -30,6 +30,8 @@ public:
 	const Book* findBookById(int id) const;
 
 	const Book& getRandomBookToBeRead();
+	const std::vector<Book>& getBooksToBeRead();
+
 
 	void saveBooksToFile(const std::string& filename) const;
 	void loadBooksFromFile(const std::string& filename);
@@ -37,7 +39,7 @@ public:
 private:
 	std::vector<Book> m_Books;
 	std::vector<Book> toBeReadBooks;
-	const std::vector<Book>& getBooksToBeRead();
+	
 	int m_NextId = 1;
 
 };

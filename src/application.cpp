@@ -12,7 +12,8 @@
 #include <cstdlib> 
 
 #include <fstream>
-
+#include <print>
+#include <ranges>
 
 namespace fs = std::filesystem;
 
@@ -493,6 +494,7 @@ void Application::HandleInput(Vector2 worldMousePos)
         }
 
         
+      
 
 
         // Release drag
@@ -539,6 +541,8 @@ void Application::HandleInput(Vector2 worldMousePos)
         {
             SetTargetFPS(GetMonitorRefreshRate(0));
         }
+        //Print books with to-read status on key press
+       
 
         // Handle left click for selecting/removing/unlocking nodes
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -604,10 +608,17 @@ void Application::HandleInput(Vector2 worldMousePos)
         }
     }
 
-    if (IsKeyPressed(KEY_R))
+  
+
+    if (IsKeyPressed(KEY_T))
     {
-        
-        std::cout << "Random book to be read: " << m_BookManager.getRandomBookToBeRead().getTitle() << std::endl;
+        std::print("Books with 'To Read' status:\n");
+       
+       
+        for (const auto& [i, book] : m_BookManager.getBooksToBeRead() | std::views::enumerate)
+        {
+            std::print("{} {}-{}\n", i + 1, book.getTitle(), book.getAuthor());
+        }
     }
 
 }
