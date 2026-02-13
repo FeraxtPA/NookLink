@@ -37,6 +37,14 @@ public:
     void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer);
     void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const;
 
+    void OnWindowResize(int width, int height) {
+        m_ScreenWidth = width;
+        m_ScreenHeight = height;
+        for (auto& w : m_Widgets) {
+            w->OnWindowResize(width, height);
+        }
+    }
+
 private:
     int m_ScreenWidth, m_ScreenHeight;
     std::vector<std::shared_ptr<Widget>> m_Widgets;

@@ -4,9 +4,11 @@
 #include <sstream>
 #include <cctype> 
 
-TextBox::TextBox(Rectangle r, std::string ph)
-    : Widget(r), placeholder(ph)
-{}
+TextBox::TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
+    : Widget(anchor, offset, size), placeholder(ph)
+{
+    OnWindowResize(GetScreenWidth(), GetScreenHeight());
+}
 
 
 bool IsWordChar(char c) {
@@ -74,7 +76,7 @@ void TextBox::Update() {
     if (!isVisible) return;
 
     Vector2 mouse = GetMousePosition();
-    isHovered = CheckCollisionPointRec(mouse, bounds);
+    isHovered = CheckCollisionPointRec(mouse, m_Bounds);
 
   
     if (isEditable)
@@ -165,9 +167,9 @@ void TextBox::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     //Background & Border
-    DrawRectangleRec(bounds, RAYWHITE);
+    DrawRectangleRec(m_Bounds, RAYWHITE);
     Color borderColor = isFocused ? RED : (isHovered ? DARKGRAY : LIGHTGRAY);
-    DrawRectangleLinesEx(bounds, 2, borderColor);
+    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
 
     if (!renderer) return;
 
@@ -180,7 +182,7 @@ void TextBox::Draw(TextRenderer* renderer) {
     const float fontSize = 20.0f;
     const float padding = 5.0f;
     const float lineHeight = 24.0f;
-    const float contentWidth = bounds.width - (padding * 2);
+    const float contentWidth = m_Bounds.width - (padding * 2);
 
     float currentX = 0.0f;
     float currentY = 0.0f;
@@ -195,11 +197,11 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     // Helper to "commit" a line to drawing
     auto finishLine = [&](int endIndex, bool newline) {
-        float absoluteY = bounds.y + padding + currentY - scrollY;
-        float absoluteX = bounds.x + padding;
+        float absoluteY = m_Bounds.y + padding + currentY - scrollY;
+        float absoluteX = m_Bounds.x + padding;
 
         // Draw if visible
-        if (absoluteY + lineHeight > bounds.y && absoluteY < bounds.y + bounds.height) {
+        if (absoluteY + lineHeight > m_Bounds.y && absoluteY < m_Bounds.y + m_Bounds.height) {
             std::string lineStr = textToDraw.substr(lineStartIndex, endIndex - lineStartIndex);
             renderer->DrawSimpleText(lineStr, { absoluteX, absoluteY }, fontSize, showPlaceholder ? GRAY : BLACK);
         }
@@ -217,7 +219,7 @@ void TextBox::Draw(TextRenderer* renderer) {
         currentX = 0.0f;
         };
 
-    BeginScissorMode((int)bounds.x, (int)bounds.y, (int)bounds.width, (int)bounds.height);
+    BeginScissorMode((int)m_Bounds.x, (int)m_Bounds.y, (int)m_Bounds.width, (int)m_Bounds.height);
 
     for (int i = 0; i < (int)textToDraw.length(); i++) {
         char c = textToDraw[i];
@@ -262,9 +264,9 @@ void TextBox::Draw(TextRenderer* renderer) {
     // 4. Draw Cursor
     if (isFocused && cursorFound) {
        
-        float relY = cursorPos.y - bounds.y;
+        float relY = cursorPos.y - m_Bounds.y;
         if (relY < 0) scrollY += relY;
-        if (relY + lineHeight > bounds.height) scrollY += (relY + lineHeight - bounds.height);
+        if (relY + lineHeight > m_Bounds.height) scrollY += (relY + lineHeight - m_Bounds.height);
 
         // Blinking
         if (((int)(GetTime() * 2) % 2) == 0) {
@@ -276,7 +278,7 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     //Scrollbar Logic
     float totalHeight = currentY + lineHeight;
-    maxScrollY = std::max(0.0f, totalHeight - (bounds.height - padding * 2));
+    maxScrollY = std::max(0.0f, totalHeight - (m_Bounds.height - padding * 2));
 
     // Clamp scroll
     if (scrollY < 0) scrollY = 0;
@@ -284,8 +286,8 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     if (maxScrollY > 0) {
         float scrollPerc = scrollY / maxScrollY;
-        float barHeight = std::max(20.0f, (bounds.height / totalHeight) * bounds.height);
-        float barY = bounds.y + (scrollPerc * (bounds.height - barHeight));
-        DrawRectangle((int)(bounds.x + bounds.width - 6), (int)barY, 4, (int)barHeight, Fade(GRAY, 0.5f));
+        float barHeight = std::max(20.0f, (m_Bounds.height / totalHeight) * m_Bounds.height);
+        float barY = m_Bounds.y + (scrollPerc * (m_Bounds.height - barHeight));
+        DrawRectangle((int)(m_Bounds.x + m_Bounds.width - 6), (int)barY, 4, (int)barHeight, Fade(GRAY, 0.5f));
     }
 }

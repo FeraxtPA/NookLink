@@ -11,7 +11,8 @@
 #include <filesystem>
 #include <memory>
 #include "textRenderer.h"
-
+#include "inputHandler.h"
+#include "debugManager.h"
 #include "UI/button.h"
 
 
@@ -42,7 +43,8 @@ private:
 	std::unique_ptr<CameraHandler> m_CameraHandler{};
 	std::unique_ptr<UIManager> m_UIManager{};
 
-	
+	std::unique_ptr<InputHandler> m_InputHandler{};
+	std::unique_ptr<DebugManager> m_DebugManager{};
 	
 	std::filesystem::path m_SaveFileName{ "my_books.json" };
 
@@ -54,9 +56,7 @@ private:
 	const int m_MaxSettleIterations{ 1000 };
 	int m_SettleIterations{0 };
 
-	Node* m_LastClickedNode{ nullptr };
-	float m_LastClickTime{ 0.0f };
-	const float m_DoubleClickThreshold{ 0.3f };
+
 
 
 	AppState m_AppState{ AppState::StartScreen };
@@ -76,9 +76,9 @@ private:
 	void UpdateStartScreen();
 	void DrawStartScreen();
 
-	void InitBookManager();
+
 	
-	void HandleInput(Vector2 worldMousePos);
+	
 
 
 };

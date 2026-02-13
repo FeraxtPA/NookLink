@@ -1,15 +1,16 @@
 #include "textInput.h"
 #include "../textRenderer.h" 
 
-TextInput::TextInput(Rectangle r, std::string ph)
-    : Widget(r), placeholder(ph)
-{}
-
+TextInput::TextInput(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
+    : Widget(anchor, offset, size), placeholder(ph)
+{
+    OnWindowResize(GetScreenWidth(), GetScreenHeight());
+}
 void TextInput::Update() {
     if (!isVisible) return;
 
     Vector2 mouse = GetMousePosition();
-    bool isHovered = CheckCollisionPointRec(mouse, bounds);
+    bool isHovered = CheckCollisionPointRec(mouse, m_Bounds);
 
    
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -49,10 +50,10 @@ void TextInput::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     // Draw Background + Border
-    DrawRectangleRec(bounds, RAYWHITE);
+    DrawRectangleRec(m_Bounds, RAYWHITE);
 
-    Color borderColor = isFocused ? RED : (CheckCollisionPointRec(GetMousePosition(), bounds) ? DARKGRAY : LIGHTGRAY);
-    DrawRectangleLinesEx(bounds, 2, borderColor);
+    Color borderColor = isFocused ? RED : (CheckCollisionPointRec(GetMousePosition(), m_Bounds) ? DARKGRAY : LIGHTGRAY);
+    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
 
     if (!renderer) return;
 
@@ -60,7 +61,7 @@ void TextInput::Draw(TextRenderer* renderer) {
     const float paddingX = 5.0f;
     const float paddingY = 8.0f;
 
-    Vector2 textPos = { bounds.x + paddingX, bounds.y + paddingY };
+    Vector2 textPos = { m_Bounds.x + paddingX, m_Bounds.y + paddingY };
 
     // Draw Text or Placeholder
     if (text.empty() && !isFocused) {

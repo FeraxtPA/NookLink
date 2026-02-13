@@ -188,22 +188,16 @@ void UIManager::RebuildFilterPanel(GraphManager* gm)
 {
     if (!m_FilterPanel || !gm) return;
 
-    
     m_FilterPanel->ClearChildren();
 
-    float startX = m_FilterPanel->bounds.x + 20;
-    float startY = m_FilterPanel->bounds.y + 50;
-    float gap = 30;
-
-    float panelX = m_FilterPanel->bounds.x;
-    float panelY = m_FilterPanel->bounds.y;
-    float panelW = m_FilterPanel->bounds.width;
-
-    std::cout << panelX << ", " << panelY << ", " << panelW << "\n";
+    // Kotvíme vše na støed-vpravo (Anchor::CenterRight), stejnì jako samotný FilterPanel.
+    // Panel má výšku 800, takže jeho horní okraj je -400 a spodní +400 (od støedu).
+    float currentY = -350; // Zaèneme kreslit 50px odshora panelu
 
     auto closeBtn = std::make_shared<Button>(
-        // Position: Top-Right corner of the panel
-        Rectangle{ (panelX + panelW/2 - 30), m_FilterPanel->bounds.height, 60, 30},
+        Anchor::CenterRight,
+        Vector2{ -125, 360 }, // -125 je støed panelu na X. 360 je dole na ose Y.
+        Vector2{ 60, 30 },
         "Close",
         [this]() {
             if (m_FilterPanel) m_FilterPanel->isVisible = false;
@@ -215,53 +209,25 @@ void UIManager::RebuildFilterPanel(GraphManager* gm)
         bool isVisible = gm->isStatusVisible(s);
 
         auto cb = std::make_shared<Checkbox>(
-            Rectangle{ startX, startY, 20, 20 },
+            Anchor::CenterRight,
+            Vector2{ -220, currentY }, // -220 = levý okraj panelu
+            Vector2{ 20, 20 },
             label,
-            isVisible, // Initial checked state
+            isVisible,
             [gm, s](bool checked) {
-                
-
                 bool currentlyHidden = !gm->isStatusVisible(s);
-
-                // If logic mismatch, toggle it.
                 if (checked == currentlyHidden) {
                     gm->toggleStatusVisibility(s);
                 }
             }
         );
         m_FilterPanel->AddChild(cb);
-        startY += gap;
+        currentY += 30; // Posun dolù pro další prvek
         };
 
     addStatusBox("Show 'To Read'", Status::ToRead);
     addStatusBox("Show 'Reading'", Status::Reading);
     addStatusBox("Show 'Read'", Status::Read);
-
-    startY += 10; // Extra spacing
-
-    // genres doesnt work as intended
-    /*
-    std::vector<std::string> genres = gm->getAllGenreNames();
-    std::sort(genres.begin(), genres.end()); // Alphabetical order
-
-    for (const auto& genre : genres) {
-        bool isVisible = gm->isGenreVisible(genre);
-
-        auto cb = std::make_shared<Checkbox>(
-            Rectangle{ startX, startY, 20, 20 },
-            genre,
-            isVisible,
-            [gm, genre](bool checked) {
-                bool currentlyHidden = !gm->isGenreVisible(genre);
-                if (checked == currentlyHidden) {
-                    gm->toggleGenreVisibility(genre);
-                }
-            }
-        );
-        m_FilterPanel->AddChild(cb);
-        startY += gap;
-    }
-    */
 }
 
 void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
@@ -374,110 +340,45 @@ void UIManager::BuildInterface(
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
 {
-    
-    //Save and load and save as buttons
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 220, 10, 100, 40 }, "Save", onSave
-    ));
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 110, 10, 100, 40 }, "Load", onLoad
-    ));
+    // ============================================================
+    // 1. HLAVNÍ UI (Tlaèítka nahoøe a dole)
+    // ============================================================
+    // Horní lišta - zprava doleva
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -60, 30 }, Vector2{ 100, 40 }, "Load", onLoad));
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -170, 30 }, Vector2{ 100, 40 }, "Save", onSave));
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -280, 30 }, Vector2{ 100, 40 }, "Save As", onSaveAs));
 
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 330, 10, 100, 40 }, "Save As", onSaveAs
-    ));
+    // Vyhledávací pole - uprostøed nahoøe
+    m_SearchBar = std::make_shared<TextInput>(Anchor::TopCenter, Vector2{ 0, 30 }, Vector2{ 300, 40 }, "Search Books/Authors...");
+    m_Widgets.push_back(m_SearchBar);
 
-    //Back to menu button
-    m_Widgets.push_back(std::make_shared<Button>(
-		Rectangle{ static_cast<float>(m_ScreenWidth - 175), static_cast<float>(m_ScreenHeight -50), 150, 40 }, "Back to Menu", onBackToMenu
-	));
+    // Tlaèítko zpìt do menu - vpravo dole
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::BottomRight, Vector2{ -95, -30 }, Vector2{ 150, 40 }, "Back to Menu", onBackToMenu));
 
-    // Layout Variables
-    float cx = m_ScreenWidth / 2.0f;
-    float cy = m_ScreenHeight / 2.0f;
-    float panelW = 400;
-    float panelH = 550;
-    float startY = -220;
-    float gap = 55;
-    float inputH = 35;
-    float inputW = 360;
-    float xOff = -180;
-
-
-    // Search bar
-    m_SearchBar = std::make_shared<TextInput>(
-        Rectangle{ (float)m_ScreenWidth / 2.0f - 150.0f, 10, 300, 40 },
-        "Search Books/Authors..."
-    );
-    m_Widgets.push_back(m_SearchBar); 
-
-
-
- 
-
-  
-
-    m_FilterPanel = std::make_shared<Panel>(
-        Rectangle{ 1660, 60, 250, (float)m_ScreenHeight - 80 },
-        "Filter Graph"
-    );
+    // Filter Panel (vpravo uprostøed) a jeho Toggle Tlaèítko
+    m_FilterPanel = std::make_shared<Panel>(Anchor::CenterRight, Vector2{ -125, 0 }, Vector2{ 250, 800 }, "Filter Graph");
     m_FilterPanel->isVisible = false;
-
-
-    auto closeFilterBtn = std::make_shared<Button>(
-		Rectangle{ 1660 + 50, 60 + 10, 20, 20 },
-		"Close",
-		[this]() {
-			if (m_FilterPanel) {
-				m_FilterPanel->isVisible = false;
-			}
-		}
-	);
-
-    m_FilterPanel->AddChild(closeFilterBtn);
-
-
     m_Widgets.push_back(m_FilterPanel);
 
-    
-
-
-    //Filter button
     m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ 1130, 10, 120, 40 }, "Filter View",
-        [this]() {
-            // Toggle visibility of the filter panel
-            if (m_FilterPanel) {
-                m_FilterPanel->isVisible = !m_FilterPanel->isVisible;
-
-            }
-        }
+        Anchor::TopRight, Vector2{ -760, 30 }, Vector2{ 120, 40 }, "Filter View",
+        [this]() { if (m_FilterPanel) m_FilterPanel->isVisible = !m_FilterPanel->isVisible; }
     ));
-   
 
     // ============================================================
-    // 2. ADD BOOK PANEL
+    // 2. ADD BOOK PANEL (Uprostøed)
     // ============================================================
-    auto addPanel = std::make_shared<Panel>(
-        Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Add New Book"
-    );
+    auto addPanel = std::make_shared<Panel>(Anchor::Center, Vector2{ 0, 0 }, Vector2{ 400, 550 }, "Add New Book");
     addPanel->isVisible = false;
 
-    // Inputs
-    auto inTitle = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY, inputW, inputH }, "Title");
-    auto inAuthor = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap, inputW, inputH }, "Author");
-    auto inGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres (e.g. SciFi, Horror)");
-    auto inRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating (0.0 - 5.0)");
-    auto inNotes = std::make_shared<TextBox>(
-        Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
-        "Notes"
-    );
+    auto inTitle = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -202.5f }, Vector2{ 360, 35 }, "Title");
+    auto inAuthor = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -147.5f }, Vector2{ 360, 35 }, "Author");
+    auto inGenres = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -92.5f }, Vector2{ 360, 35 }, "Genres (e.g. SciFi, Horror)");
+    auto inRating = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -37.5f }, Vector2{ 360, 35 }, "Rating (0.0 - 5.0)");
+    auto inNotes = std::make_shared<TextBox>(Anchor::Center, Vector2{ 0, 50.0f }, Vector2{ 360, 100 }, "Notes");
 
-    // Status Button
     auto addStatusState = std::make_shared<int>(0);
-    auto btnAddStatus = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status: To Read", []() {}
-    );
+    auto btnAddStatus = std::make_shared<Button>(Anchor::Center, Vector2{ 0, 150.0f }, Vector2{ 360, 40 }, "Status: To Read", []() {});
 
     std::weak_ptr<Button> weakAddBtn = btnAddStatus;
     btnAddStatus->SetOnClick([addStatusState, weakAddBtn]() {
@@ -489,80 +390,54 @@ void UIManager::BuildInterface(
         }
         });
 
-    // Create Button
-    auto btnCreate = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 8, 100, 40 }, "Create",
+    auto btnCreate = std::make_shared<Button>(Anchor::Center, Vector2{ -130, 240 }, Vector2{ 100, 40 }, "Create",
         [addPanel, inTitle, inAuthor, inGenres, inRating, inNotes, addStatusState, onAddBook]() {
             std::string t = inTitle->GetText();
             std::string a = inAuthor->GetText();
-            std::string g = inGenres->GetText();
-            std::string rStr = inRating->GetText();
-            std::string n = inNotes->GetText();
-
             if (!t.empty() && !a.empty()) {
                 float r = 0.0f;
-                try { r = std::stof(rStr); }
+                try { r = std::stof(inRating->GetText()); }
                 catch (...) { r = 0.0f; }
 
                 Status s = Status::ToRead;
                 if (*addStatusState == 1) s = Status::Reading;
                 if (*addStatusState == 2) s = Status::Read;
 
-                onAddBook(t, a, g, r, s, n);
-
-                // Clear & Hide
-                inTitle->Clear(); inAuthor->Clear(); inGenres->Clear();
-                inRating->Clear(); inNotes->Clear();
+                onAddBook(t, a, inGenres->GetText(), r, s, inNotes->GetText());
+                inTitle->Clear(); inAuthor->Clear(); inGenres->Clear(); inRating->Clear(); inNotes->Clear();
                 addPanel->isVisible = false;
             }
         }
     );
 
-    // Cancel Button
-    auto btnCancelAdd = std::make_shared<Button>(
-        Rectangle{ cx + 80, cy + startY + gap * 8, 100, 40 }, "Cancel",
+    auto btnCancelAdd = std::make_shared<Button>(Anchor::Center, Vector2{ 130, 240 }, Vector2{ 100, 40 }, "Cancel",
         [addPanel, inTitle, inAuthor, inGenres, inRating, inNotes]() {
-            inTitle->Clear(); inAuthor->Clear(); inGenres->Clear();
-            inRating->Clear(); inNotes->Clear();
+            inTitle->Clear(); inAuthor->Clear(); inGenres->Clear(); inRating->Clear(); inNotes->Clear();
             addPanel->isVisible = false;
         }
     );
 
-    addPanel->AddChild(inTitle);
-    addPanel->AddChild(inAuthor);
-    addPanel->AddChild(inGenres);
-    addPanel->AddChild(inRating);
-    addPanel->AddChild(inNotes);
-    addPanel->AddChild(btnAddStatus);
-    addPanel->AddChild(btnCreate);
-    addPanel->AddChild(btnCancelAdd);
+    addPanel->AddChild(inTitle); addPanel->AddChild(inAuthor); addPanel->AddChild(inGenres);
+    addPanel->AddChild(inRating); addPanel->AddChild(inNotes); addPanel->AddChild(btnAddStatus);
+    addPanel->AddChild(btnCreate); addPanel->AddChild(btnCancelAdd);
 
     // ============================================================
-    // 3. EDIT BOOK PANEL
+    // 3. EDIT BOOK PANEL (Uprostøed)
     // ============================================================
-    m_EditPanel = std::make_shared<Panel>(
-        Rectangle{ cx - panelW / 2, cy - panelH / 2, panelW, panelH }, "Edit Book Details"
-    );
+    m_EditPanel = std::make_shared<Panel>(Anchor::Center, Vector2{ 0, 0 }, Vector2{ 400, 550 }, "Edit Book Details");
     m_EditPanel->isVisible = false;
 
-    // Member Inputs
-    m_EditTitle = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY, inputW, inputH }, "Title");
-    m_EditAuthor = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap, inputW, inputH }, "Author");
-    m_EditGenres = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 2, inputW, inputH }, "Genres");
-    m_EditRating = std::make_shared<TextInput>(Rectangle{ cx + xOff, cy + startY + gap * 3, inputW, inputH }, "Rating");
-    m_EditNotes = std::make_shared<TextBox>(
-        Rectangle{ cx + xOff, cy + startY + gap * 4, inputW, 100 },
-        "Notes"
-    );
+    m_EditTitle = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -202.5f }, Vector2{ 360, 35 }, "Title");
+    m_EditAuthor = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -147.5f }, Vector2{ 360, 35 }, "Author");
+    m_EditGenres = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -92.5f }, Vector2{ 360, 35 }, "Genres");
+    m_EditRating = std::make_shared<TextInput>(Anchor::Center, Vector2{ 0, -37.5f }, Vector2{ 360, 35 }, "Rating");
+    m_EditNotes = std::make_shared<TextBox>(Anchor::Center, Vector2{ 0, 50.0f }, Vector2{ 360, 100 }, "Notes");
 
     m_EditStatusState = std::make_shared<int>(0);
-    m_EditStatusBtn = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 6 + 20, inputW, 40 }, "Status", []() {}
-    );
+    m_EditStatusBtn = std::make_shared<Button>(Anchor::Center, Vector2{ 0, 150.0f }, Vector2{ 360, 40 }, "Status", []() {});
 
     std::weak_ptr<Button> weakEditBtn = m_EditStatusBtn;
     auto editState = m_EditStatusState;
-
     m_EditStatusBtn->SetOnClick([editState, weakEditBtn]() {
         if (auto btn = weakEditBtn.lock()) {
             *editState = (*editState + 1) % 3;
@@ -572,99 +447,58 @@ void UIManager::BuildInterface(
         }
         });
 
-    auto btnUpdate = std::make_shared<Button>(
-        Rectangle{ cx + xOff, cy + startY + gap * 8, 100, 40 }, "Update",
+    auto btnUpdate = std::make_shared<Button>(Anchor::Center, Vector2{ -130, 240 }, Vector2{ 100, 40 }, "Update",
         [this, onEditBook, editState]() {
             if (m_EditTitle->GetText().empty()) return;
-
-            float r = 0.0f;
-            try { r = std::stof(m_EditRating->GetText()); }
+            float r = 0.0f; try { r = std::stof(m_EditRating->GetText()); }
             catch (...) {}
-
             Status s = Status::ToRead;
             if (*editState == 1) s = Status::Reading;
             if (*editState == 2) s = Status::Read;
-
-            onEditBook(
-                m_EditingBookId,
-                m_EditTitle->GetText(),
-                m_EditAuthor->GetText(),
-                m_EditGenres->GetText(),
-                r, s,
-                m_EditNotes->GetText()
-            );
-
+            onEditBook(m_EditingBookId, m_EditTitle->GetText(), m_EditAuthor->GetText(), m_EditGenres->GetText(), r, s, m_EditNotes->GetText());
             m_EditPanel->isVisible = false;
         }
     );
 
-    auto btnCancelEdit = std::make_shared<Button>(
-        Rectangle{ cx + 80, cy + startY + gap * 8, 100, 40 }, "Cancel",
+    auto btnCancelEdit = std::make_shared<Button>(Anchor::Center, Vector2{ 130, 240 }, Vector2{ 100, 40 }, "Cancel",
         [this]() { m_EditPanel->isVisible = false; }
     );
 
-    m_EditPanel->AddChild(m_EditTitle);
-    m_EditPanel->AddChild(m_EditAuthor);
-    m_EditPanel->AddChild(m_EditGenres);
-    m_EditPanel->AddChild(m_EditRating);
-    m_EditPanel->AddChild(m_EditNotes);
-    m_EditPanel->AddChild(m_EditStatusBtn);
-    m_EditPanel->AddChild(btnUpdate);
-    m_EditPanel->AddChild(btnCancelEdit);
+    m_EditPanel->AddChild(m_EditTitle); m_EditPanel->AddChild(m_EditAuthor); m_EditPanel->AddChild(m_EditGenres);
+    m_EditPanel->AddChild(m_EditRating); m_EditPanel->AddChild(m_EditNotes); m_EditPanel->AddChild(m_EditStatusBtn);
+    m_EditPanel->AddChild(btnUpdate); m_EditPanel->AddChild(btnCancelEdit);
 
     // ============================================================
-    // 4. LOTTERY / RANDOM PICKER PANEL
+    // 4. LOTTERY PANEL (Uprostøed)
     // ============================================================
-    // Create the Panel
-    m_LotteryPanel = std::make_shared<Panel>(
-        Rectangle{ cx - 200, cy - 150, 400, 350 }, "Next Read Lottery"
-    );
+    m_LotteryPanel = std::make_shared<Panel>(Anchor::Center, Vector2{ 0, 25 }, Vector2{ 400, 350 }, "Next Read Lottery");
     m_LotteryPanel->isVisible = false;
 
-    // Create Text Display for Animation/Result
-    m_LotteryText = std::make_shared<TextBox>(
-        Rectangle{ cx - 180, cy - 100, 360, 180 }, "..."
-    );
+    m_LotteryText = std::make_shared<TextBox>(Anchor::Center, Vector2{ 0, -10 }, Vector2{ 360, 180 }, "...");
     m_LotteryText->SetEditable(false);
 
-    m_LotteryAutoRead = std::make_shared<Checkbox>(
-        Rectangle{ cx - 180, cy + 90, 20, 20 }, // Position below text box
-        "Set status to 'Reading' automatically"
-    );
+    m_LotteryAutoRead = std::make_shared<Checkbox>(Anchor::Center, Vector2{ -170, 100 }, Vector2{ 20, 20 }, "Set status to 'Reading' automatically");
 
-    // Close Button (Hidden until winner is picked)
-    m_LotteryCloseBtn = std::make_shared<Button>(
-        Rectangle{ cx - 50, cy + 130, 100, 40 }, "Close!",
+    m_LotteryCloseBtn = std::make_shared<Button>(Anchor::Center, Vector2{ 0, 150 }, Vector2{ 100, 40 }, "Close!",
         [this]() { m_LotteryPanel->isVisible = false; }
     );
     m_LotteryCloseBtn->isVisible = false;
 
-    m_LotteryPanel->AddChild(m_LotteryText);
-    m_LotteryPanel->AddChild(m_LotteryAutoRead);
-    m_LotteryPanel->AddChild(m_LotteryCloseBtn);
+    m_LotteryPanel->AddChild(m_LotteryText); m_LotteryPanel->AddChild(m_LotteryAutoRead); m_LotteryPanel->AddChild(m_LotteryCloseBtn);
 
- 
-    // "Pick Random Read" 
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 660, 10, 150, 40 }, "Next Read",
+    // Pøidání tlaèítek pro spuštìní panelù (horní lišta)
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -595, 30 }, Vector2{ 150, 40 }, "Next Read",
         [this]() {
-            // Initialize Lottery State
-            m_LotteryPanel->isVisible = true;
-            m_IsLotteryRolling = true;
-            m_LotteryTimer = 2.0f; // Spin for 2 seconds
-            m_LotterySpeedTimer = 0.0f;
-            m_LotteryCloseBtn->isVisible = false;
-            m_LotteryText->SetText("Spinning...");
+            m_LotteryPanel->isVisible = true; m_IsLotteryRolling = true;
+            m_LotteryTimer = 2.0f; m_LotterySpeedTimer = 0.0f;
+            m_LotteryCloseBtn->isVisible = false; m_LotteryText->SetText("Spinning...");
         }
     ));
 
-    // "Add Book"
-    m_Widgets.push_back(std::make_shared<Button>(
-        Rectangle{ (float)m_ScreenWidth - 500, 10, 150, 40 }, "Add Book",
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -430, 30 }, Vector2{ 150, 40 }, "Add Book",
         [addPanel]() { addPanel->isVisible = true; }
     ));
 
-    // Panels 
     m_Widgets.push_back(addPanel);
     m_Widgets.push_back(m_EditPanel);
     m_Widgets.push_back(m_LotteryPanel);

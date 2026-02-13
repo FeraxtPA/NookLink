@@ -14,7 +14,7 @@ public:
     const Camera2D& getCamera() const { return m_Camera; }
 
     
-    
+    void updateScreenSize(Vector2 newScreenSize);
     
 
 private:

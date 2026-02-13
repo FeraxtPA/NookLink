@@ -9,7 +9,7 @@ public:
     bool isFocused = false;
     int maxLength = 50; 
 
-    TextInput(Rectangle r, std::string ph = "");
+    TextInput(Anchor anchor, Vector2 offset, Vector2 size, std::string ph = "");
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;

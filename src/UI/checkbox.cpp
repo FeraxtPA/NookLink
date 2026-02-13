@@ -1,15 +1,17 @@
 #include "checkbox.h"
 #include "../textRenderer.h"
 
-Checkbox::Checkbox(Rectangle r, std::string l, bool initial, std::function<void(bool)> onChangeCallback)
-    : Widget(r), label(l), checked(initial), onChange(onChangeCallback)
-{}
+Checkbox::Checkbox(Anchor anchor, Vector2 offset, Vector2 size, std::string l, bool initial, std::function<void(bool)> onChangeCallback)
+    : Widget(anchor, offset, size), label(l), checked(initial), onChange(onChangeCallback)
+{
+    OnWindowResize(GetScreenWidth(), GetScreenHeight());
+}
 
 void Checkbox::Update() {
     if (!isVisible) return;
 
     
-    Rectangle clickArea = bounds;
+    Rectangle clickArea = m_Bounds;
     clickArea.width += 200; // Allow clicking the text too
 
     if (CheckCollisionPointRec(GetMousePosition(), clickArea)) {
@@ -32,19 +34,19 @@ void Checkbox::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     
-    DrawRectangleRec(bounds, RAYWHITE);
+    DrawRectangleRec(m_Bounds, RAYWHITE);
 
   
     Color borderColor = isHovered ? DARKGRAY : LIGHTGRAY;
-    DrawRectangleLinesEx(bounds, 2, borderColor);
+    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
 
   
     if (checked) {
-        DrawRectangle((int)bounds.x + 4, (int)bounds.y + 4, (int)bounds.width - 8, (int)bounds.height - 8, DARKGRAY);
+        DrawRectangle((int)m_Bounds.x + 4, (int)m_Bounds.y + 4, (int)m_Bounds.width - 8, (int)m_Bounds.height - 8, DARKGRAY);
     }
 
   
     if (renderer) {
-        renderer->DrawSimpleText(label, { bounds.x + bounds.width + 10, bounds.y }, 20, BLACK);
+        renderer->DrawSimpleText(label, { m_Bounds.x + m_Bounds.width + 10, m_Bounds.y }, 20, BLACK);
     }
 }

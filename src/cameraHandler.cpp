@@ -30,3 +30,8 @@ void CameraHandler::update()
         if (m_Camera.zoom > m_MaxZoom) m_Camera.zoom = m_MaxZoom;
     }
 }
+
+void CameraHandler::updateScreenSize(Vector2 newScreenSize)
+{
+    m_Camera.offset = { newScreenSize.x / 2.0f, newScreenSize.y / 2.0f };
+}

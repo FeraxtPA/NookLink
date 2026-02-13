@@ -8,6 +8,55 @@ const std::string GraphManager::getGenreNameByNodeId(int nodeId) const {
     return opt.value_or("Unknown");
 }
 
+bool GraphManager::TryGrabNodeAt(Vector2 mousePos, bool isShiftPressed)
+{
+    for (auto& node : m_Nodes) {
+        
+        if (Vector2Distance(mousePos, node.position) <= node.radius) {
+            node.isDragged = true;
+
+            
+            if (isShiftPressed && node.type != NodeType::Genre) {
+                node.locked = true;
+            }
+
+            setDraggedNode(&node);
+            return true; 
+        }
+    }
+    return false;
+}
+
+void GraphManager::releaseDraggedNode()
+{
+    if(draggedNode) {
+		draggedNode->isDragged = false;
+		setDraggedNode(nullptr);
+	}
+}
+
+bool GraphManager::updateDraggedNodePosition(Vector2 mousePos)
+{
+    if(draggedNode) {
+		draggedNode->position = mousePos;
+		if (draggedNode->type == NodeType::Genre) {
+			updateGenrePosition(draggedNode->id, mousePos);
+		}
+		return true;
+	}
+}
+
+bool GraphManager::tryUnlockNodeAt(Vector2 mousePos)
+{
+    Node* node = getNodeAtPosition(mousePos);
+    if (node && node->locked) {
+        node->locked = false;
+        return true;
+
+    }
+    return false;
+}
+
 const std::optional<std::string> GraphManager::getGenreByNodeId(int nodeId) const {
     for (const auto& [name, info] : m_Genres) {
         if (info.nodeId == nodeId) return name;

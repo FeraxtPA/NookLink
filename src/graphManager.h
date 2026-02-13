@@ -84,6 +84,14 @@ public:
     void clearGenresAndConnections() { m_ConnectionManager.Clear(); }
 
     void updateConnections() { m_ConnectionManager.updateConnections(m_BookManager.getBooks()); }
+
+    bool TryGrabNodeAt(Vector2 mousePos, bool isShiftPressed);
+
+    void releaseDraggedNode();
+
+    bool updateDraggedNodePosition(Vector2 mousePos);
+
+    bool tryUnlockNodeAt(Vector2 mousePos);
 private:
     const BookManager& m_BookManager;
     ConnectionManager& m_ConnectionManager;

@@ -23,7 +23,7 @@ public:
     const float KEY_REPEAT_DELAY = 0.5f; 
     const float KEY_REPEAT_RATE = 0.03f; 
 
-    TextBox(Rectangle r, std::string ph = "");
+    TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph = "");
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;

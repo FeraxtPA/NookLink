@@ -153,8 +153,10 @@
     <ClCompile Include="src\bookManager.cpp" />
     <ClCompile Include="src\cameraHandler.cpp" />
     <ClCompile Include="src\connectionManager.cpp" />
+    <ClCompile Include="src\debugManager.cpp" />
     <ClCompile Include="src\graphLayout.cpp" />
     <ClCompile Include="src\graphManager.cpp" />
+    <ClCompile Include="src\inputHandler.cpp" />
     <ClCompile Include="src\nodeRenderer.cpp" />
     <ClCompile Include="src\NookLink.cpp" />
     <ClCompile Include="src\textRenderer.cpp" />
@@ -174,8 +176,10 @@
     <ClInclude Include="src\cameraHandler.h" />
     <ClInclude Include="src\colors.h" />
     <ClInclude Include="src\connectionManager.h" />
+    <ClInclude Include="src\debugManager.h" />
     <ClInclude Include="src\graphLayout.h" />
     <ClInclude Include="src\graphManager.h" />
+    <ClInclude Include="src\inputHandler.h" />
     <ClInclude Include="src\nodeRenderer.h" />
     <ClInclude Include="src\textRenderer.h" />
     <ClInclude Include="src\uiManager.h" />

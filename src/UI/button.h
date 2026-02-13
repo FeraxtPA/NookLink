@@ -5,9 +5,9 @@
 
 class Button : public Widget {
 public:
-    Button(Rectangle r, std::string t, std::function<void()> callback);
+    Button(Anchor anchor, Vector2 offset, Vector2 size, std::string t, std::function<void()> callback);
     void Update() override;
-    void Draw(TextRenderer* renderer) override; 
+    void Draw(TextRenderer* renderer) override;
     void SetText(const std::string& t) { text = t; }
     void SetOnClick(std::function<void()> callback) { onClick = callback; }
 
