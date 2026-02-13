@@ -68,6 +68,7 @@ void Application::Initialize()
     m_GraphManager = std::make_unique<GraphManager>(m_BookManager, m_ConnectionManager, m_CanvasSize, m_TextRenderer.get());
     m_CameraHandler = std::make_unique<CameraHandler>(m_ScreenSize, m_CanvasSize);
 
+    m_UIManager = std::make_unique<UIManager>(m_ScreenSize.x, m_ScreenSize.y);
 
     m_InputHandler = std::make_unique<InputHandler>(m_GraphManager.get(), m_BookManager, m_UIManager.get());
     m_DebugManager = std::make_unique<DebugManager>(m_BookManager, m_GraphManager.get());
@@ -189,12 +190,13 @@ void Application::Initialize()
     );
 
     //Needs to be initialized after font is loaded
-    m_UIManager = std::make_unique<UIManager>(m_ScreenSize.x, m_ScreenSize.y);
+   
 
     m_UIManager->BuildInterface(
 		[this]() { // onSave
 			std::cout << "Saving books to " << m_SaveFileName << "..." << std::endl;
 			m_BookManager.saveBooksToFile(m_SaveFileName.string());
+            m_UIManager->ShowNotification("Library Saved!");
 		},
         [this]() {
             const char* filters[] = { "*.json" };
@@ -220,6 +222,8 @@ void Application::Initialize()
                 SaveConfig();
 
                 std::cout << "Saved As: " << m_SaveFileName << std::endl;
+
+                m_UIManager->ShowNotification("Saved As: " + m_SaveFileName.filename().string());
             }
             else {
                 std::cout << "Save As cancelled." << std::endl;
@@ -232,6 +236,7 @@ void Application::Initialize()
 			m_GraphManager->initializePositions();
 			m_LayoutDirty = true;
             SaveConfig();
+            m_UIManager->ShowNotification("Library Loaded!");
           
            
 		},
@@ -275,6 +280,7 @@ void Application::Initialize()
             m_GraphManager->initializePositions();
             m_LayoutDirty = true;
             m_SettleIterations = 0;
+            m_UIManager->ShowNotification("Book '" + title + "' added!");
         },
         //Edit book
         [this](int id, std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
@@ -304,6 +310,17 @@ void Application::Initialize()
                 m_GraphManager->updateConnections();
                 //m_LayoutDirty = true;
                 //m_SettleIterations = 0;
+                m_UIManager->ShowNotification("Book '" + title + "' updated!");
+            }
+        },
+        [this]() {
+            if (m_GraphManager) {
+                if (m_GraphManager->getLayoutMode() == LayoutMode::Physics) {
+                    m_GraphManager->setLayoutMode(LayoutMode::Grid);
+                }
+                else {
+                    m_GraphManager->setLayoutMode(LayoutMode::Physics);
+                }
             }
         }
     );
@@ -473,22 +490,20 @@ void Application::Update()
                 IsKeyPressed(KEY_B);
         }
 
-        // Update layout if dirty
         if (m_LayoutDirty) {
-            m_UpdateInterval -= GetFrameTime();
-            if (m_UpdateInterval <= 0.0f) {
-
-
-                m_GraphManager->resolveNodeOverlaps(25.0f);
-                m_UpdateInterval = m_UpdateIntervalInitial;
-                m_SettleIterations++;
-
-                if (m_SettleIterations > m_MaxSettleIterations) {
-                    m_LayoutDirty = false;
-                    m_SettleIterations = 0;
-                }
-            }
+            if (m_GraphManager) m_GraphManager->wakeUpPhysics();
+            m_LayoutDirty = false;
         }
+
+        if (m_GraphManager && m_AppState == AppState::Editor) {
+            m_GraphManager->updatePhysics(1.0f);
+        }
+
+        m_UIManager->Update(
+            worldMousePos,
+            GetMousePosition(),
+            m_BookManager,
+            m_GraphManager.get(), m_TextRenderer.get());
 
         if (!m_UIManager->IsMouseOverUI())
         {
@@ -497,12 +512,8 @@ void Application::Update()
 
             m_DebugManager->HandleDebugInputs(m_LayoutDirty);
 
-            // Update UI
-            m_UIManager->Update(
-                worldMousePos,
-                GetMousePosition(),
-                m_BookManager,
-                m_GraphManager.get(), m_TextRenderer.get());
+         
+           
         }
     }
 }

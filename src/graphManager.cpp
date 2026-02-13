@@ -75,15 +75,19 @@ Node* GraphManager::getNodeAtPosition(Vector2 mousePos)
     return nullptr;
 }
 
-void GraphManager::resolveNodeOverlaps(float padding) {
+void GraphManager::updatePhysics(float dt) {
+
+    if (!m_IsPhysicsActive) return;
 
 
-   
-
-    m_GraphLayout.resolveNodeOverlaps(padding, m_Nodes);
+    if (m_LayoutMode == LayoutMode::Grid) {
+        m_IsPhysicsActive = m_GraphLayout.updateLerp(m_Nodes);
+        return;
+    }
 
     std::unordered_map<int, std::vector<int>> bookToGenreMap;
 
+    // Vytvoøíme si mapování (Kniha -> Její žánry)
     for (const auto& book : m_BookManager.getBooks()) {
         std::vector<int> connectedGenreNodeIds;
         for (const auto& genreStr : book.getGenres()) {
@@ -95,16 +99,10 @@ void GraphManager::resolveNodeOverlaps(float padding) {
         bookToGenreMap[book.getId()] = connectedGenreNodeIds;
     }
 
-    std::unordered_map<int, int> genreToBookCount;
-    for (const auto& [bookId, genreIds] : bookToGenreMap) {
-        for (int genreId : genreIds) {
-            genreToBookCount[genreId]++;
-        }
-    }
+    Vector2 centerPos = { m_CanvasSize.x / 2.0f, m_CanvasSize.y / 2.0f };
 
-    m_GraphLayout.applySpringConstraints(m_Nodes, bookToGenreMap, genreToBookCount, 750.0f, 0.5f);
-
-  
+    // Zavoláme naši novou výpoèetní fyziku z GraphLayoutu
+    m_IsPhysicsActive = m_GraphLayout.updatePhysics(m_Nodes, bookToGenreMap, centerPos, dt);
 }
 
 
@@ -559,6 +557,20 @@ void GraphManager::updateGenrePosition(int nodeId, Vector2 newPos) {
         }
     }
    
+}
+
+void GraphManager::setLayoutMode(LayoutMode mode)
+{
+    m_LayoutMode = mode;
+
+    if (m_LayoutMode == LayoutMode::Grid) {
+        Vector2 centerPos = { m_CanvasSize.x / 2.0f, m_CanvasSize.y / 2.0f };
+        m_GraphLayout.calculateGridLayout(m_Nodes, centerPos);
+        m_IsPhysicsActive = true; // Probudíme graf, aby bubliny mohly odletìt do møížky
+    }
+    else {
+        wakeUpPhysics(); // Probudíme fyziku, aby se chaos mohl rozjet nanovo
+    }
 }
 
 

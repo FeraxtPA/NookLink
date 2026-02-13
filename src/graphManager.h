@@ -16,6 +16,13 @@
 #include <optional>
 #include <set>
 
+
+enum class LayoutMode
+{
+    Physics,
+    Grid
+};
+
 class GraphManager {
 public:
     GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize, TextRenderer* tr);
@@ -31,6 +38,10 @@ public:
     bool isNodeVisible(const Node& node, const Rectangle& viewRect);
 
     void updateGenrePosition(int nodeId, Vector2 newPos);
+
+
+    void setLayoutMode(LayoutMode mode);
+    LayoutMode getLayoutMode() const { return m_LayoutMode; }
 
     std::vector<std::string> getAllGenreNames() const {
         std::vector<std::string> names;
@@ -76,8 +87,10 @@ public:
     Node* getDraggedNode() { return draggedNode; }
     void setDraggedNode(Node* node) { draggedNode = node; }
 
-    void resolveNodeOverlaps(float padding = 10.0f);
- 
+    void updatePhysics(float dt);
+    
+    void wakeUpPhysics() { m_IsPhysicsActive = true; }
+
     Node* getNodeAtPosition(Vector2 mousePos);
     const std::string getGenreNameByNodeId(int nodeId) const; 
 
@@ -110,6 +123,9 @@ private:
     std::set<std::string> m_HiddenGenres;
 
     std::string m_SearchQuery; 
+
+    bool m_IsPhysicsActive = true;
+    LayoutMode m_LayoutMode = LayoutMode::Physics;
 
     void resetNodeState();
 

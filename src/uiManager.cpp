@@ -56,6 +56,11 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
     m_LastMousePos = mousePos;
     Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
 
+    //Notification timer
+    if (m_NotificationTimer > 0.0f) {
+        m_NotificationTimer -= GetFrameTime();
+    }
+
     // 1. Graph Interaction
     if (graphRenderer != nullptr) {
         Node* newlyHovered = graphRenderer->getNodeAtPosition(worldMousePos);
@@ -297,7 +302,11 @@ void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookMa
     if (!IsMouseOverUI()) {
         DrawTooltip(mousePos, textRenderer);
     }
+
+    DrawNotification(textRenderer);
 }
+
+
 
 void UIManager::DrawHelpText(TextRenderer* renderer) const
 {
@@ -325,6 +334,42 @@ void UIManager::DrawTooltip(Vector2 mousePos, TextRenderer* renderer) const
     }
 }
 
+void UIManager::ShowNotification(const std::string& message, float duration)
+{
+    m_NotificationText = message;
+    m_NotificationTimer = duration;
+}
+
+void UIManager::DrawNotification(TextRenderer* textRenderer) const
+{
+    if (m_NotificationTimer <= 0.0f || !textRenderer) return;
+
+    // Vypoèítáme prùhlednost (Alpha). 
+    // Pokud zbývá ménì než 0.5 sekundy, zaène plynule mizet.
+    float alpha = 1.0f;
+    if (m_NotificationTimer < 0.5f) {
+        alpha = m_NotificationTimer / 0.5f;
+    }
+
+    // Nastavení rozmìrù
+    int fontSize = 20;
+    float textWidth = textRenderer->Measure(m_NotificationText, fontSize);
+    float boxWidth = textWidth + 40; // 20px padding z každé strany
+    float boxHeight = 50;
+
+    // Pozice: Pravý dolní roh s odsazením 20px
+    float x = m_ScreenWidth - boxWidth - 20;
+    float y = m_ScreenHeight - boxHeight - 20;
+
+    // Barvy s aplikovanou prùhledností (Fade)
+    Color boxColor = Fade(DARKGRAY, alpha * 0.9f);
+    Color textColor = Fade(RAYWHITE, alpha);
+
+    // Vykreslení pozadí a textu
+    DrawRectangleRounded({ x, y, boxWidth, boxHeight }, 0.3f, 10, boxColor);
+    textRenderer->DrawSimpleText(m_NotificationText, { x + 20, y + 15 }, fontSize, textColor);
+}
+
 bool UIManager::IsMouseOverUI() const {
     for (const auto& w : m_Widgets) {
         if (w->isVisible && w->isHovered) return true;
@@ -338,7 +383,8 @@ void UIManager::BuildInterface(
     std::function<void()> onLoad,
     std::function<void()> onBackToMenu,
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
-    std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook)
+    std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook,
+    std::function<void()> onToggleLayout)
 {
     // ============================================================
     // 1. HLAVNÍ UI (Tlaèítka nahoøe a dole)
@@ -406,6 +452,7 @@ void UIManager::BuildInterface(
                 onAddBook(t, a, inGenres->GetText(), r, s, inNotes->GetText());
                 inTitle->Clear(); inAuthor->Clear(); inGenres->Clear(); inRating->Clear(); inNotes->Clear();
                 addPanel->isVisible = false;
+                
             }
         }
     );
@@ -497,6 +544,11 @@ void UIManager::BuildInterface(
 
     m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -430, 30 }, Vector2{ 150, 40 }, "Add Book",
         [addPanel]() { addPanel->isVisible = true; }
+    ));
+
+    m_Widgets.push_back(std::make_shared<Button>(
+        Anchor::TopLeft, Vector2{ 800, 30 }, Vector2{ 150, 40 }, "Toggle Layout",
+        onToggleLayout // Pøedáme funkci, kterou získáme z aplikace
     ));
 
     m_Widgets.push_back(addPanel);

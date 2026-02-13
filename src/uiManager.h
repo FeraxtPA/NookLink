@@ -29,13 +29,21 @@ public:
         std::function<void()> onSaveAs,
         std::function<void()> onLoad,
         std::function<void()> onBackToMenu,
-        std::function<void(std::string title, std::string author, std::string genres, float rating, Status status, std::string notes)> onAddBook,
-        std::function<void(int id, std::string t, std::string a, std::string g, float r, Status s, std::string n)> onEditBook);
+        std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
+        std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook,
+        std::function<void()> onToggleLayout 
+    );
 
     void OpenEditPanel(Book* book);
 
     void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer);
     void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const;
+
+
+    void ShowNotification(const std::string& message, float duration = 2.0f);
+
+  
+
 
     void OnWindowResize(int width, int height) {
         m_ScreenWidth = width;
@@ -78,6 +86,8 @@ private:
     int m_LotteryWinnerId = -1;
     bool m_LastLotteryCheckState = false;
 
+    std::string m_NotificationText{ "" };
+    float m_NotificationTimer = 0.0f;
   
     std::shared_ptr<TextInput> m_SearchBar;
    
@@ -93,4 +103,5 @@ private:
     void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer);
     void DrawHelpText(TextRenderer* renderer) const;
     void DrawTooltip(Vector2 mousePos, TextRenderer* renderer) const;
+    void DrawNotification(TextRenderer* textRenderer) const;
 };

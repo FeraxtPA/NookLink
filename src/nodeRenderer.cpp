@@ -30,10 +30,41 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
         Color nodeColor = Fade(baseColor, alpha);
         Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
 
+        // 1. Vykreslíme samotné pozadí uzlu (plný kruh)
         DrawCircleV(node.position, node.radius, nodeColor);
 
-        if (zoom >= 0.4f && m_TextRenderer) {
+        // ==========================================
+        // 2. NOVÉ: Vizuální okraje podle Statusu
+        // ==========================================
+        float borderThickness = 0.0f;
+        Color borderColor = BLANK;
 
+        if (book->getStatus() == Status::Reading) {
+            // Pulzující efekt (funkce sin vytváøí plynulou vlnu)
+            float pulse = (sin(GetTime() * 2.0f) + 1.0f) / 2.0f; // pulse je vždy od 0.0 do 1.0
+            borderThickness = 3.0f + (pulse * 5.0f); // Tlouška neustále "dýchá" mezi 3 a 8
+
+            // Svìtle krémová barva, která jemnì pulzuje i svou prùhledností
+            borderColor = Fade(NookCol::TEXT_DEFAULT, alpha * (0.3f + pulse * 0.7f));
+        }
+        else if (book->getStatus() == Status::Read) {
+            // Výrazný zlatavý okraj pro pøeètené knihy
+            borderThickness = 4.0f;
+            borderColor = Fade(NookCol::POPUP_BORDER, alpha);
+        }
+        else { // Status::ToRead
+            // Jemný, šedý okraj pro knihy èekající na pøeètení
+            borderThickness = 2.0f;
+            borderColor = Fade(NookCol::EDGE, alpha);
+        }
+
+        // Vykreslíme samotný prstenec (okraj) kolem knihy
+        DrawRing(node.position, node.radius, node.radius + borderThickness, 0, 360, 36, borderColor);
+        // ==========================================
+
+
+        // 3. Vykreslení textu knihy
+        if (zoom >= 0.4f && m_TextRenderer) {
             float dynamicFontSize = BASE_FONT_SIZE / zoom;
             if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
 
@@ -42,10 +73,9 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
                 node.position,
                 node.radius * 1.8f, // Max Width = 90%
                 dynamicFontSize,
-                textColor 
+                textColor
             );
         }
-
     }
     else if (node.type == NodeType::Genre) {
         auto genreNameOpt = findGenreByNodeId(genres, node.id);
