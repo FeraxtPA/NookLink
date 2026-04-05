@@ -44,4 +44,13 @@ void ConnectionManager::removeEdgesConnectedToNode(int nodeId)
     );
 }
 
+int ConnectionManager::getConnectedBooksCount(int genreNodeId) const {
+    int counter = 0;
+    for (const auto& edge : m_Edges) { 
+        if (edge.type == EdgeType::BookToGenre && edge.toId == genreNodeId) {
+            counter++;
+        }
+    }
+    return counter;
+}
 

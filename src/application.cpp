@@ -97,12 +97,18 @@ void Application::Initialize()
             // Case 2: Load from the dynamic m_SaveFileName
             if (fs::exists(m_SaveFileName)) {
                 std::cout << "Loading " << m_SaveFileName << "..." << std::endl;
-                m_BookManager.loadBooksFromFile(m_SaveFileName.string());
 
+                // 1. Naèteme knihy i pozice do promìnné
+                auto loadedPositions = m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+
+                // 2. Vyèistíme a inicializujeme graf
                 m_GraphManager->clearGenresAndConnections();
                 m_GraphManager->initializePositions();
-                m_LayoutDirty = true;
 
+                // 3. APLIKUJEME POZICE (aby uzly nevystøelily)
+                m_GraphManager->applyLoadedPositions(loadedPositions);
+
+                m_LayoutDirty = true;
                 m_AppState = AppState::Editor;
             }
         }
@@ -166,15 +172,19 @@ void Application::Initialize()
 
                 // 4. Perform the Load
                 if (fs::exists(m_SaveFileName)) {
-                    // Pass generic string to your loader
-                    m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+                    // 1. Naèteme knihy i pozice
+                    auto loadedPositions = m_BookManager.loadBooksFromFile(m_SaveFileName.string());
 
                     SaveConfig();
 
+                    // 2. Vyèistíme a inicializujeme graf
                     m_GraphManager->clearGenresAndConnections();
                     m_GraphManager->initializePositions();
-                    m_LayoutDirty = true;
 
+                    // 3. APLIKUJEME POZICE
+                    m_GraphManager->applyLoadedPositions(loadedPositions);
+
+                    m_LayoutDirty = true;
                     m_AppState = AppState::Editor;
                 }
                 else {
@@ -193,11 +203,14 @@ void Application::Initialize()
    
 
     m_UIManager->BuildInterface(
-		[this]() { // onSave
-			std::cout << "Saving books to " << m_SaveFileName << "..." << std::endl;
-			m_BookManager.saveBooksToFile(m_SaveFileName.string());
+        [this]() { // onSave
+            std::cout << "Saving books to " << m_SaveFileName << "..." << std::endl;
+            // Nejdøív vytáhneme pozice z grafu, pak je pošleme do bookManageru
+            auto currentPositions = m_GraphManager->exportPositions();
+            m_BookManager.saveBooksToFile(m_SaveFileName.string(), currentPositions);
             m_UIManager->ShowNotification("Library Saved!");
-		},
+            m_HasUnsavedChanges = false;
+        },
         [this]() {
             const char* filters[] = { "*.json" };
 
@@ -216,30 +229,38 @@ void Application::Initialize()
             );
 
             if (path) {
-                m_SaveFileName = path; // Update the app's current file path
-                m_BookManager.saveBooksToFile(m_SaveFileName.string()); // Save immediately
-
+                m_SaveFileName = path;
+                auto currentPositions = m_GraphManager->exportPositions();
+                m_BookManager.saveBooksToFile(m_SaveFileName.string(), currentPositions);
                 SaveConfig();
 
                 std::cout << "Saved As: " << m_SaveFileName << std::endl;
 
                 m_UIManager->ShowNotification("Saved As: " + m_SaveFileName.filename().string());
+                m_HasUnsavedChanges = false;
             }
             else {
                 std::cout << "Save As cancelled." << std::endl;
             }
         },
-		[this]() { // onLoad
-			std::cout << "Loading books from " << m_SaveFileName << "..." << std::endl;
-			m_BookManager.loadBooksFromFile(m_SaveFileName.string());
-			m_GraphManager->clearGenresAndConnections();
-			m_GraphManager->initializePositions();
-			m_LayoutDirty = true;
+        [this]() { // onLoad
+            std::cout << "Loading books from " << m_SaveFileName << "..." << std::endl;
+
+            // 1. Naèteme knihy i pozice
+            auto loadedPositions = m_BookManager.loadBooksFromFile(m_SaveFileName.string());
+
+            // 2. Provedeme standardní èistku grafu
+            m_GraphManager->clearGenresAndConnections();
+            m_GraphManager->initializePositions();
+
+            // 3. Aplikujeme staré pozice!
+            m_GraphManager->applyLoadedPositions(loadedPositions);
+
+            m_LayoutDirty = true;
             SaveConfig();
             m_UIManager->ShowNotification("Library Loaded!");
-          
-           
-		},
+            m_HasUnsavedChanges = false;
+        },
         [this]() { 
             m_AppState = AppState::StartScreen;
             if (m_BtnContinue) {
@@ -281,6 +302,7 @@ void Application::Initialize()
             m_LayoutDirty = true;
             m_SettleIterations = 0;
             m_UIManager->ShowNotification("Book '" + title + "' added!");
+            m_HasUnsavedChanges = true;
         },
         //Edit book
         [this](int id, std::string title, std::string author, std::string genreStr, float rating, Status status, std::string notes) {
@@ -311,6 +333,7 @@ void Application::Initialize()
                 //m_LayoutDirty = true;
                 //m_SettleIterations = 0;
                 m_UIManager->ShowNotification("Book '" + title + "' updated!");
+                m_HasUnsavedChanges = true;
             }
         },
         [this]() {
@@ -322,7 +345,14 @@ void Application::Initialize()
                     m_GraphManager->setLayoutMode(LayoutMode::Physics);
                 }
             }
+        },
+        [this](Status s) {
+			if (m_GraphManager) {
+				m_GraphManager->toggleStatusVisibility(s);
+			}
+            
         }
+    
     );
 	
     
@@ -331,20 +361,62 @@ void Application::Initialize()
 
 void Application::Run()
 {
-    while (!WindowShouldClose())
+    bool exitApp = false;
+
+    while (!exitApp)
     {
-        Update();
-        Draw();
+       
+        if (WindowShouldClose())
+        {
+           
+            if (!m_BookManager.getBooks().empty()) {
+             
+                if (m_HasUnsavedChanges)
+                {
+                    int result = tinyfd_messageBox(
+                        "Exit NookLink",
+                        "Do you want to save your library before exiting?",
+                        "yesnocancel",
+                        "question",
+                        1
+                    );
+
+                
+               
+                if (result == 1) {
+                 
+                    std::cout << "Saving session to " << m_SaveFileName << "..." << std::endl;
+                    m_BookManager.saveBooksToFile(m_SaveFileName.string());
+                    exitApp = true;
+                }
+                else if (result == 2) {
+                   
+                    exitApp = true;
+                }
+                else if (result == 0) {
+                  
+                    exitApp = false;
+                }
+                }
+                else
+                {
+					exitApp = true;
+				}
+            }
+            else {
+               
+                exitApp = true;
+            }
+        }
+        if (!exitApp)
+        {
+            Update();
+            Draw();
+        }
     }
 }
-
 void Application::Shutdown()
 {
-    if (!m_BookManager.getBooks().empty()) {
-        std::cout << "Auto-saving session to " << m_SaveFileName << "..." << std::endl;
-        m_BookManager.saveBooksToFile(m_SaveFileName.string());
-    }
-
 	CloseWindow();
 }
 
@@ -505,15 +577,11 @@ void Application::Update()
             m_BookManager,
             m_GraphManager.get(), m_TextRenderer.get());
 
-        if (!m_UIManager->IsMouseOverUI())
+        if (!m_UIManager->IsBlockingGraphInteraction())
         {
             m_CameraHandler->update();
-            m_InputHandler->ProcessInputs(worldMousePos, GetTime(), m_LayoutDirty);
-
+            m_InputHandler->ProcessInputs(worldMousePos, GetTime(), m_LayoutDirty, m_HasUnsavedChanges);
             m_DebugManager->HandleDebugInputs(m_LayoutDirty);
-
-         
-           
         }
     }
 }

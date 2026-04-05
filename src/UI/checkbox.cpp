@@ -19,9 +19,13 @@ void Checkbox::Update() {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            checked = !checked;
-            if (onChange) {
-                onChange(checked);
+
+            // Pokud od posledního pøepnutí ubìhlo více než 0.2 sekundy
+            if (GetTime() - m_LastClickTime > 0.2) {
+                checked = !checked;                  // Pøepneme stav
+                if (onChange) onChange(checked); // Zavoláme akci
+
+                m_LastClickTime = GetTime();         // Zapíšeme si èas
             }
         }
     }

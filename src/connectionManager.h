@@ -27,6 +27,8 @@ public:
 
     const std::unordered_map<std::string, int>& getGenreIdMap() const { return m_GenreIdMap; }
 
+    int getConnectedBooksCount(int genreNodeId) const;
+
 
     //Need to reset all data when loading a new library(åoading a file)
     void Clear() {

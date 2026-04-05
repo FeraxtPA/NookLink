@@ -16,11 +16,18 @@
 #include <optional>
 #include <set>
 
+#include "searchFilter.h"
 
 enum class LayoutMode
 {
     Physics,
     Grid
+};
+
+struct GraphConfig {
+    static constexpr float BaseNodeRadius = 100.0f;
+    static constexpr float GenreRadiusMultiplier = 1.5f;
+    static constexpr float BookSpawnOffset = 250.0f;
 };
 
 class GraphManager {
@@ -33,7 +40,7 @@ public:
 
     const Rectangle getCameraViewRect(const Camera2D& camera, Vector2 screenDimensions);
 
-    const std::optional<std::string> getGenreByNodeId(int nodeId) const;
+    std::optional<std::string> getGenreByNodeId(int nodeId) const;
 
     bool isNodeVisible(const Node& node, const Rectangle& viewRect);
 
@@ -58,7 +65,8 @@ public:
         return m_HiddenGenres.find(g) == m_HiddenGenres.end();
     }
 
-    void setSearchQuery(std::string q) { m_SearchQuery = q; }
+    void setSearchQuery(const std::string& q) { m_SearchFilter.setQuery(q); }
+
     void drawNodes(float zoom, const Rectangle& viewRect);
 
     void toggleStatusVisibility(Status status) {
@@ -83,16 +91,20 @@ public:
 
     int getNumOfConnectedBooks(int genreNodeId) const;
 
-    std::vector<Node>& getNodes()  { return m_Nodes; }
-    Node* getDraggedNode() { return draggedNode; }
-    void setDraggedNode(Node* node) { draggedNode = node; }
+    const std::vector<Node>& getNodes() const { return m_Nodes; }
+
+    Node* getNodeById(int id);
+
+    Node* getDraggedNode() { return getNodeById(m_DraggedNodeId); }
+    void setDraggedNode(int id) { m_DraggedNodeId = id; }
 
     void updatePhysics(float dt);
     
-    void wakeUpPhysics() { m_IsPhysicsActive = true; }
+    void wakeUpPhysics() { m_IsPhysicsActive = true; m_GraphLayout.wakeUp(); }
 
     Node* getNodeAtPosition(Vector2 mousePos);
-    const std::string getGenreNameByNodeId(int nodeId) const; 
+
+    std::string getGenreNameByNodeId(int nodeId) const;
 
     void clearGenresAndConnections() { m_ConnectionManager.Clear(); }
 
@@ -105,6 +117,9 @@ public:
     bool updateDraggedNodePosition(Vector2 mousePos);
 
     bool tryUnlockNodeAt(Vector2 mousePos);
+
+    std::unordered_map<int, NodePosition> exportPositions() const;
+    void applyLoadedPositions(const std::unordered_map<int, NodePosition>& loadedPos);
 private:
     const BookManager& m_BookManager;
     ConnectionManager& m_ConnectionManager;
@@ -113,16 +128,17 @@ private:
     GraphLayout m_GraphLayout;
     
     std::unordered_map<std::string, GenreInfo> m_Genres;
-    std::unordered_map<int, Node*> m_NodeIdMap;
+    
 
     int m_GenreIdBase = -1;
-    Node* draggedNode = nullptr;
+    int m_DraggedNodeId = -1; 
+
     Vector2 m_CanvasSize;
 
     std::set<Status> m_HiddenStatuses; 
     std::set<std::string> m_HiddenGenres;
 
-    std::string m_SearchQuery; 
+    SearchFilter m_SearchFilter;
 
     bool m_IsPhysicsActive = true;
     LayoutMode m_LayoutMode = LayoutMode::Physics;

@@ -79,74 +79,68 @@ const Book& BookManager::getRandomBookToBeRead()
 	return toBeReadBooks[randomIndex];
 }
 
-void BookManager::saveBooksToFile(const std::string& filename) const
+void BookManager::saveBooksToFile(const std::string& filename, const std::unordered_map<int, NodePosition>& positions) const
 {
-
 	nlohmann::json j;
 
-
 	j["books"] = m_Books;
-
-	//Save last id for adding new books later
 	j["next_id"] = m_NextId;
 
-	
+	// NOVÉ: Uložení pozic bokem
+	nlohmann::json posJson = nlohmann::json::object();
+	for (const auto& [id, pos] : positions) {
+		// Ukládáme jako "ID": { "x": 100, "y": 200 }
+		posJson[std::to_string(id)] = { {"x", pos.x}, {"y", pos.y}, {"locked", pos.locked} };
+	}
+	j["positions"] = posJson;
+
 	std::ofstream o(filename);
 	if (!o.is_open()) {
 		std::cerr << "Error: Could not open file for writing: " << filename << std::endl;
 		return;
 	}
 
-
 	o << j.dump(4) << std::endl;
-	std::cout << "Books successfully saved to " << filename << std::endl;
+	std::cout << "Books and positions successfully saved to " << filename << std::endl;
 }
-
-void BookManager::loadBooksFromFile(const std::string& filename)
+std::unordered_map<int, NodePosition> BookManager::loadBooksFromFile(const std::string& filename)
 {
-	
-	std::ifstream i(filename);
-	if (!i.is_open()) {
-		std::cerr << "Error: Could not open file for reading: " << filename << std::endl;
-		return;
-	}
+    std::unordered_map<int, NodePosition> loadedPositions;
+    std::ifstream i(filename);
+    
+    if (!i.is_open()) {
+        std::cerr << "Error: Could not open file for reading: " << filename << std::endl;
+        return loadedPositions;
+    }
 
-	nlohmann::json j;
+    nlohmann::json j;
+    try {
+        j = nlohmann::json::parse(i);
+    }
+    catch (nlohmann::json::parse_error& e) {
+        std::cerr << "Error: Failed to parse JSON file: " << e.what() << std::endl;
+        return loadedPositions;
+    }
 
-	try {
-		j = nlohmann::json::parse(i);
-	}
-	catch (nlohmann::json::parse_error& e) {
-		std::cerr << "Error: Failed to parse JSON file: " << e.what() << std::endl;
-		return;
-	}
+    try {
+        // Pùvodní naèítání knih
+        m_Books = j.value("books", std::vector<Book>());
+        m_NextId = j.value("next_id", 1);
 
-	try {
-		
-	    //Clear books before loading from save
-		m_Books.clear();
-		
+        // NOVÉ: Naètení pozic
+        if (j.contains("positions")) {
+            for (auto& el : j["positions"].items()) {
+                int id = std::stoi(el.key());
+                float x = el.value()["x"];
+                float y = el.value()["y"];
+				bool locked = el.value().value("locked", false);
+                loadedPositions[id] = { x, y , locked};
+            }
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error reconstructing books: " << e.what() << std::endl;
+    }
 
-
-		if (j.contains("books") && j.at("books").is_array())
-		{
-		
-			for (const auto& book_json : j.at("books"))
-			{
-			
-				m_Books.push_back(book_json.get<Book>());
-			}
-		}
-		
-		// Needed if any new book will be added, so that the id continues from where left off
-		m_NextId = j.at("next_id").get<int>();
-
-	
-	}
-	catch (nlohmann::json::exception& e) {
-		std::cerr << "Error: JSON data is malformed: " << e.what() << std::endl;
-		m_Books.clear();
-		m_NextId = 1;
-	}
+    return loadedPositions; // Vrátíme pozice do hlavní aplikace
 }
-

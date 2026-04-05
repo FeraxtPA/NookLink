@@ -9,10 +9,10 @@ class InputHandler
 public:
 	InputHandler(GraphManager* graphManager, BookManager& bookManager, UIManager* uiManager);
 
-	void ProcessInputs(Vector2 worldMousePos, double currentTime, bool& layoutDirty);
+	void ProcessInputs(Vector2 worldMousePos, double currentTime, bool& layoutDirty, bool& hasUnsavedChanged);
 
 private:
-	void HandleMouseInteraction(Vector2 worldMousePos, double currentTime, bool& layoutDirty);
+	void HandleMouseInteraction(Vector2 worldMousePos, double currentTime, bool& layoutDirty, bool& hasUnsavedChanged);
 	void HandleKeyboardShortcuts(bool& layoutDirty);
 
 	GraphManager* m_GraphManager;

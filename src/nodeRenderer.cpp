@@ -167,6 +167,7 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
 
         if (!fromNode || !toNode) continue;
 
+        if (!fromNode->visible || !toNode->visible) continue;
 
         if (!isNodeVisible(from, viewRect, fromRadius) ||
             !isNodeVisible(to, viewRect, toRadius))

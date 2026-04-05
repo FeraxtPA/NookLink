@@ -159,11 +159,14 @@
     <ClCompile Include="src\inputHandler.cpp" />
     <ClCompile Include="src\nodeRenderer.cpp" />
     <ClCompile Include="src\NookLink.cpp" />
+    <ClCompile Include="src\searchFilter.cpp" />
     <ClCompile Include="src\textRenderer.cpp" />
     <ClCompile Include="src\uiManager.cpp" />
     <ClCompile Include="src\UI\button.cpp" />
     <ClCompile Include="src\UI\checkbox.cpp" />
+    <ClCompile Include="src\UI\label.cpp" />
     <ClCompile Include="src\UI\panel.cpp" />
+    <ClCompile Include="src\UI\slider.cpp" />
     <ClCompile Include="src\UI\textBox.cpp" />
     <ClCompile Include="src\UI\textInput.cpp" />
   </ItemGroup>
@@ -181,11 +184,14 @@
     <ClInclude Include="src\graphManager.h" />
     <ClInclude Include="src\inputHandler.h" />
     <ClInclude Include="src\nodeRenderer.h" />
+    <ClInclude Include="src\searchFilter.h" />
     <ClInclude Include="src\textRenderer.h" />
     <ClInclude Include="src\uiManager.h" />
     <ClInclude Include="src\UI\button.h" />
     <ClInclude Include="src\UI\checkbox.h" />
+    <ClInclude Include="src\UI\label.h" />
     <ClInclude Include="src\UI\panel.h" />
+    <ClInclude Include="src\UI\slider.h" />
     <ClInclude Include="src\UI\textBox.h" />
     <ClInclude Include="src\UI\textInput.h" />
     <ClInclude Include="src\UI\widget.h" />

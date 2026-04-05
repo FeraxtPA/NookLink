@@ -15,6 +15,35 @@ UIManager::UIManager(int screenWidth, int screenHeight)
 
 UIManager::~UIManager() {}
 
+void UIManager::OpenBookDetails(Book* book)
+{
+    if (!book || !m_BookDetailsPanel) return;
+
+    m_CurrentDetailsBook = book;
+
+    // Pøíprava žánrù (slouèení do stringu)
+    std::string genreStr = "Genres: ";
+    const auto& genres = book->getGenres();
+    for (size_t i = 0; i < genres.size(); ++i) {
+        genreStr += genres[i];
+        if (i < genres.size() - 1) genreStr += ", ";
+    }
+
+    // Slepíme všechno do jednoho obrovského textu!
+    // Díky \n\n bude mezi každou položkou hezký prázdný øádek.
+    std::string fullText =
+        "Title: " + book->getTitle() + "\n\n" +
+        "Author: " + book->getAuthor() + "\n\n" +
+        std::format("Rating: {:.1f} / 5.0\n\n", book->getRating()) +
+        genreStr + "\n\n" +
+        "Notes:\n" + book->getNotes();
+
+    // Pošleme to našemu chytrému word-wrap Labelu
+    m_DetailsText->SetText(fullText);
+
+    m_BookDetailsPanel->isVisible = true;
+}
+
 void UIManager::OpenEditPanel(Book* book)
 {
     if (!book || !m_EditPanel) return;
@@ -53,6 +82,9 @@ MouseCursor Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
 
 void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer)
 {
+
+
+    
     m_LastMousePos = mousePos;
     Widget::DesiredCursor = MOUSE_CURSOR_DEFAULT;
 
@@ -73,21 +105,18 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
 
     //Seach bar functionality
     if (graphRenderer) {
-        graphRenderer->setSearchQuery(m_SearchBar->GetText());
-    }
+        std::string finalQuery = m_SearchBar->GetText(); // Text z horní lišty
 
-
-    if (m_FilterPanel->isVisible && graphRenderer) {
-      
-
-        // Ideally, add a boolean `m_FilterPanelDirty` to UIManager.
-        // Set it to true when you Add/Edit a book.
-        static bool builtOnce = false;
-        if (!builtOnce  /*|| dirtyBool*/) {
-            RebuildFilterPanel(graphRenderer);
-            builtOnce = true;
+        if (!m_ActiveFilterQuery.empty()) {
+            if (!finalQuery.empty()) finalQuery += " | "; // Oddìlovaè, pokud je vyplnìno obojí
+            finalQuery += m_ActiveFilterQuery;            // Pøidáme filtry ze slideru a žánru
         }
+
+        graphRenderer->setSearchQuery(finalQuery);
     }
+
+
+    
 
     
     for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
@@ -179,61 +208,26 @@ void UIManager::Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& boo
     }
 
     
-    if (!IsMouseOverUI()) {
-        UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
+    bool hoverBeforeUpdate = IsMouseOverUI();
+
+    // Tady probíhá tvùj normální update widgetù
+    for (auto it = m_Widgets.rbegin(); it != m_Widgets.rend(); ++it) {
+        (*it)->Update();
     }
-    if (!IsMouseOverUI()) {
+
+    // 2. Graf blokujeme, pokud jsme nad UI byli pøed updatem, nebo jsme nad ním po updatu
+    isBlockingGraph = hoverBeforeUpdate || IsMouseOverUI();
+
+    // 3. Vymìò tady ta stará volání IsMouseOverUI() za naši novou promìnnou
+    if (!isBlockingGraph) {
+        UpdateTooltipCache(graphRenderer, bookManager, textRenderer);
         SetMouseCursor(Widget::DesiredCursor);
     }
 }
 
 
 
-void UIManager::RebuildFilterPanel(GraphManager* gm)
-{
-    if (!m_FilterPanel || !gm) return;
 
-    m_FilterPanel->ClearChildren();
-
-    // Kotvíme vše na støed-vpravo (Anchor::CenterRight), stejnì jako samotný FilterPanel.
-    // Panel má výšku 800, takže jeho horní okraj je -400 a spodní +400 (od støedu).
-    float currentY = -350; // Zaèneme kreslit 50px odshora panelu
-
-    auto closeBtn = std::make_shared<Button>(
-        Anchor::CenterRight,
-        Vector2{ -125, 360 }, // -125 je støed panelu na X. 360 je dole na ose Y.
-        Vector2{ 60, 30 },
-        "Close",
-        [this]() {
-            if (m_FilterPanel) m_FilterPanel->isVisible = false;
-        }
-    );
-    m_FilterPanel->AddChild(closeBtn);
-
-    auto addStatusBox = [&](std::string label, Status s) {
-        bool isVisible = gm->isStatusVisible(s);
-
-        auto cb = std::make_shared<Checkbox>(
-            Anchor::CenterRight,
-            Vector2{ -220, currentY }, // -220 = levý okraj panelu
-            Vector2{ 20, 20 },
-            label,
-            isVisible,
-            [gm, s](bool checked) {
-                bool currentlyHidden = !gm->isStatusVisible(s);
-                if (checked == currentlyHidden) {
-                    gm->toggleStatusVisibility(s);
-                }
-            }
-        );
-        m_FilterPanel->AddChild(cb);
-        currentY += 30; // Posun dolù pro další prvek
-        };
-
-    addStatusBox("Show 'To Read'", Status::ToRead);
-    addStatusBox("Show 'Reading'", Status::Reading);
-    addStatusBox("Show 'Read'", Status::Read);
-}
 
 void UIManager::UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer)
 {
@@ -384,8 +378,87 @@ void UIManager::BuildInterface(
     std::function<void()> onBackToMenu,
     std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
     std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook,
-    std::function<void()> onToggleLayout)
+    std::function<void()> onToggleLayout,
+    std::function<void(Status)> onToggleStatus)
 {
+
+    m_Widgets.clear();
+
+    // === 1. VYTVOØENÍ FILTER PANELU ===
+    // Umístíme ho napø. vlevo nahoru pod vyhledávání (nastav offsety dle svého UI)
+    m_SearchFilterPanel = std::make_shared<Panel>(Anchor::CenterRight, Vector2{ -175, 0 }, Vector2{ 300, 500 },"Search Filter");
+    m_SearchFilterPanel->isVisible = false; // Výchozí stav: schovaný
+
+    // Výchozí stav uzlù je viditelný, proto dáváme "initial = true"
+    m_CheckToRead = std::make_shared<Checkbox>(Anchor::CenterRight, Vector2{ -300, -180 }, Vector2{ 20, 20 }, "To Read", true,
+        [onToggleStatus](bool checked) { onToggleStatus(Status::ToRead); }
+    );
+
+    m_CheckReading = std::make_shared<Checkbox>(Anchor::CenterRight, Vector2{ -300, -120 }, Vector2{ 20, 20 }, "Reading", true,
+        [onToggleStatus](bool checked) { onToggleStatus(Status::Reading); }
+    );
+
+    m_CheckRead = std::make_shared<Checkbox>(Anchor::CenterRight, Vector2{ -300, -60 }, Vector2{ 20, 20 }, "Read", true,
+        [onToggleStatus](bool checked) { onToggleStatus(Status::Read);}
+    );
+    m_FilterRatingLabel = std::make_shared<Label>(Anchor::CenterRight, Vector2{ -185, 0 }, Vector2{ 250, 30 }, "Min. Rating: 2.5");
+    
+    m_FilterRatingSlider = std::make_shared<Slider>(Anchor::CenterRight, Vector2{ -185, 40 }, Vector2{ 250, 30 }, 0.0f, 5.0f, 2.5f,
+        [this](float val) {
+            m_FilterRatingLabel->SetText(std::format("Min. Hodnoceni: {:.1f}", val));
+        }
+    );
+    m_FilterGenreLabel = std::make_shared<Label>(Anchor::CenterRight, Vector2{ -185, 90 }, Vector2{ 250, 30 }, "Genre Filter");
+    
+    m_FilterGenreInput = std::make_shared<TextInput>(Anchor::CenterRight, Vector2{ -185, 130 }, Vector2{ 250, 30 }, "");
+
+    m_ApplyFiltersBtn = std::make_shared<Button>(Anchor::CenterRight, Vector2{ -170, 200 }, Vector2{ 250, 40 }, "Apply Filters",
+        [this]() { 
+            std::string query = "";
+
+            float rating = m_FilterRatingSlider->value;
+            if (rating > 0.0f) {
+                query += "r>" + std::format("{:.1f}", rating);
+            }
+
+            if (!m_FilterGenreInput->text.empty()) {
+                if (!query.empty()) query += " | ";
+                query += "g:" + m_FilterGenreInput->text;
+            }
+
+            // Uložíme filtry, metoda Update() už se postará o zbytek!
+            m_ActiveFilterQuery = query;
+        }
+    );
+
+    // Pøidání checkboxù do panelu
+    m_SearchFilterPanel->AddChild(m_CheckToRead);
+    m_SearchFilterPanel->AddChild(m_CheckReading);
+    m_SearchFilterPanel->AddChild(m_CheckRead);
+    m_SearchFilterPanel->AddChild(m_FilterRatingLabel);
+    m_SearchFilterPanel->AddChild(m_FilterRatingSlider);
+    m_SearchFilterPanel->AddChild(m_FilterGenreLabel);
+    m_SearchFilterPanel->AddChild(m_FilterGenreInput);
+    m_SearchFilterPanel->AddChild(m_ApplyFiltersBtn);
+
+    // Pøidáme panel do hlavního seznamu widgetù (záleží, jak vykresluješ panely, 
+    // pravdìpodobnì dìláš m_Widgets.push_back)
+    m_Widgets.push_back(m_SearchFilterPanel);
+
+    // === 2. TLAÈÍTKO PRO OTEVØENÍ PANELU ===
+    // Pøidáme tlaèítko do horní lišty vedle tlaèítka "Next Read"
+    m_Widgets.push_back(std::make_shared<Button>(Anchor::TopRight, Vector2{ -750, 30 }, Vector2{ 100, 40 }, "Filters",
+        [this]() {
+            // Statická promìnná si pamatuje èas posledního Zdaøilého kliknutí
+            static double lastClickTime = 0;
+
+            // Pokud od posledního kliknutí ubìhlo více než 0.2 sekundy (200 milisekund)
+            if (GetTime() - lastClickTime > 0.2) {
+                m_SearchFilterPanel->isVisible = !m_SearchFilterPanel->isVisible;
+                lastClickTime = GetTime(); // Uložíme nový èas
+            }
+        }
+    ));
     // ============================================================
     // 1. HLAVNÍ UI (Tlaèítka nahoøe a dole)
     // ============================================================
@@ -401,15 +474,36 @@ void UIManager::BuildInterface(
     // Tlaèítko zpìt do menu - vpravo dole
     m_Widgets.push_back(std::make_shared<Button>(Anchor::BottomRight, Vector2{ -95, -30 }, Vector2{ 150, 40 }, "Back to Menu", onBackToMenu));
 
-    // Filter Panel (vpravo uprostøed) a jeho Toggle Tlaèítko
-    m_FilterPanel = std::make_shared<Panel>(Anchor::CenterRight, Vector2{ -125, 0 }, Vector2{ 250, 800 }, "Filter Graph");
-    m_FilterPanel->isVisible = false;
-    m_Widgets.push_back(m_FilterPanel);
+    
+    m_BookDetailsPanel = std::make_shared<Panel>(Anchor::CenterLeft, Vector2{ 180, 0 }, Vector2{ 320, 500 }, "Book Info");
+    m_BookDetailsPanel->isVisible = false;
 
-    m_Widgets.push_back(std::make_shared<Button>(
-        Anchor::TopRight, Vector2{ -760, 30 }, Vector2{ 120, 40 }, "Filter View",
-        [this]() { if (m_FilterPanel) m_FilterPanel->isVisible = !m_FilterPanel->isVisible; }
-    ));
+    // Prvky panelu
+    m_DetailsText = std::make_shared<Label>(Anchor::CenterLeft, Vector2{ 165, -20 }, Vector2{ 280, 380 }, "", 20, DARKGRAY, true);
+
+    // Tlaèítka dole (Y=190) srovnaná vedle sebe
+    // Støed levého je X=100, støed pravého je X=260
+    m_DetailsEditBtn = std::make_shared<Button>(Anchor::CenterLeft, Vector2{ 100, 190 }, Vector2{ 120, 40 }, "Edit Book",
+        [this]() {
+            if (m_CurrentDetailsBook) {
+                OpenEditPanel(m_CurrentDetailsBook);
+                m_BookDetailsPanel->isVisible = false;
+            }
+        }
+    );
+  
+
+
+    m_DetailsCloseBtn = std::make_shared<Button>(Anchor::CenterLeft, Vector2{ 260, 190 }, Vector2{ 120, 40 }, "Close",
+        [this]() { m_BookDetailsPanel->isVisible = false; }
+    );
+
+    // Pøidání potomkù do panelu
+    m_BookDetailsPanel->AddChild(m_DetailsText);
+    m_BookDetailsPanel->AddChild(m_DetailsEditBtn);
+    m_BookDetailsPanel->AddChild(m_DetailsCloseBtn);
+
+    m_Widgets.push_back(m_BookDetailsPanel);
 
     // ============================================================
     // 2. ADD BOOK PANEL (Uprostøed)
@@ -547,7 +641,7 @@ void UIManager::BuildInterface(
     ));
 
     m_Widgets.push_back(std::make_shared<Button>(
-        Anchor::TopLeft, Vector2{ 800, 30 }, Vector2{ 150, 40 }, "Toggle Layout",
+        Anchor::TopLeft, Vector2{ 700, 30 }, Vector2{ 150, 40 }, "Toggle Layout",
         onToggleLayout // Pøedáme funkci, kterou získáme z aplikace
     ));
 

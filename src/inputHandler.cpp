@@ -6,12 +6,12 @@
 InputHandler::InputHandler(GraphManager* graphManager, BookManager& bookManager, UIManager* uiManager)
     : m_GraphManager(graphManager), m_BookManager(bookManager), m_UIManager(uiManager) {}
 
-void InputHandler::ProcessInputs(Vector2 worldMousePos, double currentTime, bool& layoutDirty) {
-    HandleMouseInteraction(worldMousePos, currentTime, layoutDirty);
+void InputHandler::ProcessInputs(Vector2 worldMousePos, double currentTime, bool& layoutDirty, bool& hasUnsavedChanged) {
+    HandleMouseInteraction(worldMousePos, currentTime, layoutDirty,hasUnsavedChanged);
     HandleKeyboardShortcuts(layoutDirty);
 }
 
-void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentTime, bool& layoutDirty) {
+void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentTime, bool& layoutDirty, bool& hasUnsavedChanged) {
     
     if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
         if (m_GraphManager->TryGrabNodeAt(worldMousePos, IsKeyDown(KEY_LEFT_SHIFT))) {
@@ -32,33 +32,30 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
    
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         Node* clickedNode = m_GraphManager->getNodeAtPosition(worldMousePos);
-
         if (clickedNode) {
-         
-            if (IsKeyDown(KEY_LEFT_SHIFT) && clickedNode->type == NodeType::Book) {
-                std::cout << "Removing book node with ID: " << clickedNode->id << std::endl;
-                m_BookManager.removeBook(clickedNode->id);
-                m_GraphManager->removeNodeById(clickedNode->id);
-                layoutDirty = true;
-                m_LastClickedNode = nullptr;
-                m_LastClickTime = 0.0;
-            }
-           
-            else if (clickedNode == m_LastClickedNode && (currentTime - m_LastClickTime) <= m_DoubleClickThreshold) {
+
+            // Double click logika zùstává stejná...
+            if (clickedNode == m_LastClickedNode && (currentTime - m_LastClickTime) <= m_DoubleClickThreshold) {
                 if (m_GraphManager->tryUnlockNodeAt(worldMousePos)) {
                     std::cout << "Unlocked node ID: " << clickedNode->id << std::endl;
                     m_LastClickedNode = nullptr;
                     m_LastClickTime = 0.0;
                 }
             }
-           
             else {
                 m_LastClickedNode = clickedNode;
                 m_LastClickTime = currentTime;
 
+                // === TADY JE TA ZMÌNA ===
                 if (clickedNode->type == NodeType::Book) {
-                    const Book* clickedBook = m_BookManager.findBookById(clickedNode->id);
-                    if (clickedBook) std::cout << "Clicked book: " << clickedBook->getTitle() << std::endl;
+                    // Zmìnìno z findBookById na getBookById (získáme Book* místo const Book*)
+                    Book* clickedBook = m_BookManager.getBookById(clickedNode->id);
+                    if (clickedBook) {
+                        std::cout << "Clicked book: " << clickedBook->getTitle() << std::endl;
+
+                        // ZAVOLÁME NÁŠ NOVÝ PANEL!
+                        m_UIManager->OpenBookDetails(clickedBook);
+                    }
                 }
                 else if (clickedNode->type == NodeType::Genre) {
                     std::string genreName = m_GraphManager->getGenreNameByNodeId(clickedNode->id);
@@ -67,7 +64,6 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
             }
         }
         else {
-           
             m_LastClickedNode = nullptr;
         }
     }

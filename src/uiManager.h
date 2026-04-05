@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <raylib.h>
+#include <format>
 
 #include "UI/widget.h"
 #include "bookManager.h"
@@ -16,6 +17,8 @@
 #include "UI/textBox.h"  
 #include "UI/button.h"
 #include "UI/checkbox.h"
+#include "UI/slider.h"
+#include "UI/label.h"
 
 class UIManager {
 public:
@@ -31,10 +34,15 @@ public:
         std::function<void()> onBackToMenu,
         std::function<void(std::string, std::string, std::string, float, Status, std::string)> onAddBook,
         std::function<void(int, std::string, std::string, std::string, float, Status, std::string)> onEditBook,
-        std::function<void()> onToggleLayout 
+        std::function<void()> onToggleLayout,
+        std::function<void(Status)> onToggleStatus
     );
 
+    void OpenBookDetails(Book* book);
     void OpenEditPanel(Book* book);
+
+
+    bool IsBlockingGraphInteraction() const { return isBlockingGraph; }
 
     void Update(Vector2 worldMousePos, Vector2 mousePos, BookManager& bookManager, GraphManager* graphRenderer, TextRenderer* textRenderer);
     void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const;
@@ -67,6 +75,9 @@ private:
     Vector2 m_LastMousePos = { -1, -1 };
 
     
+    bool isBlockingGraph = false;
+
+
     std::shared_ptr<Panel> m_EditPanel;
     std::shared_ptr<TextInput> m_EditTitle;
     std::shared_ptr<TextInput> m_EditAuthor;
@@ -78,6 +89,17 @@ private:
     std::shared_ptr<Button> m_LotteryCloseBtn;
     std::shared_ptr<Checkbox> m_LotteryAutoRead;
 
+    //Filer Menu
+    std::shared_ptr<Panel> m_SearchFilterPanel;
+    std::shared_ptr<Checkbox> m_CheckToRead;
+    std::shared_ptr<Checkbox> m_CheckReading;
+    std::shared_ptr<Checkbox> m_CheckRead;
+    std::shared_ptr<Label> m_FilterRatingLabel;
+    std::shared_ptr<Slider> m_FilterRatingSlider;
+    std::shared_ptr<Label> m_FilterGenreLabel;
+    std::shared_ptr<TextInput> m_FilterGenreInput;
+    std::shared_ptr<Button> m_ApplyFiltersBtn;
+    std::string m_ActiveFilterQuery = "";
 
     bool m_IsLotteryRolling = false;
     float m_LotteryTimer = 0.0f;
@@ -97,8 +119,18 @@ private:
     int m_EditingBookId = -1;
     std::shared_ptr<int> m_EditStatusState;
 
-    std::shared_ptr<Panel> m_FilterPanel;
-    void RebuildFilterPanel(GraphManager* graphManager);
+  
+
+    // Book detail panel
+    std::shared_ptr<Panel> m_BookDetailsPanel;
+
+    // Zmìnìno z TextBox na Label:
+    std::shared_ptr<Label> m_DetailsText;
+
+    std::shared_ptr<Button> m_DetailsEditBtn;
+    std::shared_ptr<Button> m_DetailsCloseBtn;
+
+    Book* m_CurrentDetailsBook = nullptr;
 
     void UpdateTooltipCache(const GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer);
     void DrawHelpText(TextRenderer* renderer) const;

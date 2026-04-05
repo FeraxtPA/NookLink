@@ -50,6 +50,8 @@ private:
 
 	bool m_IsUserInteracting{ false };
 
+	bool m_HasUnsavedChanges{ false };
+
 	float m_UpdateInterval{ 0 };
 	bool m_LayoutDirty{ true };
 	const float m_UpdateIntervalInitial{ 0.001f };

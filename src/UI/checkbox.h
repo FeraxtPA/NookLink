@@ -13,4 +13,7 @@ public:
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;
+
+private:
+    double m_LastClickTime = 0.0;
 };
