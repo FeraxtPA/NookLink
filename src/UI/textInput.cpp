@@ -1,6 +1,12 @@
+
+// Implementation of the TextInput widget class.
+// Handles text input, cursor management, and focus states.
+
+
 #include "textInput.h"
 #include "../textRenderer.h" 
 #include "../colors.h"
+#include "../utf8_utils.h"
 
 TextInput::TextInput(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
     : Widget(anchor, offset, size), placeholder(ph)
@@ -14,6 +20,7 @@ void TextInput::Update() {
     bool isHovered = CheckCollisionPointRec(mouse, m_Bounds);
 
    
+    // Focus is click-driven: click inside to focus, outside to blur.
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         isFocused = isHovered;
     }
@@ -24,16 +31,17 @@ void TextInput::Update() {
 
         int key = GetCharPressed();
         while (key > 0) {
-            // Only allow printable characters and check length
-            if ((key >= 32) && (key <= 125) && (text.length() < maxLength)) {
-                text.push_back((char)key);
+            // Accept printable Unicode codepoints and enforce max length by codepoints, not bytes.
+            if (key >= 32 && Utf8::CodepointCount(text) < (size_t)maxLength) {
+                Utf8::AppendCodepoint(text, key);
             }
             key = GetCharPressed();
         }
 
         // Handle Backspace
         if (IsKeyPressed(KEY_BACKSPACE) && !text.empty()) {
-            text.pop_back();
+            size_t cursor = text.size();
+            Utf8::ErasePrevCodepoint(text, cursor);
         }
     }
     else if (isHovered) {
@@ -72,7 +80,7 @@ void TextInput::Draw(TextRenderer* renderer) {
         renderer->DrawSimpleText(text, textPos, fontSize, NookCol::UI_TEXT);
     }
 
-    // Draw Blinking Cursor
+    // Draw caret at measured text width to keep visual position consistent with font metrics.
     if (isFocused && ((int)(GetTime() * 2) % 2) == 0) {
         float textWidth = renderer->Measure(text, fontSize);
 

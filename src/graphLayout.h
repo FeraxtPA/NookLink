@@ -1,3 +1,8 @@
+
+// Manages graph layout algorithms for both physics-based and grid-based layouts.
+// Provides force-directed physics simulation and lerp-based smooth transitions.
+
+
 #pragma once
 #include "nodeRenderer.h"
 #include <raymath.h>
@@ -9,17 +14,20 @@ class GraphLayout
 public:
     GraphLayout() = default;
 
+    void setLayoutDensityScale(float scale);
+    float getLayoutDensityScale() const { return m_LayoutDensityScale; }
+
     void wakeUp() { m_Temperature = 1.0f; m_CoolingHoldFrames = 18; }
 
     void calculateGridLayout(
         std::vector<Node>& nodes,
         Vector2 centerPos,
-        const std::unordered_map<int, std::vector<int>>& bookToGenreMap // NOV� PARAMETR
+        const std::unordered_map<int, std::vector<int>>& bookToGenreMap
     );
 
     bool updateLerp(std::vector<Node>& nodes, float dt);
 
-    // Hlavn� fyzik�ln� smy�ka: aplikuje p�ita�livost, odpuzov�n� a gravitaci
+    // Main physics loop: applies attraction, repulsion, and gravity forces
     bool updatePhysics(
         std::vector<Node>& nodes,
         const std::unordered_map<int, std::vector<int>>& bookToGenreMap,
@@ -28,12 +36,10 @@ public:
         Node* draggedNode = nullptr);
 
 private:
-    // Tvrd� kolize - zaji��uje, aby se bubliny fyzicky nep�ekr�valy, kdy� do sebe naraz�
     float resolveNodeOverlaps(float padding, std::vector<Node>& nodes, const std::vector<bool>& isActive);
 
     float m_Temperature = 1.0f;
 
-    // Kr�tk� zadr�en� cooldownu po p�epnut� na Grid, aby byla transition viditeln�.
     int m_CoolingHoldFrames = 0;
     static constexpr int m_GridTransitionHoldFrames = 24;
     static constexpr float m_MinTransitionTemperature = 0.35f;
@@ -44,4 +50,6 @@ private:
 
     std::unordered_map<int, Vector2> m_GridStartPositions;
     std::unordered_map<int, Vector2> m_TargetPositions;
+
+    float m_LayoutDensityScale = 1.0f;
 };

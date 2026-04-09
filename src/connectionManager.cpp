@@ -1,3 +1,8 @@
+
+// Implementation of the ConnectionManager class.
+// Manages edge creation and genre identification in the book graph.
+
+
 #include "connectionManager.h"
 #include <algorithm>
 

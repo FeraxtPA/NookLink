@@ -1,3 +1,8 @@
+
+// Handles rendering of book and genre nodes in the graph.
+// Manages visual representations, colors, labels, and node styling.
+
+
 #pragma once
 #include <raylib.h>
 #include "bookManager.h"

@@ -1,3 +1,8 @@
+
+// Implementation of the Label widget class.
+// Renders text with optional word wrapping and custom styling.
+
+
 #include "label.h"
 #include "../textRenderer.h"
 #include <sstream>
@@ -11,12 +16,12 @@ Label::Label(Anchor anchor, Vector2 offset, Vector2 size, std::string t, int fSi
 void Label::Update() {
     if (!isVisible) return;
 
-    // 1. Detekce myši pro scrollování
+   
     if (CheckCollisionPointRec(GetMousePosition(), m_Bounds)) {
         isHovered = true;
         float wheel = GetMouseWheelMove();
 
-        // Rychlost scrollování je 25 pixelù na jedno otoèení
+        
         if (wheel != 0.0f) {
             m_ScrollY += wheel * 25.0f;
         }
@@ -25,11 +30,12 @@ void Label::Update() {
         isHovered = false;
     }
 
-    // 2. Omezení scrollování (aby nešlo odscrollovat do prázdna)
+   
+    // Scroll range depends on rendered content height computed in Draw().
     float maxScroll = (m_ContentHeight > m_Bounds.height) ? (m_ContentHeight - m_Bounds.height) : 0.0f;
 
-    if (m_ScrollY < -maxScroll) m_ScrollY = -maxScroll; // Spodní limit
-    if (m_ScrollY > 0.0f) m_ScrollY = 0.0f;             // Horní limit
+    if (m_ScrollY < -maxScroll) m_ScrollY = -maxScroll; 
+    if (m_ScrollY > 0.0f) m_ScrollY = 0.0f;           
 }
 
 void Label::Draw(TextRenderer* renderer) {
@@ -39,7 +45,7 @@ void Label::Draw(TextRenderer* renderer) {
         renderer->DrawSimpleText(text, { m_Bounds.x, m_Bounds.y }, fontSize, color);
     }
     else {
-        // Zalamování textu
+        // Recompute wrapped lines only when text changes to keep per-frame cost low.
         if (text != m_LastText) {
             m_LastText = text;
             m_WrappedLines.clear();
@@ -66,7 +72,7 @@ void Label::Draw(TextRenderer* renderer) {
                             currentLine = "";
                         }
 
-                        // FIX: Pokud je SAMOTNÉ SLOVO delší než okno (napø. 200 znakù bez mezery)
+                        // If one token is wider than the label, split it into character chunks.
                         if (renderer->Measure(word, fontSize) > m_Bounds.width) {
                             std::string chunk = "";
                             for (char c : word) {
@@ -78,10 +84,10 @@ void Label::Draw(TextRenderer* renderer) {
                                     chunk += c;
                                 }
                             }
-                            currentLine = chunk; // Zbytek dlouhého slova
+                            currentLine = chunk; 
                         }
                         else {
-                            currentLine = word; // Bìžné slovo, co se jen nevešlo na pøedchozí øádek
+                            currentLine = word; 
                         }
                     }
                     else {
@@ -94,22 +100,21 @@ void Label::Draw(TextRenderer* renderer) {
             }
         }
 
-        // Výpoèet celkové výšky textu (pro limity scrollování)
+        
         m_ContentHeight = m_WrappedLines.size() * (fontSize + 5);
 
-        // Zapneme SCISSOR MODE (oøízne vše, co by chtìlo pøetéct pøes náš Vector2 size)
+        // Clip rendering to bounds so long text does not bleed into neighboring widgets.
         BeginScissorMode((int)m_Bounds.x, (int)m_Bounds.y, (int)m_Bounds.width, (int)m_Bounds.height);
 
-        float yOffset = m_Bounds.y + m_ScrollY; // Pøièteme odscrollovanou pozici
+        float yOffset = m_Bounds.y + m_ScrollY; 
 
         for (const auto& line : m_WrappedLines) {
             if (!line.empty()) {
-                // Vykreslíme øádek (Raylib už sám zahodí pixely, co jsou mimo ScissorBox)
                 renderer->DrawSimpleText(line, { m_Bounds.x, yOffset }, fontSize, color);
             }
             yOffset += (fontSize + 5);
         }
 
-        EndScissorMode(); // Vypneme oøezávání, zbytek UI se vykreslí normálnì
+        EndScissorMode(); 
     }
 }

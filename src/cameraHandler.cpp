@@ -1,3 +1,8 @@
+
+// Implementation of the CameraHandler class.
+// Manages camera transformations for 2D graph visualization.
+
+
 #include "cameraHandler.h"
 
 CameraHandler::CameraHandler(Vector2 screenDimensions, Vector2 canvasSize)

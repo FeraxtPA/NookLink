@@ -1,3 +1,8 @@
+
+// Text label widget for displaying static text.
+// Supports word wrapping, custom colors, and font sizes.
+
+
 #pragma once
 #include "widget.h"
 #include <string>
@@ -10,7 +15,7 @@ public:
     Color color;
     bool wordWrap;
 
-    // Zmìna: Místo maxWidth pøedáváme rovnou celou size (Vector2)
+   
     Label(Anchor anchor, Vector2 offset, Vector2 size, std::string t, int fSize = 20, Color c = DARKGRAY, bool wrap = false);
 
     void Update() override;
@@ -21,7 +26,7 @@ private:
     std::string m_LastText;
     std::vector<std::string> m_WrappedLines;
 
-    // Promìnné pro scrollování
+   
     float m_ScrollY = 0.0f;
     float m_ContentHeight = 0.0f;
 };

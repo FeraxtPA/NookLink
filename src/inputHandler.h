@@ -1,3 +1,8 @@
+
+// Handles user input including mouse and keyboard interactions.
+// Processes node selection, dragging, double-clicks, and keyboard shortcuts.
+// Coordinates input events between graph visualization and UI system.
+
 #pragma once
 #include "raylib.h"
 #include "graphManager.h"

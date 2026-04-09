@@ -1,3 +1,8 @@
+
+// Button widget implementation.
+// Handles user interaction with visual feedback and click callbacks.
+
+
 #pragma once
 #include "widget.h" 
 #include <string>

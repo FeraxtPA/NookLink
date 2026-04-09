@@ -1,3 +1,8 @@
+
+// Multi-line text box widget with scrolling.
+// Provides text editing, line wrapping, and scroll management for large text.
+
+
 #pragma once
 #include "widget.h"
 #include <string>
@@ -29,13 +34,14 @@ public:
     void Draw(TextRenderer* renderer) override;
 
     std::string GetText() const { return text; }
-    void SetText(const std::string& t) { text = t; cursorIndex = (int)t.length(); scrollY = 0.0f; }
-    void Clear() { text.clear(); cursorIndex = 0; scrollY = 0.0f; isFocused = false; }
+    void SetText(const std::string& t) { text = t; cursorIndex = (int)t.size(); scrollY = 0.0f; m_UserScrolledManually = false; }
+    void Clear() { text.clear(); cursorIndex = 0; scrollY = 0.0f; isFocused = false; m_UserScrolledManually = false; }
     void SetEditable(bool editable) { isEditable = editable; }
 
 private:
 
     bool isEditable = true;
+    bool m_UserScrolledManually = false;
     void MoveLeft(bool jumpWord);
     void MoveRight(bool jumpWord);
     void HandleKeyRepeat(int key, bool jumpWord, void (TextBox::* moveFunc)(bool));

@@ -1,3 +1,8 @@
+
+// Checkbox widget for boolean selection.
+// Displays a checkbox with label and provides change callbacks.
+
+
 #pragma once
 #include "widget.h"
 #include <string>

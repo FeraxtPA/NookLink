@@ -1,3 +1,9 @@
+
+// Main application class managing the complete lifecycle of the NookLink app.
+// Coordinates the book management system, UI, graph visualization, and I/O.
+// Maintains application state machine (StartScreen, Editor) and undo/redo history.
+
+
 #pragma once
 #include "raylib.h"
 #include "bookManager.h"
@@ -6,6 +12,7 @@
 #include "cameraHandler.h"
 #include "nodeRenderer.h"
 #include "uiManager.h"
+#include "colors.h"
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -67,6 +74,8 @@ private:
 
 	int m_ReadingGoalTarget{ 12 };
 	int m_ReadingGoalBaselineRead{ 0 };
+	int m_ThemePresetIndex{ 0 };
+	float m_LayoutDensityScale{ 1.0f };
 
 	float m_UpdateInterval{ 0 };
 	bool m_LayoutDirty{ true };

@@ -1,3 +1,8 @@
+
+// Handles debug input commands and visual/logging utilities.
+// Provides debug-only features for development and troubleshooting.
+
+
 #pragma once
 #include "raylib.h"
 #include "bookManager.h"

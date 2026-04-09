@@ -1,4 +1,9 @@
-﻿#include "book.h"
+﻿
+// Implementation of the Book data model class.
+// Provides constructors, initialization, and utility functions for books.
+
+
+#include "book.h"
 
 #include <chrono>
 #include <ctime>

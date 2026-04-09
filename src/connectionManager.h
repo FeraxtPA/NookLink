@@ -1,3 +1,8 @@
+
+// Manages connections (edges) between books and genres in the graph.
+// Maintains genre information and edge relationships for graph visualization.
+
+
 #pragma once
 #include "book.h"
 #include <vector>
@@ -30,7 +35,7 @@ public:
     int getConnectedBooksCount(int genreNodeId) const;
 
 
-    //Need to reset all data when loading a new library(åoading a file)
+    //Need to reset all data when loading a new library
     void Clear() {
 		m_Edges.clear();
 		m_ExistingGenres.clear();

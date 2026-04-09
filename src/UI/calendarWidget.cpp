@@ -1,3 +1,8 @@
+
+// Implementation of the CalendarWidget class.
+// Renders interactive calendar with navigation and date selection.
+
+
 #include "calendarWidget.h"
 
 #include "../colors.h"
@@ -37,6 +42,7 @@ void CalendarWidget::Open(const std::string& initialDate, const std::function<vo
     int month = 0;
     int year = 0;
     if (TryParseDate(initialDate, day, month, year)) {
+        // Start from input date when available so picker opens in expected month.
         m_Month = month;
         m_Year = year;
     }
@@ -96,6 +102,7 @@ void CalendarWidget::Update()
         return;
     }
 
+    // Compute grid geometry once; reused for all hit-tests below.
     const float gridTop = m_Bounds.y + kOuterPadding + kHeaderHeight + kWeekHeaderHeight + 6.0f;
     const float usableWidth = m_Bounds.width - (kOuterPadding * 2.0f);
     const float cellWidth = (usableWidth - (kGridGap * 6.0f)) / 7.0f;
@@ -104,6 +111,7 @@ void CalendarWidget::Update()
     const int totalDays = DaysInMonth(m_Year, m_Month);
 
     int dayCounter = 1;
+    // Walk a fixed 6x7 grid and skip leading cells before weekday-of-1st.
     for (int row = 0; row < 6 && dayCounter <= totalDays; ++row) {
         for (int col = 0; col < 7 && dayCounter <= totalDays; ++col) {
             const int cellIndex = row * 7 + col;
@@ -169,6 +177,7 @@ void CalendarWidget::Draw(TextRenderer* renderer)
     std::string title = std::string(kMonthNames[(size_t)(m_Month - 1)]) + " " + std::to_string(m_Year);
     renderer->DrawTextCentered(title, { headerRect.x + headerRect.width * 0.5f, headerRect.y + headerRect.height * 0.5f }, 20.0f, NookCol::UI_TEXT);
 
+    // Cell width adapts to widget width so the 7-day grid always fits exactly.
     const float usableWidth = m_Bounds.width - (kOuterPadding * 2.0f);
     const float cellWidth = (usableWidth - (kGridGap * 6.0f)) / 7.0f;
     const float weekTop = m_Bounds.y + kOuterPadding + kHeaderHeight;
@@ -194,6 +203,7 @@ void CalendarWidget::Draw(TextRenderer* renderer)
     const int todayYear = localTm.tm_year + 1900;
 
     int dayCounter = 1;
+    // Render days in row-major order with the same indexing scheme used by Update().
     for (int row = 0; row < 6 && dayCounter <= totalDays; ++row) {
         for (int col = 0; col < 7 && dayCounter <= totalDays; ++col) {
             const int cellIndex = row * 7 + col;
@@ -291,6 +301,7 @@ bool CalendarWidget::TryParseDate(const std::string& text, int& outDay, int& out
 void CalendarWidget::StepMonth(int delta)
 {
     m_Month += delta;
+    // Normalize month into [1, 12] while carrying year across boundaries.
     while (m_Month < 1) {
         m_Month += 12;
         --m_Year;

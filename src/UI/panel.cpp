@@ -1,6 +1,13 @@
+
+// Implementation of the Panel widget class.
+// Manages panel rendering with title bar and content layout.
+
+
 #include "panel.h"
 #include "../textRenderer.h"
 #include "../colors.h"
+
+#include <algorithm>
 
 namespace {
 constexpr float kPanelTitleBarHeight = 40.0f;
@@ -46,6 +53,7 @@ Rectangle Panel::GetContentRect() const
 void Panel::SyncContentLayouts()
 {
     const Rectangle contentRect = GetContentRect();
+    // All content layouts share one logical content area below the title bar.
     for (auto& layout : contentLayouts) {
         layout->m_Bounds = contentRect;
     }
@@ -53,9 +61,9 @@ void Panel::SyncContentLayouts()
 
 
 void Panel::OnWindowResize(int screenWidth, int screenHeight) {
-    Widget::OnWindowResize(screenWidth, screenHeight); // Spo��t� m_Bounds panelu
+    Widget::OnWindowResize(screenWidth, screenHeight);
     for (auto& child : children) {
-        child->OnWindowResize(screenWidth, screenHeight); // Aktualizuje v�echny d�ti
+        child->OnWindowResize(screenWidth, screenHeight); 
     }
     SyncContentLayouts();
 }
@@ -70,25 +78,25 @@ void Panel::Update() {
 
     Vector2 mouse = GetMousePosition();
 
-    // Dragging Logic
+    
     if (isDragging) {
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             isDragging = false;
         }
         else {
-            // Calculate new position based on mouse + offset
+           
             float newX = mouse.x + dragOffset.x;
             float newY = mouse.y + dragOffset.y;
 
-            // Calculate how much we moved this frame
+          
             float deltaX = newX - m_Bounds.x;
             float deltaY = newY - m_Bounds.y;
 
-            // Apply move to Panel
+            
             m_Bounds.x = newX;
             m_Bounds.y = newY;
 
-            // Apply move to ALL Children
+            // Move absolute-positioned children by the same delta to preserve visual structure.
             for (auto& child : children) {
                 child->m_Bounds.x += deltaX;
                 child->m_Bounds.y += deltaY;
@@ -102,17 +110,17 @@ void Panel::Update() {
     
     // Clicking, Hovering Logic
     else {
-        // Define the Title Bar area (Top 40 pixels)
+        
         Rectangle titleBar = { m_Bounds.x, m_Bounds.y, m_Bounds.width, 40 };
 
         if (CheckCollisionPointRec(mouse, titleBar)) {
-            // If hovering title bar, show move cursor
+           
             Widget::DesiredCursor = MOUSE_CURSOR_RESIZE_ALL;
             isHovered = true;
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 isDragging = true;
-                // Remember where we grabbed the panel relative to its corner
+                // Store grab offset so panel does not snap its top-left to cursor.
                 dragOffset = { m_Bounds.x - mouse.x, m_Bounds.y - mouse.y };
             }
         }
@@ -128,7 +136,7 @@ void Panel::Update() {
 
     SyncContentLayouts();
 
-    // Update Children
+    // Reverse traversal keeps top-most children/layouts first for interaction consistency.
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
         (*it)->Update();
     }
@@ -143,14 +151,36 @@ void Panel::Draw(TextRenderer* renderer) {
 
     SyncContentLayouts();
 
-    // Background
-    DrawRectangleRounded(m_Bounds, 0.12f, 12, NookCol::UI_PANEL);
+    constexpr float kPanelRoundness = 0.12f;
+    constexpr int kPanelRoundSegments = 12;
 
-    // Draw Title Bar 
-    DrawRectangleRounded({ m_Bounds.x, m_Bounds.y, m_Bounds.width, kPanelTitleBarHeight }, 0.12f, 12, NookCol::UI_SHELL);
+    // Convert a desired pixel corner radius into raylib's relative roundness for a rectangle.
+    const auto roundnessForRect = [](const Rectangle& rect, float radiusPx) {
+        const float minDim = std::max(1.0f, std::min(rect.width, rect.height));
+        const float clampedRadius = std::clamp(radiusPx, 0.0f, minDim * 0.5f);
+        return std::clamp((clampedRadius * 2.0f) / minDim, 0.0f, 1.0f);
+    };
+
+    // Keep panel corners in a stable visual range across both small and very large panels.
+    const float panelMinDim = std::min(m_Bounds.width, m_Bounds.height);
+    const float desiredCornerRadiusPx = std::clamp((kPanelRoundness * panelMinDim) * 0.5f, 10.0f, 18.0f);
+    const float panelRoundness = roundnessForRect(m_Bounds, desiredCornerRadiusPx);
+
+    // Background
+    DrawRectangleRounded(m_Bounds, panelRoundness, kPanelRoundSegments, NookCol::UI_PANEL);
+
+    // Use the same pixel corner radius as the panel so top corners align perfectly.
+    const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, kPanelTitleBarHeight };
+    const float titleRoundness = roundnessForRect(titleBarRect, desiredCornerRadiusPx);
+    DrawRectangleRounded(titleBarRect, titleRoundness, kPanelRoundSegments, NookCol::UI_SHELL);
+    const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, kPanelTitleBarHeight * 0.5f);
+    DrawRectangleRec(
+        { titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + kPanelTitleBarHeight - titleFillStartY },
+        NookCol::UI_SHELL
+    );
 
     // Border
-    DrawRectangleRoundedLinesEx(m_Bounds, 0.12f, 12, 2.0f, NookCol::UI_BORDER);
+    DrawRectangleRoundedLinesEx(m_Bounds, panelRoundness, kPanelRoundSegments, 2.0f, NookCol::UI_BORDER);
 
     // Title Text
     if (renderer) {

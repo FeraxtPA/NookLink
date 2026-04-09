@@ -1,3 +1,8 @@
+
+// Base widget class for all UI components.
+// Defines positioning, anchoring, visibility, and event handling for UI elements.
+
+
 #pragma once
 #include <raylib.h>
 
@@ -43,7 +48,7 @@ public:
 
 
     virtual void OnWindowResize(int screenWidth, int screenHeight) {
-        // Vypo��t�me z�kladn� bod (x, y) podle kotvy
+       
         float anchorX = 0;
         float anchorY = 0;
 
@@ -59,8 +64,6 @@ public:
         case Anchor::BottomRight:  anchorX = screenWidth; anchorY = screenHeight; break;
         }
 
-        // Vypo��t�me fin�ln� pozici (kotva + odsazen� - polovina velikosti prvku, aby byl vycentrovan� na kotv�)
-        // (Pokud chce�, aby kotva ur�ovala roh prvku a ne st�ed, v�po�et se lehce uprav�)
         m_Bounds.x = anchorX + m_Offset.x - (m_Size.x / 2.0f);
         m_Bounds.y = anchorY + m_Offset.y - (m_Size.y / 2.0f);
         m_Bounds.width = m_Size.x;

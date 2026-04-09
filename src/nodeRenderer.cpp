@@ -1,3 +1,8 @@
+
+// Implementation of the NodeRenderer class.
+// Renders individual nodes with zoom-dependent styling and text rendering.
+
+
 #include "nodeRenderer.h"
 #include "rlgl.h" 
 #include "math.h"
@@ -30,40 +35,32 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
         Color nodeColor = Fade(baseColor, alpha);
         Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
 
-        // 1. Vykresl�me samotn� pozad� uzlu (pln� kruh)
         DrawCircleV(node.position, node.radius, nodeColor);
 
-        // ==========================================
-        // 2. NOV�: Vizu�ln� okraje podle Statusu
-        // ==========================================
+       
         float borderThickness = 0.0f;
         Color borderColor = BLANK;
 
         if (book->getStatus() == Status::Reading) {
-            // Pulzuj�c� efekt (funkce sin vytv��� plynulou vlnu)
-            float pulse = (sin(GetTime() * 2.0f) + 1.0f) / 2.0f; // pulse je v�dy od 0.0 do 1.0
-            borderThickness = 3.0f + (pulse * 5.0f); // Tlou��ka neust�le "d�ch�" mezi 3 a 8
+            float pulse = (sin(GetTime() * 2.0f) + 1.0f) / 2.0f; 
+            borderThickness = 3.0f + (pulse * 5.0f);
 
-            // Sv�tle kr�mov� barva, kter� jemn� pulzuje i svou pr�hlednost�
+         
             borderColor = Fade(NookCol::TEXT_DEFAULT, alpha * (0.3f + pulse * 0.7f));
         }
         else if (book->getStatus() == Status::Read) {
-            // V�razn� zlatav� okraj pro p�e�ten� knihy
+         
             borderThickness = 4.0f;
             borderColor = Fade(NookCol::POPUP_BORDER, alpha);
         }
-        else { // Status::ToRead
-            // Jemn�, �ed� okraj pro knihy �ekaj�c� na p�e�ten�
+        else {
             borderThickness = 2.0f;
             borderColor = Fade(NookCol::EDGE, alpha);
         }
 
-        // Vykresl�me samotn� prstenec (okraj) kolem knihy
+       
         DrawRing(node.position, node.radius, node.radius + borderThickness, 0, 360, 36, borderColor);
-        // ==========================================
-
-
-        // 3. Vykreslen� textu knihy
+     
         if (zoom >= 0.4f && m_TextRenderer) {
             float dynamicFontSize = BASE_FONT_SIZE / zoom;
             if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
@@ -71,7 +68,7 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
             m_TextRenderer->DrawTextFitted(
                 book->getTitle(),
                 node.position,
-                node.radius * 1.8f, // Max Width = 90%
+                node.radius * 1.8f, 
                 dynamicFontSize,
                 textColor
             );

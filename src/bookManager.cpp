@@ -1,3 +1,8 @@
+
+// Implementation of the BookManager class.
+// Handles book persistence, sorting, filtering, and graph node management.
+
+
 #include "bookManager.h"
 #include <algorithm>
 #include <cctype>
@@ -13,6 +18,7 @@ namespace fs = std::filesystem;
 namespace {
 int ParseDateDDMMYYYYToSortable(const std::string& date)
 {
+    // Convert DD.MM.YYYY to YYYYMMDD so plain integer comparison matches chronology.
 	if (date.size() != 10 || date[2] != '.' || date[5] != '.') {
 		return 0;
 	}
@@ -57,6 +63,7 @@ bool BookManager::restoreBook(const Book& book)
 		return false;
 	}
 
+	// Keep m_Books ordered by ID so lower_bound lookups stay valid.
 	auto it = std::lower_bound(m_Books.begin(), m_Books.end(), book.getId(),
 		[](const Book& current, int value) {
 			return current.getId() < value;
@@ -195,10 +202,9 @@ bool BookManager::saveBooksToFile(const std::string& filename, const std::unorde
 	j["books"] = m_Books;
 	j["next_id"] = m_NextId;
 
-	// NOV�: Ulo�en� pozic bokem
 	nlohmann::json posJson = nlohmann::json::object();
+	// Persist only book-node positions; genre nodes are recomputed from book genres.
 	for (const auto& [id, pos] : positions) {
-		// Ukl�d�me jako "ID": { "x": 100, "y": 200 }
 		posJson[std::to_string(id)] = { {"x", pos.x}, {"y", pos.y}, {"locked", pos.locked} };
 	}
 	j["positions"] = posJson;
@@ -223,6 +229,7 @@ bool BookManager::saveBooksToFile(const std::string& filename, const std::unorde
 		return false;
 	}
 
+	// Two-phase replace: write temp first, then atomically move into place.
 	o << j.dump(4) << std::endl;
 	o.flush();
 	o.close();
@@ -284,6 +291,7 @@ bool BookManager::loadBooksFromFile(const std::string& filename, std::unordered_
 		try {
 			outBooks.clear();
 			if (j.contains("books") && j["books"].is_array()) {
+				// Best-effort import: malformed entries are skipped, valid ones still load.
 				for (const auto& entry : j["books"]) {
 					try {
 						outBooks.push_back(entry.get<Book>());
@@ -326,6 +334,7 @@ bool BookManager::loadBooksFromFile(const std::string& filename, std::unordered_
 		std::vector<Book> backupBooks;
 		int backupNextId = 1;
 
+		// Automatic recovery path: if primary fails, attempt .bak file.
 		if (tryLoadFromPath(backupPath, backupBooks, backupNextId, loadedPositions)) {
 			Log::Warn("Loaded backup file after primary load failed: " + backupPath.string());
 			if (!primaryError.empty()) {

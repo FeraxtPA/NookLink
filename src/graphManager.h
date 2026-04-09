@@ -1,3 +1,8 @@
+
+// Manages graph visualization of books and their relationships.
+// Handles node positioning, layout calculations, physics simulation, and grid layout.
+// Provides interaction support for node selection, dragging, and graph manipulation.
+
 #pragma once
 #include "book.h"
 #include "connectionManager.h"
@@ -34,7 +39,7 @@ class GraphManager {
 public:
     GraphManager(const BookManager& bm, ConnectionManager& cm, Vector2 canvasSize, TextRenderer* tr);
       
-    void initializePositions();
+    void initializePositions(bool preserveExistingPositions = true);
    
     void removeNodeById(int id);
 
@@ -100,6 +105,13 @@ public:
     void setDraggedNode(int id) { m_DraggedNodeId = id; }
 
     void updatePhysics(float dt);
+
+    void setLayoutDensityScale(float scale) {
+        m_GraphLayout.setLayoutDensityScale(scale);
+        m_IsPhysicsActive = true;
+        m_GraphLayout.wakeUp();
+    }
+    float getLayoutDensityScale() const { return m_GraphLayout.getLayoutDensityScale(); }
     
     void wakeUpPhysics() { m_IsPhysicsActive = true; m_GraphLayout.wakeUp(); }
 
@@ -144,7 +156,6 @@ private:
     bool m_IsPhysicsActive = true;
     LayoutMode m_LayoutMode = LayoutMode::Physics;
 
-    // Snapshot pozic p�ed p�epnut�m do Gridu, aby �el Physics layout vr�tit zp�t.
     std::unordered_map<int, Vector2> m_PreGridPositions;
 
     void resetNodeState();

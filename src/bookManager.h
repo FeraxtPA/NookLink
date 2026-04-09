@@ -1,3 +1,9 @@
+
+// Manages the collection of books, including storage, search, filtering, and I/O.
+// Handles book addition, deletion, modification, and JSON serialization/deserialization.
+// Maintains node positions for graph visualization and provides query/sorting operations.
+
+
 #pragma once
 #include "book.h"
 #include <vector>
@@ -7,7 +13,6 @@
 #include <string>    
 #include <fstream>   
 
-// NOV� STRUKTURA pro bezpe�n� p�enos sou�adnic bez nutnosti Raylibu
 struct NodePosition {
     float x;
     float y;
@@ -40,10 +45,8 @@ public:
     const std::vector<Book>& getBooksToBeRead();
     void sortBooks(BookSortMode mode);
 
-    // ZM�N�N� FUNKCE: P�idali jsme podporu pro mapu pozic
     bool saveBooksToFile(const std::string& filename, const std::unordered_map<int, NodePosition>& positions = {}) const;
 
-    // Na��t� knihy a pozice; vrac� false p�i chyb� a detail je v getLastError().
     bool loadBooksFromFile(const std::string& filename, std::unordered_map<int, NodePosition>& loadedPositions);
 
     const std::string& getLastError() const { return m_LastError; }

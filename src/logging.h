@@ -1,3 +1,8 @@
+
+// Centralized logging system for the application.
+// Provides leveled logging (Debug, Info, Warn, Error) with file output.
+
+
 #pragma once
 
 #include <string>

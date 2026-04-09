@@ -1,3 +1,8 @@
+
+// Single-line text input widget.
+// Provides text editing with selection, focus management, and placeholder text.
+
+
 #pragma once
 #include "widget.h"
 #include <string>

@@ -1,3 +1,8 @@
+
+// Implementation of the DebugManager class.
+// Provides debug input handling and testing utilities for development.
+
+
 #include "debugManager.h"
 #include "logging.h"
 #include <print>

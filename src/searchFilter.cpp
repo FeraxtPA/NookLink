@@ -1,3 +1,8 @@
+
+// Implementation of the SearchFilter class.
+// Parses search queries and evaluates filter conditions for books and genres.
+
+
 #include "searchFilter.h"
 #include <sstream>
 #include <algorithm>
@@ -28,8 +33,9 @@ bool TryParseDateDDMMYYYY(const std::string& text, int& outDay, int& outMonth, i
 }
 
 void SearchFilter::setQuery(const std::string& query) {
-    if (m_Query == query) return; // Nemus�me parsovat, pokud se nic nezm�nilo
+    if (m_Query == query) return; 
 
+    // Rebuild parsed rules only when input actually changed.
     m_Query = query;
     m_Rules.clear();
     parseQuery();
@@ -38,6 +44,7 @@ void SearchFilter::setQuery(const std::string& query) {
 void SearchFilter::parseQuery() {
     if (m_Query.empty()) return;
 
+    // Mini-language format: rules separated by '|', each rule can be text or prefixed operator.
     std::stringstream ss(m_Query);
     std::string segment;
 
@@ -107,6 +114,7 @@ void SearchFilter::parseQuery() {
 bool SearchFilter::matchesBook(const Book* book) const {
     if (!book) return false;
 
+    // AND semantics: every rule must match for the book to be included.
     for (const auto& rule : m_Rules) {
         bool ruleMatch = false;
 
@@ -149,6 +157,7 @@ bool SearchFilter::matchesBook(const Book* book) const {
             int month = 0;
             int year = 0;
             if (TryParseDateDDMMYYYY(dateFinished, day, month, year)) {
+                // Compare against current local month/year for relative filters.
                 const std::time_t now = std::time(nullptr);
                 std::tm localTm{};
 #if defined(_WIN32)
@@ -172,13 +181,13 @@ bool SearchFilter::matchesBook(const Book* book) const {
             }
         }
 
-        // Pokud kniha nespl�uje by� JEDNO pravidlo v �et�zci (odd�len�m |), cel� kniha je vy�azena
         if (!ruleMatch) return false;
     }
     return true;
 }
 
 bool SearchFilter::matchesGenre(const std::string& genreName) const {
+    // Genre matching uses only text/genre rules; numeric/status rules are book-only.
     for (const auto& rule : m_Rules) {
         bool ruleMatch = false;
 

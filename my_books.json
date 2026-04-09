@@ -2,6 +2,9 @@
     "books": [
         {
             "author": "George Orwell",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "Dystopian",
                 "ScienceFiction",
@@ -15,6 +18,9 @@
         },
         {
             "author": "Aldous Huxley",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "Dystopian",
                 "ScienceFiction"
@@ -27,6 +33,9 @@
         },
         {
             "author": "J.R.R. Tolkien",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "Fantasy",
                 "Adventure"
@@ -39,6 +48,9 @@
         },
         {
             "author": "Patrick Rothfuss",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "Fantasy",
                 "DarkFantasy"
@@ -51,6 +63,9 @@
         },
         {
             "author": "Frank Herbert",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "ScienceFiction"
             ],
@@ -62,6 +77,9 @@
         },
         {
             "author": "Isaac Asimov",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "ScienceFicton"
             ],
@@ -73,6 +91,9 @@
         },
         {
             "author": "Brandon Sanderson",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "Fantasy"
             ],
@@ -84,6 +105,9 @@
         },
         {
             "author": "asdf",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "sdf"
             ],
@@ -95,6 +119,9 @@
         },
         {
             "author": "xcvx",
+            "date_added": "",
+            "date_finished_reading": "",
+            "date_started_reading": "",
             "genres": [
                 "vsff"
             ],
@@ -109,48 +136,48 @@
     "positions": {
         "1": {
             "locked": false,
-            "x": 939.5812377929688,
-            "y": 421.69500732421875
+            "x": 909.0300903320313,
+            "y": 472.6717834472656
         },
         "10": {
             "locked": false,
-            "x": 961.036865234375,
-            "y": 1575.677490234375
+            "x": 921.1469116210938,
+            "y": 1554.5657958984375
         },
         "2": {
             "locked": false,
-            "x": 1175.696044921875,
-            "y": 341.08404541015625
+            "x": 1297.85546875,
+            "y": 386.3255920410156
         },
         "3": {
             "locked": false,
-            "x": 165.82846069335938,
-            "y": 1362.18017578125
+            "x": 148.0923614501953,
+            "y": 1365.1561279296875
         },
         "4": {
             "locked": false,
-            "x": 745.7252807617188,
-            "y": 1417.9271240234375
+            "x": 762.3090209960938,
+            "y": 1368.1468505859375
         },
         "6": {
             "locked": false,
-            "x": 1272.407958984375,
-            "y": 44.53187561035156
+            "x": 1273.001953125,
+            "y": 44.02159118652344
         },
         "7": {
             "locked": false,
-            "x": 1479.904052734375,
-            "y": 1423.7279052734375
+            "x": 1363.650390625,
+            "y": 1402.8701171875
         },
         "8": {
             "locked": false,
-            "x": 626.3811645507813,
-            "y": 1135.3775634765625
+            "x": 631.6995849609375,
+            "y": 1126.3336181640625
         },
         "9": {
             "locked": false,
-            "x": 1810.3333740234375,
-            "y": 798.2972412109375
+            "x": 1818.572509765625,
+            "y": 786.6961669921875
         }
     }
 }

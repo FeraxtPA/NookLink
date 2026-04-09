@@ -1,3 +1,8 @@
+
+// Implementation of the Checkbox widget class.
+// Provides toggle functionality with visual feedback.
+
+
 #include "checkbox.h"
 #include "../textRenderer.h"
 #include "../colors.h"
@@ -21,12 +26,12 @@ void Checkbox::Update() {
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 
-            // Pokud od posledn�ho p�epnut� ub�hlo v�ce ne� 0.2 sekundy
+            
             if (GetTime() - m_LastClickTime > 0.2) {
-                checked = !checked;                  // P�epneme stav
-                if (onChange) onChange(checked); // Zavol�me akci
+                checked = !checked;                  
+                if (onChange) onChange(checked); 
 
-                m_LastClickTime = GetTime();         // Zap�eme si �as
+                m_LastClickTime = GetTime();        
             }
         }
     }

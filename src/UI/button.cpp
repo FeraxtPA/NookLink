@@ -1,3 +1,8 @@
+
+// Implementation of the Button widget class.
+// Provides clickable button with hover states and callbacks.
+
+
 #include "button.h"
 #include "../textRenderer.h" 
 #include "../colors.h"
@@ -5,7 +10,7 @@
 Button::Button(Anchor anchor, Vector2 offset, Vector2 size, std::string t, std::function<void()> callback)
     : Widget(anchor, offset, size), text(t), onClick(callback)
 {
-    // Vypo��tat po��te�n� Rectangle (m_Bounds) ihned po vytvo�en�
+    // Calculate initial Rectangle (m_Bounds) immediately after creation
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
 

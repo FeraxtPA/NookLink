@@ -1,8 +1,14 @@
+
+// Implementation of the TextBox widget class.
+// Handles multi-line text editing with cursor movement and scroll management.
+
+
 #include "textBox.h"
 #include "../textRenderer.h"
 #include "../colors.h"
+#include "../utf8_utils.h"
 #include <algorithm>
-#include <cctype> 
+
 
 TextBox::TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
     : Widget(anchor, offset, size), placeholder(ph)
@@ -10,25 +16,30 @@ TextBox::TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
 
-
-bool IsWordChar(char c) {
-    return std::isalnum(c) || c == '_';
-}
-
 void TextBox::MoveLeft(bool jumpWord) {
     if (cursorIndex == 0) return;
 
     if (!jumpWord) {
-        cursorIndex--;
+        cursorIndex = (int)Utf8::PrevCodepointStart(text, (size_t)cursorIndex);
     }
     else {
-        // Ctrl+Left
-        while (cursorIndex > 0 && !IsWordChar(text[cursorIndex - 1])) {
-            cursorIndex--;
+        size_t cursor = (size_t)cursorIndex;
+
+        while (cursor > 0) {
+            const size_t prevStart = Utf8::PrevCodepointStart(text, cursor);
+            const int cp = Utf8::DecodeCodepointAt(text, prevStart);
+            if (Utf8::IsWordCodepoint(cp)) break;
+            cursor = prevStart;
         }
-        while (cursorIndex > 0 && IsWordChar(text[cursorIndex - 1])) {
-            cursorIndex--;
+
+        while (cursor > 0) {
+            const size_t prevStart = Utf8::PrevCodepointStart(text, cursor);
+            const int cp = Utf8::DecodeCodepointAt(text, prevStart);
+            if (!Utf8::IsWordCodepoint(cp)) break;
+            cursor = prevStart;
         }
+
+        cursorIndex = (int)cursor;
     }
 }
 
@@ -36,16 +47,24 @@ void TextBox::MoveRight(bool jumpWord) {
     if (cursorIndex >= (int)text.length()) return;
 
     if (!jumpWord) {
-        cursorIndex++;
+        cursorIndex = (int)Utf8::NextCodepointStart(text, (size_t)cursorIndex);
     }
     else {
-        // Ctrl+Right
-        while (cursorIndex < (int)text.length() && IsWordChar(text[cursorIndex])) {
-            cursorIndex++;
+        size_t cursor = (size_t)cursorIndex;
+
+        while (cursor < text.size()) {
+            const int cp = Utf8::DecodeCodepointAt(text, cursor);
+            if (!Utf8::IsWordCodepoint(cp)) break;
+            cursor = Utf8::NextCodepointStart(text, cursor);
         }
-        while (cursorIndex < (int)text.length() && !IsWordChar(text[cursorIndex])) {
-            cursorIndex++;
+
+        while (cursor < text.size()) {
+            const int cp = Utf8::DecodeCodepointAt(text, cursor);
+            if (Utf8::IsWordCodepoint(cp)) break;
+            cursor = Utf8::NextCodepointStart(text, cursor);
         }
+
+        cursorIndex = (int)cursor;
     }
 }
 
@@ -75,50 +94,46 @@ void TextBox::HandleKeyRepeat(int key, bool jumpWord, void (TextBox::* moveFunc)
 void TextBox::Update() {
     if (!isVisible) return;
 
-    Vector2 mouse = GetMousePosition();
+    const Vector2 mouse = GetMousePosition();
     isHovered = CheckCollisionPointRec(mouse, m_Bounds);
 
-  
-    if (isEditable)
-    { 
+    if (isEditable) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            bool wasFocused = isFocused;
+            const bool wasFocused = isFocused;
             isFocused = isHovered;
-       
-            if (isFocused && !wasFocused) cursorIndex = (int)text.length();
+
+            if (isFocused && !wasFocused) cursorIndex = (int)text.size();
         }
-    
+    }
 
-    
-    
-   
+    cursorIndex = std::clamp(cursorIndex, 0, (int)text.size());
+
+    // Wheel scrolling works regardless of editability.
     if (isHovered || isFocused) {
-        float wheel = GetMouseWheelMove();
-        if (wheel != 0) scrollY -= wheel * 20.0f;
-    }
+        const float wheel = GetMouseWheelMove();
+        if (wheel != 0) {
+            scrollY -= wheel * 20.0f;
+            // Once user scrolls manually, never auto-jump back to caret.
+            m_UserScrolledManually = true;
+        }
     }
 
-   
-    if (isEditable)
-    { 
-    if (isFocused) {
-
+    if (isEditable && isFocused) {
 
         Widget::DesiredCursor = MOUSE_CURSOR_IBEAM;
-        
 
-        bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+        const bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
 
-     
         HandleKeyRepeat(KEY_LEFT, ctrl, &TextBox::MoveLeft);
         HandleKeyRepeat(KEY_RIGHT, ctrl, &TextBox::MoveRight);
 
-       
         int key = GetCharPressed();
         while (key > 0) {
-            if ((key >= 32) && (key <= 125) && (text.length() < maxLength)) {
-                text.insert(cursorIndex, 1, (char)key);
-                cursorIndex++;
+            if (key >= 32 && Utf8::CodepointCount(text) < (size_t)maxLength) {
+                std::string utf8Char;
+                Utf8::AppendCodepoint(utf8Char, key);
+                text.insert((size_t)cursorIndex, utf8Char);
+                cursorIndex += (int)utf8Char.size();
             }
             key = GetCharPressed();
         }
@@ -126,39 +141,51 @@ void TextBox::Update() {
        
         if (IsKeyPressed(KEY_BACKSPACE)) {
             if (cursorIndex > 0 && !text.empty()) {
-                int deleteCount = 1;
-                int startIndex = cursorIndex - 1;
+                int deleteCount = 0;
+                int startIndex = cursorIndex;
 
                 if (ctrl) {
-                    // Ctrl+Backspace
-                    int tempIndex = cursorIndex;
-                    while (tempIndex > 0 && !IsWordChar(text[tempIndex - 1])) tempIndex--;
-                    while (tempIndex > 0 && IsWordChar(text[tempIndex - 1])) tempIndex--;
-                    startIndex = tempIndex;
-                    deleteCount = cursorIndex - tempIndex;
+                    size_t tempIndex = (size_t)cursorIndex;
+                    while (tempIndex > 0) {
+                        const size_t prev = Utf8::PrevCodepointStart(text, tempIndex);
+                        const int cp = Utf8::DecodeCodepointAt(text, prev);
+                        if (Utf8::IsWordCodepoint(cp)) break;
+                        tempIndex = prev;
+                    }
+                    while (tempIndex > 0) {
+                        const size_t prev = Utf8::PrevCodepointStart(text, tempIndex);
+                        const int cp = Utf8::DecodeCodepointAt(text, prev);
+                        if (!Utf8::IsWordCodepoint(cp)) break;
+                        tempIndex = prev;
+                    }
+
+                    startIndex = (int)tempIndex;
+                    deleteCount = cursorIndex - startIndex;
+                }
+                else {
+                    const size_t prev = Utf8::PrevCodepointStart(text, (size_t)cursorIndex);
+                    startIndex = (int)prev;
+                    deleteCount = cursorIndex - startIndex;
                 }
 
-                text.erase(startIndex, deleteCount);
+                text.erase((size_t)startIndex, (size_t)deleteCount);
                 cursorIndex = startIndex;
             }
         }
 
-      
         if (IsKeyPressed(KEY_DELETE)) {
             if (cursorIndex < (int)text.length()) {
-                text.erase(cursorIndex, 1);
+                const size_t start = (size_t)cursorIndex;
+                const size_t end = Utf8::NextCodepointStart(text, start);
+                text.erase(start, end - start);
             }
         }
 
-       
         if (IsKeyPressed(KEY_ENTER)) {
-            text.insert(cursorIndex, 1, '\n');
+            text.insert((size_t)cursorIndex, 1, '\n');
             cursorIndex++;
         }
-
-    }
-    }
-    else if (isHovered) {
+    } else if (isHovered) {
         Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND;
     }
 }
@@ -206,7 +233,7 @@ void TextBox::Draw(TextRenderer* renderer) {
             renderer->DrawSimpleText(lineStr, { absoluteX, absoluteY }, fontSize, showPlaceholder ? NookCol::UI_TEXT_MUTED : NookCol::UI_TEXT);
         }
 
-        // Check if cursor is on this line
+        // Track cursor against wrapped line segment so caret aligns with wrapped rendering.
         if (isFocused && !showPlaceholder && !cursorFound && cursorIndex >= lineStartIndex && cursorIndex <= endIndex) {
             
             std::string sub = textToDraw.substr(lineStartIndex, cursorIndex - lineStartIndex);
@@ -221,48 +248,51 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     BeginScissorMode((int)m_Bounds.x, (int)m_Bounds.y, (int)m_Bounds.width, (int)m_Bounds.height);
 
-    for (int i = 0; i < (int)textToDraw.length(); i++) {
-        char c = textToDraw[i];
+    size_t i = 0;
+    while (i < textToDraw.size()) {
+        int cpSize = 0;
+        const int cp = Utf8::DecodeCodepointAt(textToDraw, i, &cpSize);
+        const size_t next = std::min(textToDraw.size(), i + (size_t)std::max(cpSize, 1));
 
         // Handle newline
-        if (c == '\n') {
-            finishLine(i, true);
-            lineStartIndex = i + 1;
+        if (cp == '\n') {
+            finishLine((int)i, true);
+            lineStartIndex = (int)next;
             lastSpaceIndex = -1;
+            i = next;
             continue;
         }
 
-       
-        std::string charStr(1, c);
-        float charWidth = renderer->Measure(charStr, fontSize);
+        const std::string glyph = textToDraw.substr(i, next - i);
+        const float glyphWidth = renderer->Measure(glyph, fontSize);
 
-        // Check Wrap
-        if (currentX + charWidth > contentWidth) {
-            if (lastSpaceIndex != -1) {
-                
+        // Soft-wrap at last whitespace when possible; hard-wrap long unbroken tokens.
+        if (currentX + glyphWidth > contentWidth) {
+            if (lastSpaceIndex != -1 && lastSpaceIndex > lineStartIndex) {
                 finishLine(lastSpaceIndex, false);
-                i = lastSpaceIndex; 
-                lineStartIndex = lastSpaceIndex + 1;
+                i = (size_t)lastSpaceIndex;
+                lineStartIndex = (int)i;
                 lastSpaceIndex = -1;
             }
             else {
-                // Force wrap
-                finishLine(i, false);
-                lineStartIndex = i;
-                i--; 
+                finishLine((int)i, false);
+                lineStartIndex = (int)i;
             }
+            continue;
         }
-        else {
-            currentX += charWidth;
-            if (c == ' ') lastSpaceIndex = i;
+
+        currentX += glyphWidth;
+        if (Utf8::IsWhitespaceCodepoint(cp)) {
+            lastSpaceIndex = (int)next;
         }
+        i = next;
     }
 
   
     finishLine((int)textToDraw.length(), false);
 
-    // 4. Draw Cursor
-    if (isFocused && cursorFound) {
+    
+    if (isFocused && cursorFound && !m_UserScrolledManually) {
        
         float relY = cursorPos.y - m_Bounds.y;
         if (relY < 0) scrollY += relY;

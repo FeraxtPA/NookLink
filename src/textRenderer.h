@@ -1,3 +1,8 @@
+
+// Handles text rendering with various alignment and fitting modes.
+// Provides methods for drawing text at different positions with proper sizing.
+
+
 #pragma once
 
 #include <raylib.h>

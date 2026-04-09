@@ -1,4 +1,10 @@
-﻿#pragma once
+﻿
+// Data model for a single book entry.
+// Contains metadata such as title, author, rating, status, and reading dates.
+// Provides utility functions for status management and JSON serialization.
+
+
+#pragma once
 #include <string>
 #include <vector>
 
@@ -14,8 +20,7 @@ enum class Status
 	Read,
 };
 
-
-// Rounds a  rating to two decimal places and returns, for saving to json so it looks better
+// Rounds a rating to two decimal places for consistent JSON serialization
 inline float GetRatingTwoDecimal(const float& rating) {
 
   int i;

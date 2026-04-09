@@ -1,6 +1,14 @@
+
+// Implementation of the TextRenderer class.
+// Handles font loading and text rendering with various fitting strategies.
+
+
 #include "textRenderer.h"
-#include "colors.h"
-#include <algorithm>
+
+#include "utf8_utils.h"
+
+#include <vector>
+
 
 TextRenderer::TextRenderer() {
     InitFont();
@@ -12,17 +20,31 @@ TextRenderer::~TextRenderer() {
 
 void TextRenderer::InitFont()
 {
-    // Load custom codepoints (fractions, stars)
-    int codepoints[101] = { 0 };
-    for (int i = 0; i < 95; i++) codepoints[i] = 32 + i; // ASCII 32-126
+    std::vector<int> codepoints;
+    auto addRange = [&codepoints](int begin, int end) {
+        for (int cp = begin; cp <= end; ++cp) {
+            codepoints.push_back(cp);
+        }
+    };
 
-    codepoints[95] = 0x00BC; // 1/4
-    codepoints[96] = 0x00BD; // 1/2
-    codepoints[97] = 0x00BE; // 3/4
-    codepoints[98] = 0x2605; // star
+    // Broad multilingual + symbols set (Latin, Greek, Cyrillic, punctuation, icons).
+    addRange(0x0020, 0x007E); // Basic Latin
+    addRange(0x00A0, 0x00FF); // Latin-1 Supplement
+    addRange(0x0100, 0x017F); // Latin Extended-A
+    addRange(0x0180, 0x024F); // Latin Extended-B
+    addRange(0x1E00, 0x1EFF); // Latin Extended Additional
+    addRange(0x0370, 0x03FF); // Greek and Coptic
+    addRange(0x0400, 0x04FF); // Cyrillic
+    addRange(0x2000, 0x206F); // General punctuation
+    addRange(0x20A0, 0x20CF); // Currency symbols
+    addRange(0x2190, 0x21FF); // Arrows
+    addRange(0x2600, 0x26FF); // Misc symbols
+    addRange(0x2700, 0x27BF); // Dingbats
 
-    
-    m_Font = LoadFontEx("assets/DejaVuSans.ttf", 64, codepoints, 99);
+    m_Font = LoadFontEx("assets/DejaVuSans.ttf", 64, codepoints.data(), (int)codepoints.size());
+    if (m_Font.texture.id == 0) {
+        m_Font = GetFontDefault();
+    }
     SetTextureFilter(m_Font.texture, TEXTURE_FILTER_BILINEAR);
 }
 
@@ -39,9 +61,10 @@ std::string TextRenderer::FitTextToWidth(const std::string& text, float maxWidth
     std::string ellipsis = "...";
     float ellipsisW = Measure(ellipsis, fontSize);
 
-    // Binary search roughly or linear scan to cut text
-    while (result.length() > 0 && (Measure(result, fontSize) + ellipsisW) > maxWidth) {
-        result.pop_back();
+    // Remove trailing codepoints, not bytes, to keep UTF-8 valid.
+    while (!result.empty() && (Measure(result, fontSize) + ellipsisW) > maxWidth) {
+        size_t cursor = result.size();
+        Utf8::ErasePrevCodepoint(result, cursor);
     }
 
     return result + ellipsis;

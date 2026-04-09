@@ -1,3 +1,8 @@
+
+// Flexible layout widget for arranging child widgets.
+// Supports horizontal/vertical layout with flexible sizing and gap management.
+
+
 #pragma once
 
 #include "widget.h"

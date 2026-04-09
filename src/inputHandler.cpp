@@ -1,3 +1,8 @@
+
+// Implementation of the InputHandler class.
+// Processes mouse interactions and keyboard shortcuts for the graph interface.
+
+
 #include "inputHandler.h"
 #include "logging.h"
 
@@ -32,7 +37,6 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
         Node* clickedNode = m_GraphManager->getNodeAtPosition(worldMousePos);
         if (clickedNode) {
 
-            // Double click logika z�st�v� stejn�...
             if (clickedNode->id == m_LastClickedNodeId && (currentTime - m_LastClickTime) <= m_DoubleClickThreshold) {
                 if (m_GraphManager->tryUnlockNodeAt(worldMousePos)) {
                     Log::Debug("Unlocked node ID: " + std::to_string(clickedNode->id));
@@ -45,20 +49,33 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
                 m_LastClickedNodeType = clickedNode->type;
                 m_LastClickTime = currentTime;
 
-                // === TADY JE TA ZM�NA ===
                 if (clickedNode->type == NodeType::Book) {
-                    // Zm�n�no z findBookById na getBookById (z�sk�me Book* m�sto const Book*)
                     Book* clickedBook = m_BookManager.getBookById(clickedNode->id);
                     if (clickedBook) {
                         Log::Debug("Clicked book: " + clickedBook->getTitle());
 
-                        // ZAVOL�ME N�� NOV� PANEL!
                         m_UIManager->OpenBookDetails(clickedBook);
                     }
                 }
                 else if (clickedNode->type == NodeType::Genre) {
                     std::string genreName = m_GraphManager->getGenreNameByNodeId(clickedNode->id);
                     Log::Debug("Clicked genre: " + genreName);
+
+                    std::vector<std::string> sampleTitles;
+                    for (const auto& b : m_BookManager.getBooks()) {
+                        for (const auto& g : b.getGenres()) {
+                            if (g == genreName) {
+                                sampleTitles.push_back(b.getTitle());
+                                break;
+                            }
+                        }
+                    }
+
+                    m_UIManager->OpenGenreDetails(
+                        genreName,
+                        m_GraphManager->getNumOfConnectedBooks(clickedNode->id),
+                        sampleTitles
+                    );
                 }
             }
         }

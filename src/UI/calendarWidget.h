@@ -1,3 +1,8 @@
+
+// Calendar date picker widget.
+// Provides month/year navigation and date selection with modal behavior.
+
+
 #pragma once
 
 #include "widget.h"

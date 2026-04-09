@@ -1,6 +1,13 @@
+
+// Implementation of the FlexLayout widget class.
+// Manages child widget positioning with flexible and fixed sizing.
+
+
 #include "flexLayout.h"
+#include "dropdown.h"
 
 #include <algorithm>
+#include <vector>
 
 FlexLayout::FlexLayout(Anchor anchor, Vector2 offset, Vector2 size, Direction direction, Vector2 padding, float gap, CrossAlign crossAlign)
     : Widget(anchor, offset, size), m_Direction(direction), m_CrossAlign(crossAlign), m_Padding(padding), m_Gap(gap)
@@ -51,10 +58,24 @@ void FlexLayout::Draw(TextRenderer* renderer)
 
     LayoutChildren();
 
+    std::vector<std::shared_ptr<Dropdown>> expandedDropdowns;
+    expandedDropdowns.reserve(m_Items.size());
+
     for (auto& item : m_Items) {
         if (item.widget) {
+            auto dropdown = std::dynamic_pointer_cast<Dropdown>(item.widget);
+            if (dropdown && dropdown->IsExpanded()) {
+                expandedDropdowns.push_back(dropdown);
+                continue;
+            }
+
             item.widget->Draw(renderer);
         }
+    }
+
+    // Draw expanded dropdowns last so option menus stay above neighboring fields.
+    for (auto& dropdown : expandedDropdowns) {
+        dropdown->Draw(renderer);
     }
 }
 
@@ -85,10 +106,12 @@ void FlexLayout::LayoutChildren()
             }
         }
 
+        // Free space = content - fixed items - inter-item gaps.
         const float totalGap = m_Gap * std::max(0, visibleCount - 1);
         float remaining = contentWidth - fixedWidth - totalGap;
         if (remaining < 0.0f) remaining = 0.0f;
 
+        // Each grow unit receives proportional share of remaining width.
         const float growUnit = growTotal > 0.0f ? remaining / growTotal : 0.0f;
         float currentX = contentX;
 
@@ -98,6 +121,7 @@ void FlexLayout::LayoutChildren()
 
             if (item.widget) {
                 float y = contentY;
+                // Cross-axis alignment for horizontal flow affects Y only.
                 switch (m_CrossAlign) {
                 case CrossAlign::Start:   y = contentY; break;
                 case CrossAlign::Center:  y = contentY + (contentHeight - itemHeight) * 0.5f; break;
@@ -130,6 +154,7 @@ void FlexLayout::LayoutChildren()
         }
     }
 
+    // Vertical flow mirrors horizontal logic, but distributes remaining height.
     const float totalGap = m_Gap * std::max(0, visibleCount - 1);
     float remaining = contentHeight - fixedHeight - totalGap;
     if (remaining < 0.0f) remaining = 0.0f;
@@ -143,6 +168,7 @@ void FlexLayout::LayoutChildren()
 
         if (item.widget) {
             float x = contentX;
+            // Cross-axis alignment for vertical flow affects X only.
             switch (m_CrossAlign) {
             case CrossAlign::Start:   x = contentX; break;
             case CrossAlign::Center:  x = contentX + (contentWidth - itemWidth) * 0.5f; break;

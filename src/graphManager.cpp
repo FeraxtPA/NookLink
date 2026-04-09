@@ -1,3 +1,8 @@
+
+// Implementation of the GraphManager class.
+// Manages graph rendering, node physics, and layout calculations.
+
+
 #include "graphManager.h"
 #include "logging.h"
 
@@ -13,7 +18,7 @@ bool GraphManager::TryGrabNodeAt(Vector2 mousePos, bool isShiftPressed) {
       if (isShiftPressed && node.type != NodeType::Genre) {
         node.locked = true;
       }
-      // ZM�NA ZDE:
+      // Update the dragged node reference
       setDraggedNode(node.id);
       return true;
     }
@@ -22,15 +27,15 @@ bool GraphManager::TryGrabNodeAt(Vector2 mousePos, bool isShiftPressed) {
 }
 
 void GraphManager::releaseDraggedNode() {
-  Node *dragged = getDraggedNode(); // Pou�ije na�i novou metodu
+  Node *dragged = getDraggedNode(); 
   if (dragged) {
     dragged->isDragged = false;
-    m_DraggedNodeId = -1; // Vyresetujeme ID
+    m_DraggedNodeId = -1; 
   }
 }
 
 bool GraphManager::updateDraggedNodePosition(Vector2 mousePos) {
-  Node *dragged = getDraggedNode(); // Pou�ije na�i novou metodu
+  Node *dragged = getDraggedNode();
   if (dragged) {
     dragged->position = mousePos;
     if (dragged->type == NodeType::Genre) {
@@ -67,10 +72,15 @@ void GraphManager::applyLoadedPositions(
 
   for (auto &node : m_Nodes) {
     if (node.type == NodeType::Book && loadedPos.count(node.id)) {
-      node.position.x = loadedPos.at(node.id).x;
-      node.position.y = loadedPos.at(node.id).y;
+      const NodePosition& saved = loadedPos.at(node.id);
 
-      node.locked = loadedPos.at(node.id).locked;
+      // Keep compatibility with legacy saves: only hard-apply locked nodes.
+      // Unlocked nodes are re-layouted by current physics/clustering rules.
+      if (saved.locked) {
+        node.position.x = saved.x;
+        node.position.y = saved.y;
+        node.locked = true;
+      }
     }
   }
 }
@@ -105,7 +115,7 @@ void GraphManager::updatePhysics(float dt) {
 
   std::unordered_map<int, std::vector<int>> bookToGenreMap;
 
-  // Vytvo��me si mapov�n� (Kniha -> Jej� ��nry)
+  // Build adjacency once per tick; GraphLayout consumes compact book->genre IDs.
   for (const auto &book : m_BookManager.getBooks()) {
     std::vector<int> connectedGenreNodeIds;
     for (const auto &genreStr : book.getGenres()) {
@@ -165,7 +175,6 @@ void GraphManager::placeGenreNodes(
   float genreRadius =
       GraphConfig::BaseNodeRadius * GraphConfig::GenreRadiusMultiplier;
 
-  // Calculate the radius of the large circle on which genres will be placed
   float genreCircleRadius =
       calculateCircleRadius((int)genres.size(), m_CanvasSize.x / 3.0f);
 
@@ -205,10 +214,10 @@ void GraphManager::placeBookNodes(
     if (oldPositions.find(book.getId()) != oldPositions.end()) {
       m_Nodes.push_back({book.getId(), NodeType::Book,
                          oldPositions.at(book.getId()), nodeRadius});
-      continue; // Skip the rest of the calculation logic for this book
+      continue; 
     }
 
-    // New position
+    
     Vector2 avgPos = {};
     int count = 0;
 
@@ -242,17 +251,20 @@ GraphManager::GraphManager(const BookManager &bm, ConnectionManager &cm,
     : m_BookManager(bm), m_ConnectionManager(cm), m_NodeRenderer(bm, tr),
       m_CanvasSize(canvasSize) {}
 
-void GraphManager::initializePositions() {
+void GraphManager::initializePositions(bool preserveExistingPositions) {
   std::unordered_map<int, Vector2> oldBookPos;
   std::unordered_map<std::string, Vector2> oldGenrePos;
 
-  for (const auto &node : m_Nodes) {
-    if (node.type == NodeType::Book) {
-      oldBookPos[node.id] = node.position;
-    } else if (node.type == NodeType::Genre) {
-      auto nameOpt = getGenreByNodeId(node.id);
-      if (nameOpt.has_value()) {
-        oldGenrePos[nameOpt.value()] = node.position;
+  // Preserve existing positions so rebuilding connections does not always reshuffle nodes.
+  if (preserveExistingPositions) {
+    for (const auto &node : m_Nodes) {
+      if (node.type == NodeType::Book) {
+        oldBookPos[node.id] = node.position;
+      } else if (node.type == NodeType::Genre) {
+        auto nameOpt = getGenreByNodeId(node.id);
+        if (nameOpt.has_value()) {
+          oldGenrePos[nameOpt.value()] = node.position;
+        }
       }
     }
   }
@@ -282,7 +294,7 @@ void GraphManager::removeNodeById(int id) {
       }
     }
 
-    // OPRAVA: Kontrola ta�en�ho uzlu p�es ID
+   
     if (m_DraggedNodeId == targetId) {
       m_DraggedNodeId = -1;
     }
@@ -368,9 +380,7 @@ void GraphManager::recalculateVisibility() {
         continue;
       }
 
-      // Check Genre (Hide book if *any* of its genres are hidden)
-      // Alternatively: Hide only if *all* genres are hidden.
-      // Below implements "Hide if any genre matches the blocklist"
+          // Book visibility is conjunction of status filter and genre filter.
       for (const auto &g : b->getGenres()) {
         if (m_HiddenGenres.count(g)) {
           node.visible = false;
@@ -393,7 +403,6 @@ void GraphManager::drawNode(const Node &node, float zoom) {
 }
 
 void GraphManager::updateGenrePosition(int nodeId, Vector2 newPos) {
-  // Update position inside m_Genres for the genre that matches nodeId
   for (auto &[genre, info] : m_Genres) {
     if (info.nodeId == nodeId) {
       info.position = newPos;
@@ -410,6 +419,7 @@ void GraphManager::setLayoutMode(LayoutMode mode) {
   m_LayoutMode = mode;
 
   if (m_LayoutMode == LayoutMode::Grid) {
+    // Save organic (physics) coordinates so we can restore them when leaving grid mode.
     m_PreGridPositions.clear();
     for (const auto &node : m_Nodes) {
       m_PreGridPositions[node.id] = node.position;
@@ -433,18 +443,8 @@ void GraphManager::setLayoutMode(LayoutMode mode) {
 
     m_IsPhysicsActive = true;
   } else {
-    if (!m_PreGridPositions.empty()) {
-      for (auto &node : m_Nodes) {
-        auto it = m_PreGridPositions.find(node.id);
-        if (it != m_PreGridPositions.end()) {
-          node.position = it->second;
-          if (node.type == NodeType::Genre) {
-            updateGenrePosition(node.id, node.position);
-          }
-        }
-      }
-    }
-
+    // Rebuild fresh physics clusters when returning from grid to avoid stale/colliding legacy positions.
+    initializePositions(false);
     wakeUpPhysics();
   }
 }

@@ -1,3 +1,8 @@
+
+// Implementation of the logging system.
+// Handles log file creation and writes leveled log messages with timestamps.
+
+
 #include "logging.h"
 
 #include <chrono>

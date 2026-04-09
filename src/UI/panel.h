@@ -1,3 +1,8 @@
+
+// Panel widget for grouping and organizing UI elements.
+// Provides title bar, content layout, and child widget management.
+
+
 #pragma once
 #include "widget.h"
 #include "flexLayout.h"
@@ -8,6 +13,7 @@
 class Panel : public Widget {
 public:
     Panel(Anchor anchor, Vector2 offset, Vector2 size, std::string t);
+    void SetTitle(const std::string& t) { title = t; }
 
     std::shared_ptr<FlexLayout> CreateContentLayout(
         FlexLayout::Direction direction,

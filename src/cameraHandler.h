@@ -1,3 +1,8 @@
+
+// Manages the 2D camera for graph visualization.
+// Handles panning, zooming, and viewport management for the graph canvas.
+
+
 #pragma once
 #include <raylib.h>
 
