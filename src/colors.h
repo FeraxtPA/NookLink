@@ -23,6 +23,17 @@ namespace NookCol
     constexpr Color TEXT_HIGHLIGHT = { 120, 150, 150, 255 };
     
     constexpr Color TEXT_ONNODE = { 235, 219, 178, 255 };
+
+	constexpr Color UI_SHELL = { 47, 43, 40, 232 };
+	constexpr Color UI_PANEL = { 59, 54, 50, 236 };
+	constexpr Color UI_PANEL_ALT = { 66, 60, 55, 236 };
+	constexpr Color UI_PANEL_HOVER = { 78, 71, 65, 240 };
+	constexpr Color UI_BORDER = { 113, 103, 93, 255 };
+	constexpr Color UI_BORDER_SOFT = { 89, 82, 75, 255 };
+	constexpr Color UI_TEXT = { 236, 225, 208, 255 };
+	constexpr Color UI_TEXT_MUTED = { 188, 174, 160, 255 };
+	constexpr Color UI_ACCENT = { 214, 177, 112, 255 };
+	constexpr Color UI_ACCENT_SOFT = { 164, 187, 151, 255 };
 }
 
 //touissant

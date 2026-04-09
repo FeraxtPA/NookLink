@@ -1,6 +1,40 @@
 ﻿#include "book.h"
 
-Book::Book() : m_id(0), m_Title(""), m_Author(""), m_Status(Status::ToRead), m_Notes(""), m_Rating(0.0f) {}
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
+namespace {
+std::string GetTodayDateDDMMYYYY()
+{
+    const auto now = std::chrono::system_clock::now();
+    const std::time_t tt = std::chrono::system_clock::to_time_t(now);
+
+    std::tm localTm{};
+#if defined(_WIN32)
+    localtime_s(&localTm, &tt);
+#else
+    localtime_r(&tt, &localTm);
+#endif
+
+    std::ostringstream oss;
+    oss << std::put_time(&localTm, "%d.%m.%Y");
+    return oss.str();
+}
+}
+
+Book::Book()
+    : m_id(0),
+      m_Title(""),
+      m_Author(""),
+      m_Status(Status::ToRead),
+      m_Notes(""),
+      m_Rating(0.0f),
+      m_DateAdded(GetTodayDateDDMMYYYY()),
+      m_DateStartedReading(""),
+      m_DateFinishedReading("")
+{}
 
 
 Book::Book(const std::string& title, const std::string& author, Status status) :
@@ -9,6 +43,9 @@ Book::Book(const std::string& title, const std::string& author, Status status) :
 	m_id = 0; 
 	m_Notes = "";
 	m_Rating = 0.0f; 
+    m_DateAdded = GetTodayDateDDMMYYYY();
+    m_DateStartedReading = "";
+    m_DateFinishedReading = "";
 
 }
 

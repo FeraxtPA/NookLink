@@ -44,6 +44,5 @@ private:
     const BookManager& m_BookManager;
     TextRenderer* m_TextRenderer; 
 
-    Vector2 getNodePosition(int id, const std::vector<Node>& nodes) const;
     Color getStatusColor(Status status) const;
 };

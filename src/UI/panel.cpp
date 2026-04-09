@@ -1,5 +1,10 @@
 #include "panel.h"
 #include "../textRenderer.h"
+#include "../colors.h"
+
+namespace {
+constexpr float kPanelTitleBarHeight = 40.0f;
+}
 
 Panel::Panel(Anchor anchor, Vector2 offset, Vector2 size, std::string t)
     : Widget(anchor, offset, size), title(t)
@@ -7,12 +12,52 @@ Panel::Panel(Anchor anchor, Vector2 offset, Vector2 size, std::string t)
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
 
+std::shared_ptr<FlexLayout> Panel::CreateContentLayout(
+    FlexLayout::Direction direction,
+    Vector2 padding,
+    float gap,
+    FlexLayout::CrossAlign crossAlign)
+{
+    auto layout = std::make_shared<FlexLayout>(
+        Anchor::TopLeft,
+        Vector2{ 0.0f, 0.0f },
+        Vector2{ 0.0f, 0.0f },
+        direction,
+        padding,
+        gap,
+        crossAlign
+    );
+
+    contentLayouts.push_back(layout);
+    SyncContentLayouts();
+    return layout;
+}
+
+Rectangle Panel::GetContentRect() const
+{
+    return Rectangle{
+        m_Bounds.x,
+        m_Bounds.y + kPanelTitleBarHeight,
+        m_Bounds.width,
+        std::max(0.0f, m_Bounds.height - kPanelTitleBarHeight)
+    };
+}
+
+void Panel::SyncContentLayouts()
+{
+    const Rectangle contentRect = GetContentRect();
+    for (auto& layout : contentLayouts) {
+        layout->m_Bounds = contentRect;
+    }
+}
+
 
 void Panel::OnWindowResize(int screenWidth, int screenHeight) {
-    Widget::OnWindowResize(screenWidth, screenHeight); // Spoèítá m_Bounds panelu
+    Widget::OnWindowResize(screenWidth, screenHeight); // Spoï¿½ï¿½tï¿½ m_Bounds panelu
     for (auto& child : children) {
-        child->OnWindowResize(screenWidth, screenHeight); // Aktualizuje všechny dìti
+        child->OnWindowResize(screenWidth, screenHeight); // Aktualizuje vï¿½echny dï¿½ti
     }
+    SyncContentLayouts();
 }
 
 
@@ -49,6 +94,8 @@ void Panel::Update() {
                 child->m_Bounds.y += deltaY;
             }
 
+            SyncContentLayouts();
+
             Widget::DesiredCursor = MOUSE_CURSOR_RESIZE_ALL;
         }
     }
@@ -79,8 +126,14 @@ void Panel::Update() {
         }
     }
 
+    SyncContentLayouts();
+
     // Update Children
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        (*it)->Update();
+    }
+
+    for (auto it = contentLayouts.rbegin(); it != contentLayouts.rend(); ++it) {
         (*it)->Update();
     }
 }
@@ -88,22 +141,28 @@ void Panel::Update() {
 void Panel::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
+    SyncContentLayouts();
+
     // Background
-    DrawRectangleRec(m_Bounds, Fade(LIGHTGRAY, 0.95f));
+    DrawRectangleRounded(m_Bounds, 0.12f, 12, NookCol::UI_PANEL);
 
     // Draw Title Bar 
-    DrawRectangle((int)m_Bounds.x, (int)m_Bounds.y, (int)m_Bounds.width, 40, Fade(GRAY, 0.4f));
+    DrawRectangleRounded({ m_Bounds.x, m_Bounds.y, m_Bounds.width, kPanelTitleBarHeight }, 0.12f, 12, NookCol::UI_SHELL);
 
     // Border
-    DrawRectangleLinesEx(m_Bounds, 3, DARKGRAY);
+    DrawRectangleRoundedLinesEx(m_Bounds, 0.12f, 12, 2.0f, NookCol::UI_BORDER);
 
     // Title Text
     if (renderer) {
-        renderer->DrawSimpleText(title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, DARKGRAY);
+        renderer->DrawSimpleText(title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
     }
 
     // Draw Children
     for (auto& child : children) {
         child->Draw(renderer);
+    }
+
+    for (auto& layout : contentLayouts) {
+        layout->Draw(renderer);
     }
 }

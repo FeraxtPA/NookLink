@@ -3,8 +3,8 @@
 #include <vector>
 #include "book.h"
 
-// Typy pravidel vyèlenìné z GraphManageru
-enum class RuleType { Text, RatingGreater, RatingLower, RatingEqual, Status, Genre };
+// Typy pravidel vyï¿½lenï¿½nï¿½ z GraphManageru
+enum class RuleType { Text, RatingGreater, RatingLower, RatingEqual, Status, Genre, FinishedRange };
 
 struct FilterRule {
     RuleType type = RuleType::Text;
@@ -16,13 +16,13 @@ class SearchFilter {
 public:
     SearchFilter() = default;
 
-    // Zavolá se POUZE když se zmìní text ve vyhledávání
+    // Zavolï¿½ se POUZE kdyï¿½ se zmï¿½nï¿½ text ve vyhledï¿½vï¿½nï¿½
     void setQuery(const std::string& query);
 
-    // Zjistí, zda je vùbec nìjaké vyhledávání aktivní
+    // Zjistï¿½, zda je vï¿½bec nï¿½jakï¿½ vyhledï¿½vï¿½nï¿½ aktivnï¿½
     bool isActive() const { return !m_Rules.empty(); }
 
-    // Èisté metody pro vyhodnocení konkrétních entit
+    // ï¿½istï¿½ metody pro vyhodnocenï¿½ konkrï¿½tnï¿½ch entit
     bool matchesBook(const Book* book) const;
     bool matchesGenre(const std::string& genreName) const;
 
@@ -32,6 +32,6 @@ private:
 
     void parseQuery();
 
-    // Pomocná funkce pøesunutá z graphManager.cpp
+    // Pomocnï¿½ funkce pï¿½esunutï¿½ z graphManager.cpp
     std::string statusToString(Status s) const;
 };

@@ -1,5 +1,12 @@
 #include "graphLayout.h"
-#include <iostream>
+#include <algorithm>
+
+namespace {
+float SmoothStep01(float t) {
+    const float x = std::clamp(t, 0.0f, 1.0f);
+    return x * x * (3.0f - 2.0f * x);
+}
+}
 
 // src/graphLayout.cpp
 void GraphLayout::calculateGridLayout(
@@ -12,75 +19,96 @@ void GraphLayout::calculateGridLayout(
     std::vector<Node*> genres;
     std::vector<Node*> books;
 
-    // Rozdìlíme uzly na žánry a knihy
+    // Rozdï¿½lï¿½me uzly na ï¿½ï¿½nry a knihy
     for (auto& n : nodes) {
         if (n.type == NodeType::Genre) genres.push_back(&n);
         else books.push_back(&n);
     }
 
-    float spacingX = 280.0f; // Vzdálenost mezi knihami na polièce
-    float spacingY = 300.0f; // Vzdálenost mezi jednotlivými žánry (øádky)
+    float spacingX = 280.0f; // Vzdï¿½lenost mezi knihami na poliï¿½ce
+    float spacingY = 300.0f; // Vzdï¿½lenost mezi jednotlivï¿½mi ï¿½ï¿½nry (ï¿½ï¿½dky)
 
-    // Výpoèet poèáteèního bodu
-    // X posuneme více doleva, aby polièky mìly prostor rùst doprava
+    // Vï¿½poï¿½et poï¿½ï¿½teï¿½nï¿½ho bodu
+    // X posuneme vï¿½ce doleva, aby poliï¿½ky mï¿½ly prostor rï¿½st doprava
     float startX = centerPos.x - 600.0f;
-    // Y vycentrujeme podle toho, kolik máme žánrù
+    // Y vycentrujeme podle toho, kolik mï¿½me ï¿½ï¿½nrï¿½
     float startY = centerPos.y - (genres.size() * spacingY) / 2.0f;
 
-    std::unordered_set<int> placedBooks; // Sem si zapisujeme, co už má místo
+    std::unordered_set<int> placedBooks; // Sem si zapisujeme, co uï¿½ mï¿½ mï¿½sto
     int row = 0;
 
-    // 1. Rozmístìní knih do polièek podle žánrù
+    // 1. Rozmï¿½stï¿½nï¿½ knih do poliï¿½ek podle ï¿½ï¿½nrï¿½
     for (auto* g : genres) {
-        // Uzel Žánru usadíme na úplný zaèátek øádku
+        // Uzel ï¿½ï¿½nru usadï¿½me na ï¿½plnï¿½ zaï¿½ï¿½tek ï¿½ï¿½dku
         m_TargetPositions[g->id] = { startX, startY + row * spacingY };
 
-        int col = 1; // Sloupec 0 je žánr, knihy zaèínají na 1
+        int col = 1; // Sloupec 0 je ï¿½ï¿½nr, knihy zaï¿½ï¿½najï¿½ na 1
 
         for (auto* b : books) {
-            // Pokud už kniha leží na jiné polièce, pøeskoèíme ji
+            // Pokud uï¿½ kniha leï¿½ï¿½ na jinï¿½ poliï¿½ce, pï¿½eskoï¿½ï¿½me ji
             if (placedBooks.count(b->id)) continue;
 
             auto it = bookToGenreMap.find(b->id);
             if (it != bookToGenreMap.end()) {
                 const auto& bookGenres = it->second;
-                // Zkontrolujeme, jestli kniha patøí do aktuálního žánru
+                // Zkontrolujeme, jestli kniha patï¿½ï¿½ do aktuï¿½lnï¿½ho ï¿½ï¿½nru
                 if (std::find(bookGenres.begin(), bookGenres.end(), g->id) != bookGenres.end()) {
-                    // Kniha patøí sem! Usadíme ji vedle.
+                    // Kniha patï¿½ï¿½ sem! Usadï¿½me ji vedle.
                     m_TargetPositions[b->id] = { startX + col * spacingX, startY + row * spacingY };
                     placedBooks.insert(b->id);
                     col++;
                 }
             }
         }
-        row++; // Pøesun na další øádek (další žánr)
+        row++; // Pï¿½esun na dalï¿½ï¿½ ï¿½ï¿½dek (dalï¿½ï¿½ ï¿½ï¿½nr)
     }
 
-    // 2. Úklid sirotkù (knihy, které nemají žádný žánr)
+    // 2. ï¿½klid sirotkï¿½ (knihy, kterï¿½ nemajï¿½ ï¿½ï¿½dnï¿½ ï¿½ï¿½nr)
     int orphansCol = 0;
     for (auto* b : books) {
         if (!placedBooks.count(b->id)) {
-            // Dáme je do úplnì posledního, extra øádku
+            // Dï¿½me je do ï¿½plnï¿½ poslednï¿½ho, extra ï¿½ï¿½dku
             m_TargetPositions[b->id] = { startX + orphansCol * spacingX, startY + row * spacingY };
             orphansCol++;
         }
     }
+
+    // Pï¿½i pï¿½epnutï¿½ Physics -> Grid lehce ohï¿½ejeme systï¿½m a na chvï¿½li zastavï¿½me cooldown,
+    // aby uzly mï¿½ly ï¿½as plynule dojet do novï¿½ch cï¿½lovï¿½ch pozic.
+    m_GridStartPositions.clear();
+    for (const auto& node : nodes) {
+        m_GridStartPositions[node.id] = node.position;
+    }
+    m_GridTransitionT = 0.0f;
+
+    m_Temperature = std::max(m_Temperature, m_MinTransitionTemperature);
+    m_CoolingHoldFrames = m_GridTransitionHoldFrames;
 }
 
-bool GraphLayout::updateLerp(std::vector<Node>& nodes) {
+bool GraphLayout::updateLerp(std::vector<Node>& nodes, float dt) {
     bool isMoving = false;
-    float lerpSpeed = 0.05f; // 0.05 znamená, že uzel každý snímek uletí 5% zbývající cesty
+
+    // Vyï¿½ï¿½ï¿½ teplota = sviï¿½nï¿½jï¿½ï¿½ pï¿½iblï¿½enï¿½ k cï¿½li; drï¿½ï¿½ transition ï¿½ivou po toggle.
+    const float tempBoost = std::clamp(m_Temperature, 0.0f, 1.0f);
+    const float transitionDuration = m_GridTransitionDuration * (1.15f - 0.35f * tempBoost);
+    m_GridTransitionT = std::min(1.0f, m_GridTransitionT + (dt / std::max(transitionDuration, 0.01f)));
+    const float alpha = SmoothStep01(m_GridTransitionT);
 
     for (auto& n : nodes) {
-        // Ignorujeme uzly, které uživatel zrovna drží myší
+        // Ignorujeme uzly, kterï¿½ uï¿½ivatel zrovna drï¿½ï¿½ myï¿½ï¿½
         if (!n.isDragged && m_TargetPositions.count(n.id)) {
-            Vector2 target = m_TargetPositions[n.id];
+            const Vector2 target = m_TargetPositions[n.id];
+            const Vector2 start = m_GridStartPositions.count(n.id) ? m_GridStartPositions[n.id] : n.position;
             float dist = Vector2Distance(n.position, target);
 
-            // Pokud jsme daleko, letíme
-            if (dist > 1.0f) {
-                // Vector2Lerp je super funkce z raymath.h pro plynulý pohyb
-                n.position = Vector2Lerp(n.position, target, lerpSpeed);
+            if (m_GridTransitionT < 1.0f) {
+                n.position = Vector2Lerp(start, target, alpha);
+                if (Vector2Distance(n.position, target) > 0.5f) {
+                    isMoving = true;
+                }
+            }
+            else if (dist > 0.5f) {
+                n.position = target;
                 isMoving = true;
             }
             else {
@@ -88,7 +116,18 @@ bool GraphLayout::updateLerp(std::vector<Node>& nodes) {
             }
         }
     }
-    return isMoving;
+
+    if (m_CoolingHoldFrames > 0) {
+        --m_CoolingHoldFrames;
+    }
+    else {
+        m_Temperature *= m_GridCoolingFactor;
+        if (m_Temperature < 0.0f) {
+            m_Temperature = 0.0f;
+        }
+    }
+
+    return m_GridTransitionT < 1.0f || isMoving;
 }
 
 bool GraphLayout::updatePhysics(
@@ -100,24 +139,24 @@ bool GraphLayout::updatePhysics(
 {
     std::vector<Vector2> displacements(nodes.size(), { 0.0f, 0.0f });
 
-    // ZÁKLAD: Všechny uzly jsou aktivní (pokud nic netáhneme)
+    // Zï¿½KLAD: Vï¿½echny uzly jsou aktivnï¿½ (pokud nic netï¿½hneme)
     std::vector<bool> isActive(nodes.size(), true);
 
-    // Pokud táhneme uzel, omezíme fyziku jen na propojené a blízké uzly
+    // Pokud tï¿½hneme uzel, omezï¿½me fyziku jen na propojenï¿½ a blï¿½zkï¿½ uzly
     if (draggedNode != nullptr) {
-        float activeRadius = 800.0f; // Vzdálenost, ve které uzly uhýbají
+        float activeRadius = 800.0f; // Vzdï¿½lenost, ve kterï¿½ uzly uhï¿½bajï¿½
 
-        // Nejdøív vše uspíme
+        // Nejdï¿½ï¿½v vï¿½e uspï¿½me
         std::fill(isActive.begin(), isActive.end(), false);
 
         for (size_t i = 0; i < nodes.size(); ++i) {
-            // 1. Zóna kolem kurzoru (aby cizí uzly uhýbaly)
+            // 1. Zï¿½na kolem kurzoru (aby cizï¿½ uzly uhï¿½baly)
             if (Vector2Distance(nodes[i].position, draggedNode->position) < activeRadius) {
                 isActive[i] = true;
             }
         }
 
-        // 2. Tvoje pravidlo: Probuzení podle propojení (pøes žánry)
+        // 2. Tvoje pravidlo: Probuzenï¿½ podle propojenï¿½ (pï¿½es ï¿½ï¿½nry)
         if (draggedNode->type == NodeType::Book) {
             auto it = bookToGenreMap.find(draggedNode->id);
             if (it != bookToGenreMap.end()) {
@@ -146,10 +185,10 @@ bool GraphLayout::updatePhysics(
     float attractionStrength = 0.05f;
     float centerGravity = 0.01f;
 
-    // 1. ODPUZOVÁNÍ
+    // 1. ODPUZOVï¿½Nï¿½
     for (size_t i = 0; i < nodes.size(); ++i) {
         for (size_t j = i + 1; j < nodes.size(); ++j) {
-            // Pokud OBA spí, nemusíme je øešit
+            // Pokud OBA spï¿½, nemusï¿½me je ï¿½eï¿½it
             if (!isActive[i] && !isActive[j]) continue;
 
             Vector2 delta = Vector2Subtract(nodes[i].position, nodes[j].position);
@@ -168,13 +207,13 @@ bool GraphLayout::updatePhysics(
 
             Vector2 repulseVector = Vector2Scale(Vector2Normalize(delta), force);
 
-            // Aplikujeme sílu pouze tìm uzlùm, které nespí
+            // Aplikujeme sï¿½lu pouze tï¿½m uzlï¿½m, kterï¿½ nespï¿½
             if (isActive[i]) displacements[i] = Vector2Add(displacements[i], repulseVector);
             if (isActive[j]) displacements[j] = Vector2Subtract(displacements[j], repulseVector);
         }
     }
 
-    // 2. PØITAHOVÁNÍ (Pružiny)
+    // 2. Pï¿½ITAHOVï¿½Nï¿½ (Pruï¿½iny)
     for (size_t i = 0; i < nodes.size(); ++i) {
         if (nodes[i].type != NodeType::Book) continue;
 
@@ -191,7 +230,7 @@ bool GraphLayout::updatePhysics(
             }
 
             if (found) {
-                // Pokud obì strany spí, neøešíme pružinu
+                // Pokud obï¿½ strany spï¿½, neï¿½eï¿½ï¿½me pruï¿½inu
                 if (!isActive[i] && !isActive[genreIdx]) continue;
 
                 Vector2 delta = Vector2Subtract(nodes[genreIdx].position, nodes[i].position);
@@ -209,7 +248,7 @@ bool GraphLayout::updatePhysics(
         }
     }
 
-    // 3. GRAVITACE KE STØEDU
+    // 3. GRAVITACE KE STï¿½EDU
     for (size_t i = 0; i < nodes.size(); ++i) {
         if (!isActive[i]) continue;
 
@@ -230,10 +269,10 @@ bool GraphLayout::updatePhysics(
 
         if (!nodes[i].locked && !nodes[i].isDragged) {
 
-            // ZMÌNA 1: Aplikujeme tlumení teplotou hned pøi výpoètu posunu
+            // ZMï¿½NA 1: Aplikujeme tlumenï¿½ teplotou hned pï¿½i vï¿½poï¿½tu posunu
             Vector2 actualMove = Vector2Scale(displacements[i], dt * m_Temperature);
 
-            // ZMÌNA 2: Omezíme až tento zchlazený pohyb (aby uzly na zaèátku neuletìly)
+            // ZMï¿½NA 2: Omezï¿½me aï¿½ tento zchlazenï¿½ pohyb (aby uzly na zaï¿½ï¿½tku neuletï¿½ly)
             float moveLength = Vector2Length(actualMove);
             if (moveLength > 30.0f) {
                 actualMove = Vector2Scale(Vector2Normalize(actualMove), 30.0f);
@@ -244,12 +283,12 @@ bool GraphLayout::updatePhysics(
         }
     }
 
-    // 5. TVRDÉ KOLIZE
+    // 5. TVRDï¿½ KOLIZE
     totalMovement += resolveNodeOverlaps(20.0f, nodes, isActive);
 
     m_Temperature *= 0.98f;
 
-    // Pokud už graf skoro vychladl, natvrdo ho zmrazíme (vrátíme false -> fyzika se vypne)
+    // Pokud uï¿½ graf skoro vychladl, natvrdo ho zmrazï¿½me (vrï¿½tï¿½me false -> fyzika se vypne)
     if (m_Temperature < 0.05f) {
         m_Temperature = 0.0f;
         return false;
@@ -266,7 +305,7 @@ float GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& nodes, 
 
     for (size_t i = 0; i < nodes.size(); ++i) {
         for (size_t j = i + 1; j < nodes.size(); ++j) {
-            // Kolizi neøešíme, pokud se na sebe tlaèí dva spící uzly
+            // Kolizi neï¿½eï¿½ï¿½me, pokud se na sebe tlaï¿½ï¿½ dva spï¿½cï¿½ uzly
             if (!isActive[i] && !isActive[j]) continue;
 
             Node& a = nodes[i];
@@ -287,7 +326,7 @@ float GraphLayout::resolveNodeOverlaps(float padding, std::vector<Node>& nodes, 
                 float overlap = totalRadius - dist;
                 Vector2 displacement = Vector2Scale(direction, std::min(overlap * 0.5f, maxDisplacement));
 
-                // Neaktivní uzly se chovají, jako by byly locked (zamèené), takže aktivní se od nich odráží
+                // Neaktivnï¿½ uzly se chovajï¿½, jako by byly locked (zamï¿½enï¿½), takï¿½e aktivnï¿½ se od nich odrï¿½ï¿½
                 bool aFixed = a.locked || a.isDragged || !isActive[i];
                 bool bFixed = b.locked || b.isDragged || !isActive[j];
 

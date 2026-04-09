@@ -1,7 +1,7 @@
 #include "textBox.h"
 #include "../textRenderer.h"
+#include "../colors.h"
 #include <algorithm>
-#include <sstream>
 #include <cctype> 
 
 TextBox::TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
@@ -167,9 +167,9 @@ void TextBox::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     //Background & Border
-    DrawRectangleRec(m_Bounds, RAYWHITE);
-    Color borderColor = isFocused ? RED : (isHovered ? DARKGRAY : LIGHTGRAY);
-    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
+    DrawRectangleRounded(m_Bounds, 0.14f, 10, NookCol::UI_PANEL_ALT);
+    Color borderColor = isFocused ? NookCol::UI_ACCENT : (isHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT);
+    DrawRectangleRoundedLinesEx(m_Bounds, 0.14f, 10, 2.0f, borderColor);
 
     if (!renderer) return;
 
@@ -203,7 +203,7 @@ void TextBox::Draw(TextRenderer* renderer) {
         // Draw if visible
         if (absoluteY + lineHeight > m_Bounds.y && absoluteY < m_Bounds.y + m_Bounds.height) {
             std::string lineStr = textToDraw.substr(lineStartIndex, endIndex - lineStartIndex);
-            renderer->DrawSimpleText(lineStr, { absoluteX, absoluteY }, fontSize, showPlaceholder ? GRAY : BLACK);
+            renderer->DrawSimpleText(lineStr, { absoluteX, absoluteY }, fontSize, showPlaceholder ? NookCol::UI_TEXT_MUTED : NookCol::UI_TEXT);
         }
 
         // Check if cursor is on this line
@@ -270,7 +270,7 @@ void TextBox::Draw(TextRenderer* renderer) {
 
         // Blinking
         if (((int)(GetTime() * 2) % 2) == 0) {
-            renderer->DrawSimpleText("|", { cursorPos.x - 1, cursorPos.y }, fontSize, BLACK);
+            renderer->DrawSimpleText("|", { cursorPos.x - 1, cursorPos.y }, fontSize, NookCol::UI_TEXT);
         }
     }
 
@@ -288,6 +288,6 @@ void TextBox::Draw(TextRenderer* renderer) {
         float scrollPerc = scrollY / maxScrollY;
         float barHeight = std::max(20.0f, (m_Bounds.height / totalHeight) * m_Bounds.height);
         float barY = m_Bounds.y + (scrollPerc * (m_Bounds.height - barHeight));
-        DrawRectangle((int)(m_Bounds.x + m_Bounds.width - 6), (int)barY, 4, (int)barHeight, Fade(GRAY, 0.5f));
+        DrawRectangle((int)(m_Bounds.x + m_Bounds.width - 6), (int)barY, 4, (int)barHeight, Fade(NookCol::UI_ACCENT_SOFT, 0.45f));
     }
 }

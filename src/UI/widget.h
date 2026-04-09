@@ -36,9 +36,14 @@ public:
     Widget(Anchor anchor, Vector2 offset, Vector2 size)
         : m_Anchor(anchor), m_Offset(offset), m_Size(size) {}
 
+    void SetSize(Vector2 size) { m_Size = size; }
+    void SetOffset(Vector2 offset) { m_Offset = offset; }
+    Vector2 GetSize() const { return m_Size; }
+    Vector2 GetOffset() const { return m_Offset; }
+
 
     virtual void OnWindowResize(int screenWidth, int screenHeight) {
-        // Vypoèítáme základní bod (x, y) podle kotvy
+        // Vypoï¿½ï¿½tï¿½me zï¿½kladnï¿½ bod (x, y) podle kotvy
         float anchorX = 0;
         float anchorY = 0;
 
@@ -54,8 +59,8 @@ public:
         case Anchor::BottomRight:  anchorX = screenWidth; anchorY = screenHeight; break;
         }
 
-        // Vypoèítáme finální pozici (kotva + odsazení - polovina velikosti prvku, aby byl vycentrovaný na kotvì)
-        // (Pokud chceš, aby kotva urèovala roh prvku a ne støed, výpoèet se lehce upraví)
+        // Vypoï¿½ï¿½tï¿½me finï¿½lnï¿½ pozici (kotva + odsazenï¿½ - polovina velikosti prvku, aby byl vycentrovanï¿½ na kotvï¿½)
+        // (Pokud chceï¿½, aby kotva urï¿½ovala roh prvku a ne stï¿½ed, vï¿½poï¿½et se lehce upravï¿½)
         m_Bounds.x = anchorX + m_Offset.x - (m_Size.x / 2.0f);
         m_Bounds.y = anchorY + m_Offset.y - (m_Size.y / 2.0f);
         m_Bounds.width = m_Size.x;

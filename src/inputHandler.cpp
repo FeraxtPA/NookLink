@@ -1,7 +1,5 @@
 #include "inputHandler.h"
-#include <iostream>
-#include <print>
-#include <ranges>
+#include "logging.h"
 
 InputHandler::InputHandler(GraphManager* graphManager, BookManager& bookManager, UIManager* uiManager)
     : m_GraphManager(graphManager), m_BookManager(bookManager), m_UIManager(uiManager) {}
@@ -34,37 +32,38 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
         Node* clickedNode = m_GraphManager->getNodeAtPosition(worldMousePos);
         if (clickedNode) {
 
-            // Double click logika zùstává stejná...
-            if (clickedNode == m_LastClickedNode && (currentTime - m_LastClickTime) <= m_DoubleClickThreshold) {
+            // Double click logika zï¿½stï¿½vï¿½ stejnï¿½...
+            if (clickedNode->id == m_LastClickedNodeId && (currentTime - m_LastClickTime) <= m_DoubleClickThreshold) {
                 if (m_GraphManager->tryUnlockNodeAt(worldMousePos)) {
-                    std::cout << "Unlocked node ID: " << clickedNode->id << std::endl;
-                    m_LastClickedNode = nullptr;
+                    Log::Debug("Unlocked node ID: " + std::to_string(clickedNode->id));
+                    m_LastClickedNodeId = -1;
                     m_LastClickTime = 0.0;
                 }
             }
             else {
-                m_LastClickedNode = clickedNode;
+                m_LastClickedNodeId = clickedNode->id;
+                m_LastClickedNodeType = clickedNode->type;
                 m_LastClickTime = currentTime;
 
-                // === TADY JE TA ZMÌNA ===
+                // === TADY JE TA ZMï¿½NA ===
                 if (clickedNode->type == NodeType::Book) {
-                    // Zmìnìno z findBookById na getBookById (získáme Book* místo const Book*)
+                    // Zmï¿½nï¿½no z findBookById na getBookById (zï¿½skï¿½me Book* mï¿½sto const Book*)
                     Book* clickedBook = m_BookManager.getBookById(clickedNode->id);
                     if (clickedBook) {
-                        std::cout << "Clicked book: " << clickedBook->getTitle() << std::endl;
+                        Log::Debug("Clicked book: " + clickedBook->getTitle());
 
-                        // ZAVOLÁME NÁŠ NOVÝ PANEL!
+                        // ZAVOLï¿½ME Nï¿½ï¿½ NOVï¿½ PANEL!
                         m_UIManager->OpenBookDetails(clickedBook);
                     }
                 }
                 else if (clickedNode->type == NodeType::Genre) {
                     std::string genreName = m_GraphManager->getGenreNameByNodeId(clickedNode->id);
-                    std::cout << "Clicked genre: " << genreName << std::endl;
+                    Log::Debug("Clicked genre: " + genreName);
                 }
             }
         }
         else {
-            m_LastClickedNode = nullptr;
+            m_LastClickedNodeId = -1;
         }
     }
 }
@@ -72,8 +71,8 @@ void InputHandler::HandleMouseInteraction(Vector2 worldMousePos, double currentT
 void InputHandler::HandleKeyboardShortcuts(bool& layoutDirty) {
     
     if (IsKeyPressed(KEY_E)) {
-        if (m_LastClickedNode && m_LastClickedNode->type == NodeType::Book) {
-            Book* bookToEdit = m_BookManager.getBookById(m_LastClickedNode->id);
+        if (m_LastClickedNodeId != -1 && m_LastClickedNodeType == NodeType::Book) {
+            Book* bookToEdit = m_BookManager.getBookById(m_LastClickedNodeId);
             if (bookToEdit) {
                 m_UIManager->OpenEditPanel(bookToEdit);
             }

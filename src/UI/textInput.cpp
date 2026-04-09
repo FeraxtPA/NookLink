@@ -1,5 +1,6 @@
 #include "textInput.h"
 #include "../textRenderer.h" 
+#include "../colors.h"
 
 TextInput::TextInput(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
     : Widget(anchor, offset, size), placeholder(ph)
@@ -50,10 +51,10 @@ void TextInput::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     // Draw Background + Border
-    DrawRectangleRec(m_Bounds, RAYWHITE);
+    DrawRectangleRounded(m_Bounds, 0.20f, 10, NookCol::UI_PANEL_ALT);
 
-    Color borderColor = isFocused ? RED : (CheckCollisionPointRec(GetMousePosition(), m_Bounds) ? DARKGRAY : LIGHTGRAY);
-    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
+    Color borderColor = isFocused ? NookCol::UI_ACCENT : (CheckCollisionPointRec(GetMousePosition(), m_Bounds) ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT);
+    DrawRectangleRoundedLinesEx(m_Bounds, 0.20f, 10, 2.0f, borderColor);
 
     if (!renderer) return;
 
@@ -65,10 +66,10 @@ void TextInput::Draw(TextRenderer* renderer) {
 
     // Draw Text or Placeholder
     if (text.empty() && !isFocused) {
-        renderer->DrawSimpleText(placeholder, textPos, fontSize, GRAY);
+        renderer->DrawSimpleText(placeholder, textPos, fontSize, NookCol::UI_TEXT_MUTED);
     }
     else {
-        renderer->DrawSimpleText(text, textPos, fontSize, BLACK);
+        renderer->DrawSimpleText(text, textPos, fontSize, NookCol::UI_TEXT);
     }
 
     // Draw Blinking Cursor
@@ -76,6 +77,6 @@ void TextInput::Draw(TextRenderer* renderer) {
         float textWidth = renderer->Measure(text, fontSize);
 
         Vector2 cursorPos = { textPos.x + textWidth + 2, textPos.y };
-        renderer->DrawSimpleText("|", cursorPos, fontSize, BLACK);
+        renderer->DrawSimpleText("|", cursorPos, fontSize, NookCol::UI_TEXT);
     }
 }

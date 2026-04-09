@@ -1,5 +1,5 @@
 #include "debugManager.h"
-#include <iostream>
+#include "logging.h"
 #include <print>
 #include <ranges>
 
@@ -16,17 +16,17 @@ void DebugManager::HandleDebugInputs(bool& layoutDirty) {
         }
         m_GraphManager->initializePositions();
         layoutDirty = true;
-        std::cout << "[DEBUG] Spawned 50 test books.\n";
+        Log::Debug("Spawned 50 test books");
     }
 
   
     if (IsKeyPressed(KEY_V)) {
         SetTargetFPS(0);
-        std::cout << "[DEBUG] FPS un-capped.\n";
+        Log::Debug("FPS un-capped");
     }
     if (IsKeyPressed(KEY_B)) {
         SetTargetFPS(GetMonitorRefreshRate(0));
-        std::cout << "[DEBUG] FPS capped to monitor refresh rate.\n";
+        Log::Debug("FPS capped to monitor refresh rate");
     }
 
    

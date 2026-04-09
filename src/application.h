@@ -32,6 +32,19 @@ public:
 	
 
 private:
+	enum class HistoryActionType {
+		AddBook,
+		EditBook,
+		DeleteBook
+	};
+
+	struct HistoryAction {
+		HistoryActionType type;
+		int bookId;
+		Book before;
+		Book after;
+	};
+
 	Vector2 m_ScreenSize{ 1920, 1080 };
 	Vector2 m_CanvasSize{ 2000,2000 };
 
@@ -52,6 +65,9 @@ private:
 
 	bool m_HasUnsavedChanges{ false };
 
+	int m_ReadingGoalTarget{ 12 };
+	int m_ReadingGoalBaselineRead{ 0 };
+
 	float m_UpdateInterval{ 0 };
 	bool m_LayoutDirty{ true };
 	const float m_UpdateIntervalInitial{ 0.001f };
@@ -68,15 +84,45 @@ private:
 
 	std::shared_ptr<Button> m_BtnContinue;
 
+	bool m_HasShutdown{ false };
+	std::vector<HistoryAction> m_UndoHistory{};
+	std::vector<HistoryAction> m_RedoHistory{};
+	static constexpr size_t m_MaxHistoryEntries{ 20 };
+
+	struct FrameProfile {
+		float updatePhysicsMs = 0.0f;
+		float drawEdgesMs = 0.0f;
+		float drawNodesMs = 0.0f;
+		float drawUiMs = 0.0f;
+		float frameCpuMs = 0.0f;
+	};
+
+	bool m_ShowProfilingOverlay = false;
+	FrameProfile m_ProfileCurrent{};
+	FrameProfile m_ProfileSmooth{};
+	float m_ProfileSmoothing = 0.15f;
+
 	void Update();
 	void Draw();
+	void DrawProfilingOverlay();
+	void SmoothProfile();
 
 
 	void LoadConfig();
 	void SaveConfig();
+	void ClearHistory();
+	void PushHistoryAction(const HistoryAction& action);
+	bool ApplyBookSnapshot(const Book& snapshot);
+	bool UndoLastAction();
+	bool RedoLastAction();
 
 	void UpdateStartScreen();
 	void DrawStartScreen();
+
+	int GetReadBooksCount() const;
+	void AdjustReadingGoalTarget(int delta);
+	int GetReadingGoalProgress() const;
+	void ResetReadingGoalProgressBaseline();
 
 
 	

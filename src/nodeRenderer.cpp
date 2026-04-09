@@ -2,7 +2,7 @@
 #include "rlgl.h" 
 #include "math.h"
 #include <optional>
-#include <iostream>
+#include <unordered_map>
 
 
 static std::optional<std::string> findGenreByNodeId(const std::unordered_map<std::string, GenreInfo>& genres, int nodeId) {
@@ -30,40 +30,40 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
         Color nodeColor = Fade(baseColor, alpha);
         Color textColor = Fade(NookCol::TEXT_ONNODE, alpha);
 
-        // 1. Vykreslíme samotné pozadí uzlu (plný kruh)
+        // 1. Vykreslï¿½me samotnï¿½ pozadï¿½ uzlu (plnï¿½ kruh)
         DrawCircleV(node.position, node.radius, nodeColor);
 
         // ==========================================
-        // 2. NOVÉ: Vizuální okraje podle Statusu
+        // 2. NOVï¿½: Vizuï¿½lnï¿½ okraje podle Statusu
         // ==========================================
         float borderThickness = 0.0f;
         Color borderColor = BLANK;
 
         if (book->getStatus() == Status::Reading) {
-            // Pulzující efekt (funkce sin vytváøí plynulou vlnu)
-            float pulse = (sin(GetTime() * 2.0f) + 1.0f) / 2.0f; // pulse je vždy od 0.0 do 1.0
-            borderThickness = 3.0f + (pulse * 5.0f); // Tlouška neustále "dýchá" mezi 3 a 8
+            // Pulzujï¿½cï¿½ efekt (funkce sin vytvï¿½ï¿½ï¿½ plynulou vlnu)
+            float pulse = (sin(GetTime() * 2.0f) + 1.0f) / 2.0f; // pulse je vï¿½dy od 0.0 do 1.0
+            borderThickness = 3.0f + (pulse * 5.0f); // Tlouï¿½ï¿½ka neustï¿½le "dï¿½chï¿½" mezi 3 a 8
 
-            // Svìtle krémová barva, která jemnì pulzuje i svou prùhledností
+            // Svï¿½tle krï¿½movï¿½ barva, kterï¿½ jemnï¿½ pulzuje i svou prï¿½hlednostï¿½
             borderColor = Fade(NookCol::TEXT_DEFAULT, alpha * (0.3f + pulse * 0.7f));
         }
         else if (book->getStatus() == Status::Read) {
-            // Výrazný zlatavý okraj pro pøeètené knihy
+            // Vï¿½raznï¿½ zlatavï¿½ okraj pro pï¿½eï¿½tenï¿½ knihy
             borderThickness = 4.0f;
             borderColor = Fade(NookCol::POPUP_BORDER, alpha);
         }
         else { // Status::ToRead
-            // Jemný, šedý okraj pro knihy èekající na pøeètení
+            // Jemnï¿½, ï¿½edï¿½ okraj pro knihy ï¿½ekajï¿½cï¿½ na pï¿½eï¿½tenï¿½
             borderThickness = 2.0f;
             borderColor = Fade(NookCol::EDGE, alpha);
         }
 
-        // Vykreslíme samotný prstenec (okraj) kolem knihy
+        // Vykreslï¿½me samotnï¿½ prstenec (okraj) kolem knihy
         DrawRing(node.position, node.radius, node.radius + borderThickness, 0, 360, 36, borderColor);
         // ==========================================
 
 
-        // 3. Vykreslení textu knihy
+        // 3. Vykreslenï¿½ textu knihy
         if (zoom >= 0.4f && m_TextRenderer) {
             float dynamicFontSize = BASE_FONT_SIZE / zoom;
             if (dynamicFontSize < 1.0f) dynamicFontSize = 1.0f;
@@ -135,14 +135,11 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
 
         return overlapsX && overlapsY;
         };
-
-   
-    auto getNodeById = [&](int id) -> const Node* {
-		for (const auto& node : nodes) {
-			if (node.id == id) return &node;
-		}
-		return nullptr;
-	};
+    std::unordered_map<int, const Node*> nodeById;
+    nodeById.reserve(nodes.size());
+    for (const auto& node : nodes) {
+        nodeById[node.id] = &node;
+    }
 
     const auto& edges = cm.getEdges();
 
@@ -156,16 +153,16 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
     for (const auto& edge : edges) {
         if (edge.type != EdgeType::BookToGenre) continue; 
 
-        Vector2 from = getNodePosition(edge.fromId, nodes);
-        Vector2 to = getNodePosition(edge.toId, nodes);
+        auto fromIt = nodeById.find(edge.fromId);
+        auto toIt = nodeById.find(edge.toId);
+        if (fromIt == nodeById.end() || toIt == nodeById.end()) continue;
 
-        const Node* fromNode = getNodeById(edge.fromId);
-        const Node* toNode = getNodeById(edge.toId);
-
-        float fromRadius = fromNode->radius; 
-        float toRadius = toNode->radius;
-
-        if (!fromNode || !toNode) continue;
+        const Node* fromNode = fromIt->second;
+        const Node* toNode = toIt->second;
+        const Vector2 from = fromNode->position;
+        const Vector2 to = toNode->position;
+        const float fromRadius = fromNode->radius;
+        const float toRadius = toNode->radius;
 
         if (!fromNode->visible || !toNode->visible) continue;
 
@@ -184,22 +181,6 @@ void NodeRenderer::drawEdges(const ConnectionManager& cm, const std::vector<Node
     rlEnd();
 
     rlPopMatrix();
-}
-
-
-Node* getNodeById(int id, std::vector<Node>& nodes)
-{
-	for (auto& node : nodes) {
-		if (node.id == id) return &node;
-	}
-	return nullptr;
-}
-Vector2 NodeRenderer::getNodePosition(int id, const std::vector<Node>& nodes) const
-{
-    for (const auto& node : nodes) {
-        if (node.id == id) return node.position;
-    }
-    return { 0, 0 };
 }
 
 Color NodeRenderer::getStatusColor(Status status) const

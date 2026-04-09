@@ -48,7 +48,7 @@ inline Status stringToStatus(const std::string& s) {
 	if (s == "ToRead") return Status::ToRead;
 	if (s == "Reading") return Status::Reading;
 	if (s == "Read") return Status::Read;
-	throw std::runtime_error("Unknown Status: " + s);
+	return Status::ToRead;
 }
 
 // Convert Status enum to JSON string
@@ -76,6 +76,9 @@ public:
 	Status getStatus() const { return m_Status; }
 	const std::vector<std::string>& getGenres() const { return m_Genres; }
 	const std::string& getNotes() const { return m_Notes; }
+	const std::string& getDateAdded() const { return m_DateAdded; }
+	const std::string& getDateStartedReading() const { return m_DateStartedReading; }
+	const std::string& getDateFinishedReading() const { return m_DateFinishedReading; }
 
 
 	void setId(int id) { m_id = id; }
@@ -87,6 +90,9 @@ public:
 	}
 	void clearGenres() { m_Genres.clear(); } 
 	void setNotes(const std::string& notes) { m_Notes = notes; }
+	void setDateAdded(const std::string& dateAdded) { m_DateAdded = dateAdded; }
+	void setDateStartedReading(const std::string& started) { m_DateStartedReading = started; }
+	void setDateFinishedReading(const std::string& finished) { m_DateFinishedReading = finished; }
 	float getRating() const { return m_Rating;}
 	
 	void setRating(float rating) {
@@ -103,18 +109,33 @@ public:
 			{"status", b.m_Status},
 			{"genres", b.m_Genres}, 
 			{"notes", b.m_Notes},
-			{"rating", b.m_Rating}
+			{"rating", b.m_Rating},
+			{"date_added", b.m_DateAdded},
+			{"date_started_reading", b.m_DateStartedReading},
+			{"date_finished_reading", b.m_DateFinishedReading}
 		};
 	}
 
 	friend void from_json(const json& j, Book& b) {
-		j.at("id").get_to(b.m_id);
-		j.at("title").get_to(b.m_Title);
-		j.at("author").get_to(b.m_Author);
-		j.at("status").get_to(b.m_Status);
-		j.at("genres").get_to(b.m_Genres); 
-		if (j.contains("notes")) j.at("notes").get_to(b.m_Notes);
-		j.at("rating").get_to(b.m_Rating);
+		b.m_id = j.value("id", 0);
+		b.m_Title = j.value("title", std::string{});
+		b.m_Author = j.value("author", std::string{});
+
+		const std::string statusText = j.value("status", std::string{"ToRead"});
+		b.m_Status = stringToStatus(statusText);
+
+		if (j.contains("genres") && j["genres"].is_array()) {
+			b.m_Genres = j["genres"].get<std::vector<std::string>>();
+		}
+		else {
+			b.m_Genres.clear();
+		}
+
+		b.m_Notes = j.value("notes", std::string{});
+		b.m_Rating = j.value("rating", 0.0f);
+		b.m_DateAdded = j.value("date_added", std::string{});
+		b.m_DateStartedReading = j.value("date_started_reading", std::string{});
+		b.m_DateFinishedReading = j.value("date_finished_reading", std::string{});
 	}
 
 private:
@@ -126,6 +147,10 @@ private:
 	std::vector<std::string> m_Genres;
 	std::string m_Notes;
 	float m_Rating;
+	std::string m_DateAdded;
+	std::string m_DateStartedReading;
+	std::string m_DateFinishedReading;
+	
 
 };
 

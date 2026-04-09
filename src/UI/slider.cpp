@@ -1,6 +1,7 @@
 #include "slider.h"
 #include <raylib.h>
 #include <cmath>
+#include "../colors.h"
 
 Slider::Slider(Anchor anchor, Vector2 offset, Vector2 size, float minV, float maxV, float initialVal, std::function<void(float)> onChangeCallback)
     : Widget(anchor, offset, size), minVal(minV), maxVal(maxV), value(initialVal), onChange(onChangeCallback)
@@ -13,12 +14,12 @@ void Slider::Update() {
 
     Vector2 mousePos = GetMousePosition();
 
-    // Detekce najetí myší
+    // Detekce najetï¿½ myï¿½ï¿½
     if (CheckCollisionPointRec(mousePos, m_Bounds)) {
         isHovered = true;
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
 
-        // Zaèátek tažení
+        // Zaï¿½ï¿½tek taï¿½enï¿½
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             isDragging = true;
         }
@@ -27,27 +28,27 @@ void Slider::Update() {
         isHovered = false;
     }
 
-    // Konec tažení (kdekoli na obrazovce)
+    // Konec taï¿½enï¿½ (kdekoli na obrazovce)
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         isDragging = false;
     }
 
-    // Samotný pohyb sliderem
+    // Samotnï¿½ pohyb sliderem
     if (isDragging) {
-        // Zjistíme, jak daleko je myš od levého okraje slideru (0.0 až 1.0)
+        // Zjistï¿½me, jak daleko je myï¿½ od levï¿½ho okraje slideru (0.0 aï¿½ 1.0)
         float normalizedX = (mousePos.x - m_Bounds.x) / m_Bounds.width;
 
-        // Omezíme meze, aby uživatel nevyjel mimo slider
+        // Omezï¿½me meze, aby uï¿½ivatel nevyjel mimo slider
         if (normalizedX < 0.0f) normalizedX = 0.0f;
         if (normalizedX > 1.0f) normalizedX = 1.0f;
 
-        // Pøepoèet na reálnou hodnotu (napø. 0 až 5)
+        // Pï¿½epoï¿½et na reï¿½lnou hodnotu (napï¿½. 0 aï¿½ 5)
         float newVal = minVal + normalizedX * (maxVal - minVal);
 
-        // Zaokrouhlení na jedno desetinné místo (napø. 4.3)
+        // Zaokrouhlenï¿½ na jedno desetinnï¿½ mï¿½sto (napï¿½. 4.3)
         newVal = std::round(newVal * 10.0f) / 10.0f;
 
-        // Pokud se hodnota zmìnila, aktualizujeme ji a zavoláme callback
+        // Pokud se hodnota zmï¿½nila, aktualizujeme ji a zavolï¿½me callback
         if (newVal != value) {
             value = newVal;
             if (onChange) {
@@ -60,15 +61,15 @@ void Slider::Update() {
 void Slider::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
-    // 1. Vykreslení prázdného pozadí (koleje)
-    DrawRectangleRec(m_Bounds, LIGHTGRAY);
+    // 1. Vykreslenï¿½ prï¿½zdnï¿½ho pozadï¿½ (koleje)
+    DrawRectangleRounded(m_Bounds, 0.5f, 12, NookCol::UI_PANEL_ALT);
 
-    // 2. Vykreslení vyplnìné èásti podle aktuální hodnoty
+    // 2. Vykreslenï¿½ vyplnï¿½nï¿½ ï¿½ï¿½sti podle aktuï¿½lnï¿½ hodnoty
     float normalizedValue = (value - minVal) / (maxVal - minVal);
     Rectangle fillRec = { m_Bounds.x, m_Bounds.y, m_Bounds.width * normalizedValue, m_Bounds.height };
-    DrawRectangleRec(fillRec, DARKGRAY);
+    DrawRectangleRounded(fillRec, 0.5f, 12, NookCol::UI_ACCENT_SOFT);
 
-    // 3. Vykreslení rámeèku okolo
-    Color borderColor = isHovered || isDragging ? BLACK : GRAY;
+    // 3. Vykreslenï¿½ rï¿½meï¿½ku okolo
+    Color borderColor = isHovered || isDragging ? NookCol::UI_ACCENT : NookCol::UI_BORDER_SOFT;
     DrawRectangleLinesEx(m_Bounds, 2, borderColor);
 }

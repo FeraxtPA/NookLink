@@ -19,7 +19,8 @@ private:
 	BookManager& m_BookManager;
 	UIManager* m_UIManager;
 
-	Node* m_LastClickedNode{ nullptr };
+	int m_LastClickedNodeId{ -1 };
+	NodeType m_LastClickedNodeType{ NodeType::Book };
 	float m_LastClickTime{ 0.0f };
 	const float m_DoubleClickThreshold{ 0.3f };
 };

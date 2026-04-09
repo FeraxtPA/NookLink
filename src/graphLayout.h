@@ -9,17 +9,17 @@ class GraphLayout
 public:
     GraphLayout() = default;
 
-    void wakeUp() { m_Temperature = 1.0f; }
+    void wakeUp() { m_Temperature = 1.0f; m_CoolingHoldFrames = 18; }
 
     void calculateGridLayout(
         std::vector<Node>& nodes,
         Vector2 centerPos,
-        const std::unordered_map<int, std::vector<int>>& bookToGenreMap // NOVİ PARAMETR
+        const std::unordered_map<int, std::vector<int>>& bookToGenreMap // NOVï¿½ PARAMETR
     );
 
-    bool updateLerp(std::vector<Node>& nodes);
+    bool updateLerp(std::vector<Node>& nodes, float dt);
 
-    // Hlavní fyzikální smyèka: aplikuje pøitalivost, odpuzování a gravitaci
+    // Hlavnï¿½ fyzikï¿½lnï¿½ smyï¿½ka: aplikuje pï¿½itaï¿½livost, odpuzovï¿½nï¿½ a gravitaci
     bool updatePhysics(
         std::vector<Node>& nodes,
         const std::unordered_map<int, std::vector<int>>& bookToGenreMap,
@@ -28,10 +28,20 @@ public:
         Node* draggedNode = nullptr);
 
 private:
-    // Tvrdá kolize - zajišuje, aby se bubliny fyzicky nepøekrıvaly, kdy do sebe narazí
+    // Tvrdï¿½ kolize - zajiï¿½ï¿½uje, aby se bubliny fyzicky nepï¿½ekrï¿½valy, kdyï¿½ do sebe narazï¿½
     float resolveNodeOverlaps(float padding, std::vector<Node>& nodes, const std::vector<bool>& isActive);
 
     float m_Temperature = 1.0f;
 
+    // Krï¿½tkï¿½ zadrï¿½enï¿½ cooldownu po pï¿½epnutï¿½ na Grid, aby byla transition viditelnï¿½.
+    int m_CoolingHoldFrames = 0;
+    static constexpr int m_GridTransitionHoldFrames = 24;
+    static constexpr float m_MinTransitionTemperature = 0.35f;
+    static constexpr float m_GridCoolingFactor = 0.992f;
+
+    float m_GridTransitionT = 1.0f;
+    static constexpr float m_GridTransitionDuration = 0.45f;
+
+    std::unordered_map<int, Vector2> m_GridStartPositions;
     std::unordered_map<int, Vector2> m_TargetPositions;
 };

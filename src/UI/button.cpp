@@ -1,10 +1,11 @@
 #include "button.h"
 #include "../textRenderer.h" 
+#include "../colors.h"
 
 Button::Button(Anchor anchor, Vector2 offset, Vector2 size, std::string t, std::function<void()> callback)
     : Widget(anchor, offset, size), text(t), onClick(callback)
 {
-    // Vypoèítat poèáteèní Rectangle (m_Bounds) ihned po vytvoøení
+    // Vypoï¿½ï¿½tat poï¿½ï¿½teï¿½nï¿½ Rectangle (m_Bounds) ihned po vytvoï¿½enï¿½
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
 
@@ -29,13 +30,15 @@ void Button::Update() {
 void Button::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
-    // Draw Box
-    DrawRectangleRec(m_Bounds, isHovered ? DARKGRAY : LIGHTGRAY);
-    DrawRectangleLinesEx(m_Bounds, 2, BLACK);
+    const Color fillColor = isHovered ? NookCol::UI_PANEL_HOVER : NookCol::UI_PANEL;
+    const Color borderColor = isHovered ? NookCol::UI_ACCENT : NookCol::UI_BORDER_SOFT;
+
+    DrawRectangleRounded(m_Bounds, 0.22f, 10, fillColor);
+    DrawRectangleRoundedLinesEx(m_Bounds, 0.22f, 10, 2.0f, borderColor);
 
     
     if (renderer) {
         Vector2 center = { m_Bounds.x + m_Bounds.width / 2.0f, m_Bounds.y + m_Bounds.height / 2.0f };
-        renderer->DrawTextCentered(text, center, 20.0f, BLACK);
+        renderer->DrawTextCentered(text, center, 19.0f, NookCol::UI_TEXT);
     }
 }

@@ -92,6 +92,7 @@ public:
     int getNumOfConnectedBooks(int genreNodeId) const;
 
     const std::vector<Node>& getNodes() const { return m_Nodes; }
+    size_t getEdgeCount() const { return m_ConnectionManager.getEdges().size(); }
 
     Node* getNodeById(int id);
 
@@ -142,6 +143,9 @@ private:
 
     bool m_IsPhysicsActive = true;
     LayoutMode m_LayoutMode = LayoutMode::Physics;
+
+    // Snapshot pozic p�ed p�epnut�m do Gridu, aby �el Physics layout vr�tit zp�t.
+    std::unordered_map<int, Vector2> m_PreGridPositions;
 
     void resetNodeState();
 

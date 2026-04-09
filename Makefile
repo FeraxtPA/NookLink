@@ -1,6 +1,9 @@
 CXX = g++
-CXXFLAGS = -std=c++20 -Wall -Wextra -Wno-reorder -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-missing-field-initializers -I./include
+CXXFLAGS = -std=c++23 -Wall -Wextra -Wno-reorder -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-missing-field-initializers -I./include
+CFLAGS = -Wall -Wextra -I./include
+DEPFLAGS = -MMD -MP
 LDFLAGS = -lraylib
+OBJ_DIR = obj
 
 # Updated to find .cpp files in src and src/UI
 CPP_SOURCES = $(wildcard src/*.cpp) $(wildcard src/UI/*.cpp)
@@ -8,9 +11,10 @@ CPP_SOURCES = $(wildcard src/*.cpp) $(wildcard src/UI/*.cpp)
 C_SOURCES = include/tinyfiledialogs/tinyfiledialogs.c
 
 # Create object lists
-CPP_OBJECTS = $(CPP_SOURCES:.cpp=.o)
-C_OBJECTS = $(C_SOURCES:.c=.o)
+CPP_OBJECTS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(CPP_SOURCES))
+C_OBJECTS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SOURCES))
 OBJECTS = $(CPP_OBJECTS) $(C_OBJECTS)
+DEPS = $(OBJECTS:.o=.d)
 
 EXECUTABLE = NookLink_Linux
 
@@ -18,17 +22,21 @@ all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
-	rm -f $(OBJECTS)
 
 # Compile C++ files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 # Compile C files (using CXX to keep it simple, or use gcc)
-%.o: %.c
-	$(CXX) $(CXXFLAGS) -x c -c $< -o $@
+$(OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CXX) $(CFLAGS) $(DEPFLAGS) -x c -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(EXECUTABLE)
+	rm -rf $(OBJ_DIR) $(EXECUTABLE)
+	@mkdir -p $(OBJ_DIR)
 
 .PHONY: all clean
+
+-include $(DEPS)

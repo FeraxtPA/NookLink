@@ -1,5 +1,6 @@
 #include "checkbox.h"
 #include "../textRenderer.h"
+#include "../colors.h"
 
 Checkbox::Checkbox(Anchor anchor, Vector2 offset, Vector2 size, std::string l, bool initial, std::function<void(bool)> onChangeCallback)
     : Widget(anchor, offset, size), label(l), checked(initial), onChange(onChangeCallback)
@@ -20,12 +21,12 @@ void Checkbox::Update() {
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 
-            // Pokud od posledního pøepnutí ubìhlo více než 0.2 sekundy
+            // Pokud od poslednï¿½ho pï¿½epnutï¿½ ubï¿½hlo vï¿½ce neï¿½ 0.2 sekundy
             if (GetTime() - m_LastClickTime > 0.2) {
-                checked = !checked;                  // Pøepneme stav
-                if (onChange) onChange(checked); // Zavoláme akci
+                checked = !checked;                  // Pï¿½epneme stav
+                if (onChange) onChange(checked); // Zavolï¿½me akci
 
-                m_LastClickTime = GetTime();         // Zapíšeme si èas
+                m_LastClickTime = GetTime();         // Zapï¿½eme si ï¿½as
             }
         }
     }
@@ -38,19 +39,19 @@ void Checkbox::Draw(TextRenderer* renderer) {
     if (!isVisible) return;
 
     
-    DrawRectangleRec(m_Bounds, RAYWHITE);
+    DrawRectangleRounded(m_Bounds, 0.18f, 8, NookCol::UI_PANEL_ALT);
 
   
-    Color borderColor = isHovered ? DARKGRAY : LIGHTGRAY;
-    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
+    Color borderColor = isHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT;
+    DrawRectangleRoundedLinesEx(m_Bounds, 0.18f, 8, 2.0f, borderColor);
 
   
     if (checked) {
-        DrawRectangle((int)m_Bounds.x + 4, (int)m_Bounds.y + 4, (int)m_Bounds.width - 8, (int)m_Bounds.height - 8, DARKGRAY);
+        DrawRectangle((int)m_Bounds.x + 4, (int)m_Bounds.y + 4, (int)m_Bounds.width - 8, (int)m_Bounds.height - 8, NookCol::UI_ACCENT_SOFT);
     }
 
   
     if (renderer) {
-        renderer->DrawSimpleText(label, { m_Bounds.x + m_Bounds.width + 10, m_Bounds.y }, 20, BLACK);
+        renderer->DrawSimpleText(label, { m_Bounds.x + m_Bounds.width + 10, m_Bounds.y }, 20, NookCol::UI_TEXT);
     }
 }

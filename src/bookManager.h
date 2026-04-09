@@ -6,13 +6,19 @@
 #include <unordered_map>
 #include <string>    
 #include <fstream>   
-#include <iostream>   
 
-// NOVÁ STRUKTURA pro bezpeèný pøenos souøadnic bez nutnosti Raylibu
+// NOVï¿½ STRUKTURA pro bezpeï¿½nï¿½ pï¿½enos souï¿½adnic bez nutnosti Raylibu
 struct NodePosition {
     float x;
     float y;
     bool locked = false;
+};
+
+enum class BookSortMode {
+    IdAsc,
+    AuthorAsc,
+    RatingDesc,
+    DateAddedDesc
 };
 
 class BookManager
@@ -21,6 +27,7 @@ public:
     BookManager() = default;
 
     int addBook(const Book& book);
+    bool restoreBook(const Book& book);
     void removeBook(int id);
     void removeBook(const Book& book);
 
@@ -31,15 +38,21 @@ public:
 
     const Book& getRandomBookToBeRead();
     const std::vector<Book>& getBooksToBeRead();
+    void sortBooks(BookSortMode mode);
 
-    // ZMÌNÌNÉ FUNKCE: Pøidali jsme podporu pro mapu pozic
-    void saveBooksToFile(const std::string& filename, const std::unordered_map<int, NodePosition>& positions = {}) const;
+    // ZMï¿½Nï¿½Nï¿½ FUNKCE: Pï¿½idali jsme podporu pro mapu pozic
+    bool saveBooksToFile(const std::string& filename, const std::unordered_map<int, NodePosition>& positions = {}) const;
 
-    // Návratová hodnota nám teï vrátí mapu naètených pozic (pokud nìjaké v souboru byly)
-    std::unordered_map<int, NodePosition> loadBooksFromFile(const std::string& filename);
+    // Naï¿½ï¿½tï¿½ knihy a pozice; vracï¿½ false pï¿½i chybï¿½ a detail je v getLastError().
+    bool loadBooksFromFile(const std::string& filename, std::unordered_map<int, NodePosition>& loadedPositions);
+
+    const std::string& getLastError() const { return m_LastError; }
 
 private:
+    void setLastError(const std::string& message) const { m_LastError = message; }
+
     std::vector<Book> m_Books;
     std::vector<Book> toBeReadBooks;
     int m_NextId = 1;
+    mutable std::string m_LastError{};
 };

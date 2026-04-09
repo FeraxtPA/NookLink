@@ -2,9 +2,33 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <ctime>
+
+namespace {
+bool TryParseDateDDMMYYYY(const std::string& text, int& outDay, int& outMonth, int& outYear)
+{
+    if (text.size() != 10 || text[2] != '.' || text[5] != '.') {
+        return false;
+    }
+
+    for (size_t i = 0; i < text.size(); ++i) {
+        if (i == 2 || i == 5) {
+            continue;
+        }
+        if (text[i] < '0' || text[i] > '9') {
+            return false;
+        }
+    }
+
+    outDay = std::stoi(text.substr(0, 2));
+    outMonth = std::stoi(text.substr(3, 2));
+    outYear = std::stoi(text.substr(6, 4));
+    return true;
+}
+}
 
 void SearchFilter::setQuery(const std::string& query) {
-    if (m_Query == query) return; // Nemusíme parsovat, pokud se nic nezmìnilo
+    if (m_Query == query) return; // Nemusï¿½me parsovat, pokud se nic nezmï¿½nilo
 
     m_Query = query;
     m_Rules.clear();
@@ -64,6 +88,13 @@ void SearchFilter::parseQuery() {
             if (rule.stringVal.find_first_not_of(" ") != std::string::npos)
                 rule.stringVal.erase(0, rule.stringVal.find_first_not_of(" "));
         }
+        else if (segment.find("fr:") != std::string::npos || segment.find("finished:") != std::string::npos) {
+            rule.type = RuleType::FinishedRange;
+            size_t pos = segment.find(':');
+            rule.stringVal = segment.substr(pos + 1);
+            if (rule.stringVal.find_first_not_of(" ") != std::string::npos)
+                rule.stringVal.erase(0, rule.stringVal.find_first_not_of(" "));
+        }
         else {
             rule.type = RuleType::Text;
             rule.stringVal = segment;
@@ -112,8 +143,36 @@ bool SearchFilter::matchesBook(const Book* book) const {
                 ruleMatch = true;
             }
         }
+        else if (rule.type == RuleType::FinishedRange) {
+            const std::string dateFinished = book->getDateFinishedReading();
+            int day = 0;
+            int month = 0;
+            int year = 0;
+            if (TryParseDateDDMMYYYY(dateFinished, day, month, year)) {
+                const std::time_t now = std::time(nullptr);
+                std::tm localTm{};
+#if defined(_WIN32)
+                localtime_s(&localTm, &now);
+#else
+                localtime_r(&now, &localTm);
+#endif
 
-        // Pokud kniha nesplòuje by JEDNO pravidlo v øetìzci (oddìleném |), celá kniha je vyøazena
+                const int currentMonth = localTm.tm_mon + 1;
+                const int currentYear = localTm.tm_year + 1900;
+
+                if (rule.stringVal == "month") {
+                    ruleMatch = (month == currentMonth && year == currentYear);
+                }
+                else if (rule.stringVal == "year") {
+                    ruleMatch = (year == currentYear);
+                }
+                else if (rule.stringVal == "all") {
+                    ruleMatch = true;
+                }
+            }
+        }
+
+        // Pokud kniha nesplï¿½uje byï¿½ JEDNO pravidlo v ï¿½etï¿½zci (oddï¿½lenï¿½m |), celï¿½ kniha je vyï¿½azena
         if (!ruleMatch) return false;
     }
     return true;
