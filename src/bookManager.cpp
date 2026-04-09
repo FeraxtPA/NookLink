@@ -203,7 +203,7 @@ bool BookManager::saveBooksToFile(const std::string& filename, const std::unorde
 	j["next_id"] = m_NextId;
 
 	nlohmann::json posJson = nlohmann::json::object();
-	// Persist only book-node positions; genre nodes are recomputed from book genres.
+	// Persist positions for all graph nodes keyed by node ID.
 	for (const auto& [id, pos] : positions) {
 		posJson[std::to_string(id)] = { {"x", pos.x}, {"y", pos.y}, {"locked", pos.locked} };
 	}

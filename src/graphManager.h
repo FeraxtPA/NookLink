@@ -132,7 +132,8 @@ public:
     bool tryUnlockNodeAt(Vector2 mousePos);
 
     std::unordered_map<int, NodePosition> exportPositions() const;
-    void applyLoadedPositions(const std::unordered_map<int, NodePosition>& loadedPos);
+    bool applyLoadedPositions(const std::unordered_map<int, NodePosition>& loadedPos);
+    void setPhysicsActive(bool active) { m_IsPhysicsActive = active; }
 private:
     const BookManager& m_BookManager;
     ConnectionManager& m_ConnectionManager;
@@ -157,6 +158,11 @@ private:
     LayoutMode m_LayoutMode = LayoutMode::Physics;
 
     std::unordered_map<int, Vector2> m_PreGridPositions;
+    std::unordered_map<int, Vector2> m_RestoreFromGridStartPositions;
+    std::unordered_map<int, Vector2> m_RestoreFromGridTargetPositions;
+    bool m_IsRestoringFromGrid = false;
+    float m_RestoreFromGridT = 0.0f;
+    float m_RestoreFromGridDuration = 0.35f;
 
     void resetNodeState();
 

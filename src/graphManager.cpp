@@ -6,6 +6,13 @@
 #include "graphManager.h"
 #include "logging.h"
 
+namespace {
+float SmoothStep01(float t) {
+  const float x = std::clamp(t, 0.0f, 1.0f);
+  return x * x * (3.0f - 2.0f * x);
+}
+}
+
 std::string GraphManager::getGenreNameByNodeId(int nodeId) const {
   auto opt = getGenreByNodeId(nodeId);
   return opt.value_or("Unknown");
@@ -58,31 +65,36 @@ bool GraphManager::tryUnlockNodeAt(Vector2 mousePos) {
 std::unordered_map<int, NodePosition> GraphManager::exportPositions() const {
   std::unordered_map<int, NodePosition> posMap;
   for (const auto &node : m_Nodes) {
-    if (node.type == NodeType::Book) {
-      posMap[node.id] = {node.position.x, node.position.y, node.locked};
-    }
+    posMap[node.id] = {node.position.x, node.position.y, node.locked};
   }
   return posMap;
 }
 
-void GraphManager::applyLoadedPositions(
+bool GraphManager::applyLoadedPositions(
     const std::unordered_map<int, NodePosition> &loadedPos) {
-  if (loadedPos.empty())
-    return;
+  if (loadedPos.empty()) {
+    return false;
+  }
+
+  bool allNodesHaveSavedPositions = true;
 
   for (auto &node : m_Nodes) {
-    if (node.type == NodeType::Book && loadedPos.count(node.id)) {
-      const NodePosition& saved = loadedPos.at(node.id);
+    auto it = loadedPos.find(node.id);
+    if (it == loadedPos.end()) {
+      allNodesHaveSavedPositions = false;
+      continue;
+    }
 
-      // Keep compatibility with legacy saves: only hard-apply locked nodes.
-      // Unlocked nodes are re-layouted by current physics/clustering rules.
-      if (saved.locked) {
-        node.position.x = saved.x;
-        node.position.y = saved.y;
-        node.locked = true;
-      }
+    const NodePosition &saved = it->second;
+    node.position = {saved.x, saved.y};
+    node.locked = saved.locked;
+
+    if (node.type == NodeType::Genre) {
+      updateGenrePosition(node.id, node.position);
     }
   }
+
+  return allNodesHaveSavedPositions;
 }
 
 std::optional<std::string> GraphManager::getGenreByNodeId(int nodeId) const {
@@ -104,6 +116,55 @@ Node *GraphManager::getNodeAtPosition(Vector2 mousePos) {
 }
 
 void GraphManager::updatePhysics(float dt) {
+
+  if (m_IsRestoringFromGrid) {
+    m_RestoreFromGridT = std::min(
+        1.0f,
+        m_RestoreFromGridT + (dt / std::max(0.01f, m_RestoreFromGridDuration)));
+
+    const float alpha = SmoothStep01(m_RestoreFromGridT);
+    bool isMoving = false;
+
+    for (auto &node : m_Nodes) {
+      auto startIt = m_RestoreFromGridStartPositions.find(node.id);
+      auto targetIt = m_RestoreFromGridTargetPositions.find(node.id);
+      if (startIt == m_RestoreFromGridStartPositions.end() ||
+          targetIt == m_RestoreFromGridTargetPositions.end()) {
+        continue;
+      }
+
+      const Vector2 start = startIt->second;
+      const Vector2 target = targetIt->second;
+      node.position = Vector2Lerp(start, target, alpha);
+
+      if (node.type == NodeType::Genre) {
+        updateGenrePosition(node.id, node.position);
+      }
+
+      if (Vector2Distance(node.position, target) > 0.5f) {
+        isMoving = true;
+      }
+    }
+
+    if (m_RestoreFromGridT >= 1.0f || !isMoving) {
+      for (auto &node : m_Nodes) {
+        auto targetIt = m_RestoreFromGridTargetPositions.find(node.id);
+        if (targetIt == m_RestoreFromGridTargetPositions.end()) {
+          continue;
+        }
+
+        node.position = targetIt->second;
+        if (node.type == NodeType::Genre) {
+          updateGenrePosition(node.id, node.position);
+        }
+      }
+
+      m_IsRestoringFromGrid = false;
+      m_IsPhysicsActive = false;
+    }
+
+    return;
+  }
 
   if (!m_IsPhysicsActive)
     return;
@@ -419,6 +480,10 @@ void GraphManager::setLayoutMode(LayoutMode mode) {
   m_LayoutMode = mode;
 
   if (m_LayoutMode == LayoutMode::Grid) {
+    m_IsRestoringFromGrid = false;
+    m_RestoreFromGridStartPositions.clear();
+    m_RestoreFromGridTargetPositions.clear();
+
     // Save organic (physics) coordinates so we can restore them when leaving grid mode.
     m_PreGridPositions.clear();
     for (const auto &node : m_Nodes) {
@@ -443,8 +508,28 @@ void GraphManager::setLayoutMode(LayoutMode mode) {
 
     m_IsPhysicsActive = true;
   } else {
-    // Rebuild fresh physics clusters when returning from grid to avoid stale/colliding legacy positions.
-    initializePositions(false);
-    wakeUpPhysics();
+    // Smoothly return to the pre-grid snapshot instead of rebuilding a fresh layout.
+    m_RestoreFromGridStartPositions.clear();
+    m_RestoreFromGridTargetPositions.clear();
+
+    for (auto &node : m_Nodes) {
+      auto it = m_PreGridPositions.find(node.id);
+      if (it == m_PreGridPositions.end()) {
+        continue;
+      }
+
+      m_RestoreFromGridStartPositions[node.id] = node.position;
+      m_RestoreFromGridTargetPositions[node.id] = it->second;
+    }
+
+    if (m_RestoreFromGridTargetPositions.empty()) {
+      m_IsRestoringFromGrid = false;
+      m_IsPhysicsActive = false;
+      return;
+    }
+
+    m_RestoreFromGridT = 0.0f;
+    m_IsRestoringFromGrid = true;
+    m_IsPhysicsActive = true;
   }
 }

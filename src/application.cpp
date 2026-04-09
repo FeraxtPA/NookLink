@@ -293,10 +293,11 @@ void Application::Initialize()
             m_GraphManager->clearGenresAndConnections();
             m_GraphManager->initializePositions();
 
-         
             m_GraphManager->applyLoadedPositions(loadedPositions);
 
-            m_LayoutDirty = true;
+            // Keep restored coordinates stable; nodes without saved position keep their initializePositions() spawn.
+            m_GraphManager->setPhysicsActive(false);
+            m_LayoutDirty = false;
             ClearHistory();
             m_AppState = AppState::Editor;
         }
@@ -373,7 +374,9 @@ void Application::Initialize()
                    
                     m_GraphManager->applyLoadedPositions(loadedPositions);
 
-                    m_LayoutDirty = true;
+                    // Keep restored coordinates stable; nodes without saved position keep their initializePositions() spawn.
+                    m_GraphManager->setPhysicsActive(false);
+                    m_LayoutDirty = false;
                     ClearHistory();
                     m_AppState = AppState::Editor;
                 }
