@@ -5,42 +5,47 @@
 
 #pragma once
 #include "widget.h"
+#include "../constants.h"
 #include <string>
 #include <vector>
 
 class TextBox : public Widget {
 public:
-    std::string text;
-    std::string placeholder;
-    bool isFocused = false;
-    int maxLength = 2000;
-
     
-    int cursorIndex = 0;
-
-   
-    float scrollY = 0.0f;
-    float maxScrollY = 0.0f;
-
-    // Key Repeat State
-    float keyRepeatTimer = 0.0f;
-    int lastKeyPressed = -1;
-    const float KEY_REPEAT_DELAY = 0.5f; 
-    const float KEY_REPEAT_RATE = 0.03f; 
 
     TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph = "");
 
     void Update() override;
     void Draw(TextRenderer* renderer) override;
 
-    std::string GetText() const { return text; }
-    void SetText(const std::string& t) { text = t; cursorIndex = (int)t.size(); scrollY = 0.0f; m_UserScrolledManually = false; }
-    void Clear() { text.clear(); cursorIndex = 0; scrollY = 0.0f; isFocused = false; m_UserScrolledManually = false; }
-    void SetEditable(bool editable) { isEditable = editable; }
+    std::string GetText() const { return m_Text; }
+    void SetText(const std::string& t) { m_Text = t; m_CursorIndex = (int)t.size(); m_ScrollY = 0.0f; m_UserScrolledManually = false; }
+    void Clear() { m_Text.clear(); m_CursorIndex = 0; m_ScrollY = 0.0f; m_IsFocused = false; m_UserScrolledManually = false; }
+    void SetEditable(bool editable) { m_IsEditable = editable; }
+
+	bool IsFocused() const { return m_IsFocused; }
+	void SetFocused(bool focused) { m_IsFocused = focused; if (focused) m_CursorIndex = (int)m_Text.size(); }
 
 private:
+    int m_MaxLength = 2000;
 
-    bool isEditable = true;
+    bool m_IsFocused = false;
+
+    static constexpr float KEY_REPEAT_RATE = NookConst::Input::kTextBoxKeyRepeatRate;
+    static constexpr float KEY_REPEAT_DELAY = NookConst::Input::kTextBoxKeyRepeatDelay;
+    float m_KeyRepeatTimer = 0.0f;
+
+    int m_LastKeyPressed = -1;
+
+    int m_CursorIndex = 0;
+
+    std::string m_PlaceHolder;
+
+    float m_ScrollY = 0.0f;
+    float m_MaxScrollY = 0.0f;
+
+    std::string m_Text;
+    bool m_IsEditable = true;
     bool m_UserScrolledManually = false;
     void MoveLeft(bool jumpWord);
     void MoveRight(bool jumpWord);

@@ -24,6 +24,7 @@ public:
 
     void SetOptions(const std::vector<std::string>& options, int selectedIndex = 0);
     void SetSelectedIndex(int index, bool notify = false);
+    void SetMaxVisibleOptions(int maxVisible);
 
     int GetSelectedIndex() const { return m_SelectedIndex; }
     std::string GetSelectedText() const;
@@ -34,5 +35,7 @@ private:
     int m_SelectedIndex = 0;
     bool m_IsExpanded = false;
     int m_HoveredOptionIndex = -1;
+    int m_ScrollOffset = 0;
+    int m_MaxVisibleOptions = 7;
     std::function<void(int, const std::string&)> m_OnSelect;
 };

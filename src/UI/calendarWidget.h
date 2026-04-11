@@ -19,11 +19,12 @@ public:
 
     void Open(const std::string& initialDate, const std::function<void(const std::string&)>& onDateSelected, Vector2 preferredTopLeft);
     void Close();
-    bool IsOpen() const { return isVisible; }
+    bool IsOpen() const { return m_IsVisible; }
 
 private:
     std::function<void(const std::string&)> m_OnDateSelected;
 
+    
     int m_Year = 1970;
     int m_Month = 1;
 

@@ -9,62 +9,104 @@
 #include "../utf8_utils.h"
 #include <algorithm>
 
+namespace {
+std::string BuildTextBoxClipboardInsert(size_t maxCodepointsToAdd)
+{
+    if (maxCodepointsToAdd == 0) {
+        return "";
+    }
+
+	// Get raw clipboard text and filter out control characters except newlines.
+    const char* clipboard = GetClipboardText();
+    if (!clipboard || clipboard[0] == '\0') {
+        return "";
+    }
+
+    const std::string source(clipboard);
+    std::string result;
+    size_t added = 0;
+
+    size_t i = 0;
+    while (i < source.size() && added < maxCodepointsToAdd) {
+        int cpSize = 0;
+        const int cp = Utf8::DecodeCodepointAt(source, i, &cpSize);
+        const size_t next = std::min(source.size(), i + (size_t)std::max(cpSize, 1));
+
+        if (cp == '\r') {
+            i = next;
+            continue;
+        }
+
+        if (cp == '\n' || cp >= 32) {
+            Utf8::AppendCodepoint(result, cp);
+            ++added;
+        }
+
+        i = next;
+    }
+
+    return result;
+}
+}
+
 
 TextBox::TextBox(Anchor anchor, Vector2 offset, Vector2 size, std::string ph)
-    : Widget(anchor, offset, size), placeholder(ph)
+    : Widget(anchor, offset, size), m_PlaceHolder(ph)
 {
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
 
+// Moves cursor left, optionally jumping over entire words when ctrl is held.
 void TextBox::MoveLeft(bool jumpWord) {
-    if (cursorIndex == 0) return;
+    if (m_CursorIndex == 0) return;
 
     if (!jumpWord) {
-        cursorIndex = (int)Utf8::PrevCodepointStart(text, (size_t)cursorIndex);
+        m_CursorIndex = (int)Utf8::PrevCodepointStart(m_Text, (size_t)m_CursorIndex);
     }
     else {
-        size_t cursor = (size_t)cursorIndex;
+        size_t cursor = (size_t)m_CursorIndex;
 
         while (cursor > 0) {
-            const size_t prevStart = Utf8::PrevCodepointStart(text, cursor);
-            const int cp = Utf8::DecodeCodepointAt(text, prevStart);
+            const size_t prevStart = Utf8::PrevCodepointStart(m_Text, cursor);
+            const int cp = Utf8::DecodeCodepointAt(m_Text, prevStart);
             if (Utf8::IsWordCodepoint(cp)) break;
             cursor = prevStart;
         }
 
         while (cursor > 0) {
-            const size_t prevStart = Utf8::PrevCodepointStart(text, cursor);
-            const int cp = Utf8::DecodeCodepointAt(text, prevStart);
+            const size_t prevStart = Utf8::PrevCodepointStart(m_Text, cursor);
+            const int cp = Utf8::DecodeCodepointAt(m_Text, prevStart);
             if (!Utf8::IsWordCodepoint(cp)) break;
             cursor = prevStart;
         }
 
-        cursorIndex = (int)cursor;
+        m_CursorIndex = (int)cursor;
     }
 }
 
+// Moves cursor right, optionally jumping over entire words when ctrl is held.
 void TextBox::MoveRight(bool jumpWord) {
-    if (cursorIndex >= (int)text.length()) return;
+    if (m_CursorIndex >= (int)m_Text.length()) return;
 
     if (!jumpWord) {
-        cursorIndex = (int)Utf8::NextCodepointStart(text, (size_t)cursorIndex);
+        m_CursorIndex = (int)Utf8::NextCodepointStart(m_Text, (size_t)m_CursorIndex);
     }
     else {
-        size_t cursor = (size_t)cursorIndex;
+        size_t cursor = (size_t)m_CursorIndex;
 
-        while (cursor < text.size()) {
-            const int cp = Utf8::DecodeCodepointAt(text, cursor);
+        while (cursor < m_Text.size()) {
+            const int cp = Utf8::DecodeCodepointAt(m_Text, cursor);
             if (!Utf8::IsWordCodepoint(cp)) break;
-            cursor = Utf8::NextCodepointStart(text, cursor);
+            cursor = Utf8::NextCodepointStart(m_Text, cursor);
         }
 
-        while (cursor < text.size()) {
-            const int cp = Utf8::DecodeCodepointAt(text, cursor);
+        while (cursor < m_Text.size()) {
+            const int cp = Utf8::DecodeCodepointAt(m_Text, cursor);
             if (Utf8::IsWordCodepoint(cp)) break;
-            cursor = Utf8::NextCodepointStart(text, cursor);
+            cursor = Utf8::NextCodepointStart(m_Text, cursor);
         }
 
-        cursorIndex = (int)cursor;
+        m_CursorIndex = (int)cursor;
     }
 }
 
@@ -72,138 +114,153 @@ void TextBox::MoveRight(bool jumpWord) {
 void TextBox::HandleKeyRepeat(int key, bool jumpWord, void (TextBox::* moveFunc)(bool)) {
     if (IsKeyPressed(key)) {
         (this->*moveFunc)(jumpWord);
-        lastKeyPressed = key;
-        keyRepeatTimer = 0.0f;
+        m_LastKeyPressed = key;
+        m_KeyRepeatTimer = 0.0f;
     }
-    else if (IsKeyDown(key) && lastKeyPressed == key) {
-        keyRepeatTimer += GetFrameTime();
-        if (keyRepeatTimer > KEY_REPEAT_DELAY) {
+    else if (IsKeyDown(key) && m_LastKeyPressed == key) {
+        m_KeyRepeatTimer += GetFrameTime();
+        if (m_KeyRepeatTimer > KEY_REPEAT_DELAY) {
             // Apply movement multiple times if frame time > repeat rate
-            while (keyRepeatTimer > KEY_REPEAT_DELAY + KEY_REPEAT_RATE) {
+            while (m_KeyRepeatTimer > KEY_REPEAT_DELAY + KEY_REPEAT_RATE) {
                 (this->*moveFunc)(jumpWord);
-                keyRepeatTimer -= KEY_REPEAT_RATE;
+                m_KeyRepeatTimer -= KEY_REPEAT_RATE;
             }
         }
     }
-    else if (IsKeyReleased(key) && lastKeyPressed == key) {
-        lastKeyPressed = -1;
-        keyRepeatTimer = 0.0f;
+    else if (IsKeyReleased(key) && m_LastKeyPressed == key) {
+        m_LastKeyPressed = -1;
+        m_KeyRepeatTimer = 0.0f;
     }
 }
 
 void TextBox::Update() {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     const Vector2 mouse = GetMousePosition();
-    isHovered = CheckCollisionPointRec(mouse, m_Bounds);
+    m_IsHovered = CheckCollisionPointRec(mouse, m_Bounds);
+    if (m_IsEditable && (m_IsHovered || m_IsFocused)) {
+        RequestCursor(MOUSE_CURSOR_IBEAM);
+    }
 
-    if (isEditable) {
+    if (m_IsEditable) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            const bool wasFocused = isFocused;
-            isFocused = isHovered;
+            const bool wasFocused = m_IsFocused;
+            m_IsFocused = m_IsHovered;
 
-            if (isFocused && !wasFocused) cursorIndex = (int)text.size();
+            if (m_IsFocused && !wasFocused) m_CursorIndex = (int)m_Text.size();
         }
     }
 
-    cursorIndex = std::clamp(cursorIndex, 0, (int)text.size());
+    m_CursorIndex = std::clamp(m_CursorIndex, 0, (int)m_Text.size());
 
     // Wheel scrolling works regardless of editability.
-    if (isHovered || isFocused) {
+    if (m_IsHovered || m_IsFocused) {
         const float wheel = GetMouseWheelMove();
         if (wheel != 0) {
-            scrollY -= wheel * 20.0f;
+            m_ScrollY -= wheel * 20.0f;
             // Once user scrolls manually, never auto-jump back to caret.
             m_UserScrolledManually = true;
         }
     }
 
-    if (isEditable && isFocused) {
-
-        Widget::DesiredCursor = MOUSE_CURSOR_IBEAM;
+    if (m_IsEditable && m_IsFocused) {
 
         const bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+
+        if (ctrl && IsKeyPressed(KEY_C) && !m_Text.empty()) {
+            SetClipboardText(m_Text.c_str());
+        }
+
+        if (ctrl && IsKeyPressed(KEY_V)) {
+            const size_t currentCount = Utf8::CodepointCount(m_Text);
+            const size_t remaining = currentCount < (size_t)m_MaxLength ? (size_t)m_MaxLength - currentCount : 0;
+            const std::string insert = BuildTextBoxClipboardInsert(remaining);
+            if (!insert.empty()) {
+                m_Text.insert((size_t)m_CursorIndex, insert);
+                m_CursorIndex += (int)insert.size();
+            }
+        }
 
         HandleKeyRepeat(KEY_LEFT, ctrl, &TextBox::MoveLeft);
         HandleKeyRepeat(KEY_RIGHT, ctrl, &TextBox::MoveRight);
 
         int key = GetCharPressed();
         while (key > 0) {
-            if (key >= 32 && Utf8::CodepointCount(text) < (size_t)maxLength) {
+            if (key >= 32 && Utf8::CodepointCount(m_Text) < (size_t)m_MaxLength) {
                 std::string utf8Char;
                 Utf8::AppendCodepoint(utf8Char, key);
-                text.insert((size_t)cursorIndex, utf8Char);
-                cursorIndex += (int)utf8Char.size();
+                m_Text.insert((size_t)m_CursorIndex, utf8Char);
+                m_CursorIndex += (int)utf8Char.size();
             }
             key = GetCharPressed();
         }
 
        
         if (IsKeyPressed(KEY_BACKSPACE)) {
-            if (cursorIndex > 0 && !text.empty()) {
+            if (m_CursorIndex > 0 && !m_Text.empty()) {
                 int deleteCount = 0;
-                int startIndex = cursorIndex;
+                int startIndex = m_CursorIndex;
 
                 if (ctrl) {
-                    size_t tempIndex = (size_t)cursorIndex;
+                    size_t tempIndex = (size_t)m_CursorIndex;
                     while (tempIndex > 0) {
-                        const size_t prev = Utf8::PrevCodepointStart(text, tempIndex);
-                        const int cp = Utf8::DecodeCodepointAt(text, prev);
+                        const size_t prev = Utf8::PrevCodepointStart(m_Text, tempIndex);
+                        const int cp = Utf8::DecodeCodepointAt(m_Text, prev);
                         if (Utf8::IsWordCodepoint(cp)) break;
                         tempIndex = prev;
                     }
                     while (tempIndex > 0) {
-                        const size_t prev = Utf8::PrevCodepointStart(text, tempIndex);
-                        const int cp = Utf8::DecodeCodepointAt(text, prev);
+                        const size_t prev = Utf8::PrevCodepointStart(m_Text, tempIndex);
+                        const int cp = Utf8::DecodeCodepointAt(m_Text, prev);
                         if (!Utf8::IsWordCodepoint(cp)) break;
                         tempIndex = prev;
                     }
 
                     startIndex = (int)tempIndex;
-                    deleteCount = cursorIndex - startIndex;
+                    deleteCount = m_CursorIndex - startIndex;
                 }
                 else {
-                    const size_t prev = Utf8::PrevCodepointStart(text, (size_t)cursorIndex);
+                    const size_t prev = Utf8::PrevCodepointStart(m_Text, (size_t)m_CursorIndex);
                     startIndex = (int)prev;
-                    deleteCount = cursorIndex - startIndex;
+                    deleteCount = m_CursorIndex - startIndex;
                 }
 
-                text.erase((size_t)startIndex, (size_t)deleteCount);
-                cursorIndex = startIndex;
+                m_Text.erase((size_t)startIndex, (size_t)deleteCount);
+                m_CursorIndex = startIndex;
             }
         }
 
         if (IsKeyPressed(KEY_DELETE)) {
-            if (cursorIndex < (int)text.length()) {
-                const size_t start = (size_t)cursorIndex;
-                const size_t end = Utf8::NextCodepointStart(text, start);
-                text.erase(start, end - start);
+            if (m_CursorIndex < (int)m_Text.length()) {
+                const size_t start = (size_t)m_CursorIndex;
+                const size_t end = Utf8::NextCodepointStart(m_Text, start);
+                m_Text.erase(start, end - start);
             }
         }
 
         if (IsKeyPressed(KEY_ENTER)) {
-            text.insert((size_t)cursorIndex, 1, '\n');
-            cursorIndex++;
+            m_Text.insert((size_t)m_CursorIndex, 1, '\n');
+            m_CursorIndex++;
         }
-    } else if (isHovered) {
-        Widget::DesiredCursor = MOUSE_CURSOR_POINTING_HAND;
+    } else if (m_IsHovered) {
+		RequestCursor(MOUSE_CURSOR_IBEAM);
     }
 }
 
 void TextBox::Draw(TextRenderer* renderer) {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     //Background & Border
     DrawRectangleRounded(m_Bounds, 0.14f, 10, NookCol::UI_PANEL_ALT);
-    Color borderColor = isFocused ? NookCol::UI_ACCENT : (isHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT);
+    Color borderColor = m_IsFocused ? NookCol::UI_ACCENT : (m_IsHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT);
     DrawRectangleRoundedLinesEx(m_Bounds, 0.14f, 10, 2.0f, borderColor);
 
     if (!renderer) return;
 
     //Text to Draw
-    std::string textToDraw = text;
-    bool showPlaceholder = text.empty() && !isFocused;
-    if (showPlaceholder) textToDraw = placeholder;
+    std::string textToDraw = m_Text;
+    bool showPlaceholder = m_Text.empty() && !m_IsFocused;
+    if (showPlaceholder) textToDraw = m_PlaceHolder;
 
     
     const float fontSize = 20.0f;
@@ -224,7 +281,7 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     // Helper to "commit" a line to drawing
     auto finishLine = [&](int endIndex, bool newline) {
-        float absoluteY = m_Bounds.y + padding + currentY - scrollY;
+        float absoluteY = m_Bounds.y + padding + currentY - m_ScrollY;
         float absoluteX = m_Bounds.x + padding;
 
         // Draw if visible
@@ -234,9 +291,9 @@ void TextBox::Draw(TextRenderer* renderer) {
         }
 
         // Track cursor against wrapped line segment so caret aligns with wrapped rendering.
-        if (isFocused && !showPlaceholder && !cursorFound && cursorIndex >= lineStartIndex && cursorIndex <= endIndex) {
+        if (m_IsFocused && !showPlaceholder && !cursorFound && m_CursorIndex >= lineStartIndex && m_CursorIndex <= endIndex) {
             
-            std::string sub = textToDraw.substr(lineStartIndex, cursorIndex - lineStartIndex);
+            std::string sub = textToDraw.substr(lineStartIndex, m_CursorIndex - lineStartIndex);
             float subWidth = renderer->Measure(sub, fontSize);
             cursorPos = { absoluteX + subWidth, absoluteY };
             cursorFound = true;
@@ -292,11 +349,11 @@ void TextBox::Draw(TextRenderer* renderer) {
     finishLine((int)textToDraw.length(), false);
 
     
-    if (isFocused && cursorFound && !m_UserScrolledManually) {
+    if (m_IsFocused && cursorFound && !m_UserScrolledManually) {
        
         float relY = cursorPos.y - m_Bounds.y;
-        if (relY < 0) scrollY += relY;
-        if (relY + lineHeight > m_Bounds.height) scrollY += (relY + lineHeight - m_Bounds.height);
+        if (relY < 0) m_ScrollY += relY;
+        if (relY + lineHeight > m_Bounds.height) m_ScrollY += (relY + lineHeight - m_Bounds.height);
 
         // Blinking
         if (((int)(GetTime() * 2) % 2) == 0) {
@@ -308,14 +365,14 @@ void TextBox::Draw(TextRenderer* renderer) {
 
     //Scrollbar Logic
     float totalHeight = currentY + lineHeight;
-    maxScrollY = std::max(0.0f, totalHeight - (m_Bounds.height - padding * 2));
+    m_MaxScrollY = std::max(0.0f, totalHeight - (m_Bounds.height - padding * 2));
 
     // Clamp scroll
-    if (scrollY < 0) scrollY = 0;
-    if (scrollY > maxScrollY) scrollY = maxScrollY;
+    if (m_ScrollY < 0) m_ScrollY = 0;
+    if (m_ScrollY > m_MaxScrollY) m_ScrollY = m_MaxScrollY;
 
-    if (maxScrollY > 0) {
-        float scrollPerc = scrollY / maxScrollY;
+    if (m_MaxScrollY > 0) {
+        float scrollPerc = m_ScrollY / m_MaxScrollY;
         float barHeight = std::max(20.0f, (m_Bounds.height / totalHeight) * m_Bounds.height);
         float barY = m_Bounds.y + (scrollPerc * (m_Bounds.height - barHeight));
         DrawRectangle((int)(m_Bounds.x + m_Bounds.width - 6), (int)barY, 4, (int)barHeight, Fade(NookCol::UI_ACCENT_SOFT, 0.45f));

@@ -10,10 +10,24 @@ namespace NookCol
 {
 	enum class ThemePreset {
 		Classic,
-		KaerMorhen,
-		BlueHour,
-		Autumn,
-		Frosted
+     Graphite,
+		Mist,
+		Harvest,
+		Frost,
+		CozyDusk,
+		CozyMoss,
+		CozyCocoa,
+		Monochrome,
+		Pastel,
+		Sepia,
+		Nord,
+		CatppuccinMocha,
+		SolarizedDark,
+		Dracula,
+		TokyoNight,
+		GruvboxDark,
+		EverforestDark,
+		OneDark
 	};
 
 	extern Color BACKGROUND;

@@ -6,6 +6,8 @@
 #include "checkbox.h"
 #include "../textRenderer.h"
 #include "../colors.h"
+#include "../constants.h"
+
 
 Checkbox::Checkbox(Anchor anchor, Vector2 offset, Vector2 size, std::string l, bool initial, std::function<void(bool)> onChangeCallback)
     : Widget(anchor, offset, size), label(l), checked(initial), onChange(onChangeCallback)
@@ -14,49 +16,40 @@ Checkbox::Checkbox(Anchor anchor, Vector2 offset, Vector2 size, std::string l, b
 }
 
 void Checkbox::Update() {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
-    
     Rectangle clickArea = m_Bounds;
-    clickArea.width += 200; // Allow clicking the text too
+    clickArea.width += NookConst::WidgetStyle::kCheckboxClickLabelExtension; // Allow clicking the text too
 
-    if (CheckCollisionPointRec(GetMousePosition(), clickArea)) {
-        isHovered = true;
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    const bool hovered = HandleHoverCursor(clickArea);
+    const bool clicked = hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsLeftClickConsumed();
+    if (clicked && GetTime() - m_LastClickTime > NookConst::Input::kUiClickDebounceSeconds) {
+        ConsumeLeftClick();
+        checked = !checked;
+        if (onChange) onChange(checked);
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-
-            
-            if (GetTime() - m_LastClickTime > 0.2) {
-                checked = !checked;                  
-                if (onChange) onChange(checked); 
-
-                m_LastClickTime = GetTime();        
-            }
-        }
-    }
-    else {
-        isHovered = false;
+        m_LastClickTime = GetTime();
     }
 }
 
 void Checkbox::Draw(TextRenderer* renderer) {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     
-    DrawRectangleRounded(m_Bounds, 0.18f, 8, NookCol::UI_PANEL_ALT);
+    DrawRectangleRounded(m_Bounds, NookConst::WidgetStyle::kCheckboxRoundness, NookConst::WidgetStyle::kCheckboxRoundSegments, NookCol::UI_PANEL_ALT);
 
   
-    Color borderColor = isHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT;
-    DrawRectangleRoundedLinesEx(m_Bounds, 0.18f, 8, 2.0f, borderColor);
+    Color borderColor = m_IsHovered ? NookCol::UI_BORDER : NookCol::UI_BORDER_SOFT;
+    DrawRectangleRoundedLinesEx(m_Bounds, NookConst::WidgetStyle::kCheckboxRoundness, NookConst::WidgetStyle::kCheckboxRoundSegments, NookConst::WidgetStyle::kCheckboxBorderThickness, borderColor);
 
   
     if (checked) {
-        DrawRectangle((int)m_Bounds.x + 4, (int)m_Bounds.y + 4, (int)m_Bounds.width - 8, (int)m_Bounds.height - 8, NookCol::UI_ACCENT_SOFT);
+        const int inset = (int)NookConst::WidgetStyle::kCheckboxInnerInset;
+        DrawRectangle((int)m_Bounds.x + inset, (int)m_Bounds.y + inset, (int)m_Bounds.width - inset * 2, (int)m_Bounds.height - inset * 2, NookCol::UI_ACCENT_SOFT);
     }
 
   
     if (renderer) {
-        renderer->DrawSimpleText(label, { m_Bounds.x + m_Bounds.width + 10, m_Bounds.y }, 20, NookCol::UI_TEXT);
+        renderer->DrawSimpleText(label, { m_Bounds.x + m_Bounds.width + NookConst::WidgetStyle::kCheckboxLabelGap, m_Bounds.y }, NookConst::WidgetStyle::kCheckboxLabelFontSize, NookCol::UI_TEXT);
     }
 }

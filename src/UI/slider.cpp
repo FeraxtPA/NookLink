@@ -7,6 +7,7 @@
 #include <raylib.h>
 #include <cmath>
 #include "../colors.h"
+#include "../constants.h"
 
 Slider::Slider(Anchor anchor, Vector2 offset, Vector2 size, float minV, float maxV, float initialVal, std::function<void(float)> onChangeCallback)
     : Widget(anchor, offset, size), minVal(minV), maxVal(maxV), value(initialVal), onChange(onChangeCallback)
@@ -15,22 +16,15 @@ Slider::Slider(Anchor anchor, Vector2 offset, Vector2 size, float minV, float ma
 }
 
 void Slider::Update() {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     Vector2 mousePos = GetMousePosition();
 
-   
-    if (CheckCollisionPointRec(mousePos, m_Bounds)) {
-        isHovered = true;
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-
-        
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            isDragging = true;
-        }
+    if (ConsumeLeftClickOnHover(m_Bounds)) {
+        isDragging = true;
     }
-    else {
-        isHovered = false;
+    else if (!isDragging) {
+        HandleHoverCursor(m_Bounds);
     }
 
    
@@ -51,7 +45,7 @@ void Slider::Update() {
         float newVal = minVal + normalizedX * (maxVal - minVal);
 
         // Keep one decimal place for stable UI labels and filtering logic.
-        newVal = std::round(newVal * 10.0f) / 10.0f;
+        newVal = std::round(newVal * NookConst::WidgetStyle::kSliderStepScale) / NookConst::WidgetStyle::kSliderStepScale;
 
      
         if (newVal != value) {
@@ -64,17 +58,17 @@ void Slider::Update() {
 }
 
 void Slider::Draw(TextRenderer* renderer) {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
    
-    DrawRectangleRounded(m_Bounds, 0.5f, 12, NookCol::UI_PANEL_ALT);
+    DrawRectangleRounded(m_Bounds, NookConst::WidgetStyle::kSliderRoundness, NookConst::WidgetStyle::kSliderRoundSegments, NookCol::UI_PANEL_ALT);
 
     // Draw filled progress segment proportional to current value.
     float normalizedValue = (value - minVal) / (maxVal - minVal);
     Rectangle fillRec = { m_Bounds.x, m_Bounds.y, m_Bounds.width * normalizedValue, m_Bounds.height };
-    DrawRectangleRounded(fillRec, 0.5f, 12, NookCol::UI_ACCENT_SOFT);
+    DrawRectangleRounded(fillRec, NookConst::WidgetStyle::kSliderRoundness, NookConst::WidgetStyle::kSliderRoundSegments, NookCol::UI_ACCENT_SOFT);
 
   
-    Color borderColor = isHovered || isDragging ? NookCol::UI_ACCENT : NookCol::UI_BORDER_SOFT;
-    DrawRectangleLinesEx(m_Bounds, 2, borderColor);
+    Color borderColor = m_IsHovered || isDragging ? NookCol::UI_ACCENT : NookCol::UI_BORDER_SOFT;
+    DrawRectangleLinesEx(m_Bounds, NookConst::WidgetStyle::kSliderBorderThickness, borderColor);
 }

@@ -38,6 +38,8 @@ public:
     void SetPadding(Vector2 padding) { m_Padding = padding; }
     void SetGap(float gap) { m_Gap = gap; }
 
+    void BeginFrameInputRecursive() override;
+    MouseCursor ResolveRequestedCursorRecursive() const override;
     void Update() override;
     void Draw(TextRenderer* renderer) override;
     void OnWindowResize(int screenWidth, int screenHeight) override;

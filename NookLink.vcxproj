@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -84,6 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -98,6 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -112,9 +114,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalHeaderUnitDependencies>%(AdditionalHeaderUnitDependencies)</AdditionalHeaderUnitDependencies>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,9 +135,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalHeaderUnitDependencies>%(AdditionalHeaderUnitDependencies)</AdditionalHeaderUnitDependencies>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,22 +152,44 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\tinyfiledialogs\tinyfiledialogs.c" />
-    <ClCompile Include="src\application.cpp" />
-    <ClCompile Include="src\book.cpp" />
-    <ClCompile Include="src\bookManager.cpp" />
-    <ClCompile Include="src\cameraHandler.cpp" />
-    <ClCompile Include="src\connectionManager.cpp" />
-    <ClCompile Include="src\debugManager.cpp" />
-    <ClCompile Include="src\graphLayout.cpp" />
-    <ClCompile Include="src\graphManager.cpp" />
-    <ClCompile Include="src\inputHandler.cpp" />
-    <ClCompile Include="src\nodeRenderer.cpp" />
-    <ClCompile Include="src\NookLink.cpp" />
-    <ClCompile Include="src\searchFilter.cpp" />
+    <ClCompile Include="src\Core\application.cpp" />
+    <ClCompile Include="src\Core\application_persistence.cpp" />
+    <ClCompile Include="src\Core\application_runtime.cpp" />
+    <ClCompile Include="src\Domain\book.cpp" />
+    <ClCompile Include="src\Domain\bookManager.cpp" />
+    <ClCompile Include="src\Domain\cameraHandler.cpp" />
+    <ClCompile Include="src\colors.cpp" />
+    <ClCompile Include="src\Domain\connectionManager.cpp" />
+    <ClCompile Include="src\Core\debugManager.cpp" />
+    <ClCompile Include="src\Services\goodreadsCsvImporter.cpp" />
+    <ClCompile Include="src\Services\googleBooksClient.cpp" />
+    <ClCompile Include="src\Domain\graphLayout.cpp" />
+    <ClCompile Include="src\Domain\graphManager.cpp" />
+    <ClCompile Include="src\Domain\graphManager_physics.cpp" />
+    <ClCompile Include="src\Domain\graphManager_picking.cpp" />
+    <ClCompile Include="src\Domain\graphManager_rendering.cpp" />
+    <ClCompile Include="src\Domain\graphManager_selection.cpp" />
+    <ClCompile Include="src\Core\inputHandler.cpp" />
+    <ClCompile Include="src\Core\logging.cpp" />
+    <ClCompile Include="src\Domain\nodeRenderer.cpp" />
+    <ClCompile Include="src\Core\NookLink.cpp" />
+    <ClCompile Include="src\Domain\searchFilter.cpp" />
+    <ClCompile Include="src\Domain\date_utils.cpp" />
+    <ClCompile Include="src\Domain\validation.cpp" />
     <ClCompile Include="src\textRenderer.cpp" />
-    <ClCompile Include="src\uiManager.cpp" />
+    <ClCompile Include="src\UIManager\uiManager.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_build.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_build_filter_toolbar.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_build_panels.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_interaction.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_overlays.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_render.cpp" />
+    <ClCompile Include="src\UIManager\uiManager_state.cpp" />
     <ClCompile Include="src\UI\button.cpp" />
+    <ClCompile Include="src\UI\calendarWidget.cpp" />
     <ClCompile Include="src\UI\checkbox.cpp" />
+    <ClCompile Include="src\UI\dropdown.cpp" />
+    <ClCompile Include="src\UI\flexLayout.cpp" />
     <ClCompile Include="src\UI\label.cpp" />
     <ClCompile Include="src\UI\panel.cpp" />
     <ClCompile Include="src\UI\slider.cpp" />
@@ -173,33 +199,59 @@
   <ItemGroup>
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\tinyfiledialogs\tinyfiledialogs.h" />
-    <ClInclude Include="src\application.h" />
-    <ClInclude Include="src\book.h" />
-    <ClInclude Include="src\bookManager.h" />
-    <ClInclude Include="src\cameraHandler.h" />
+    <ClInclude Include="src\Core\application.h" />
+    <ClInclude Include="src\Domain\book.h" />
+    <ClInclude Include="src\Domain\bookManager.h" />
+    <ClInclude Include="src\Domain\cameraHandler.h" />
     <ClInclude Include="src\colors.h" />
-    <ClInclude Include="src\connectionManager.h" />
-    <ClInclude Include="src\debugManager.h" />
-    <ClInclude Include="src\graphLayout.h" />
-    <ClInclude Include="src\graphManager.h" />
-    <ClInclude Include="src\inputHandler.h" />
-    <ClInclude Include="src\nodeRenderer.h" />
-    <ClInclude Include="src\searchFilter.h" />
+    <ClInclude Include="src\Domain\connectionManager.h" />
+    <ClInclude Include="src\constants.h" />
+    <ClInclude Include="src\constants_ui.h" />
+    <ClInclude Include="src\constants_render.h" />
+    <ClInclude Include="src\constants_input.h" />
+    <ClInclude Include="src\constants_layout.h" />
+    <ClInclude Include="src\Core\debugManager.h" />
+    <ClInclude Include="src\Services\goodreadsCsvImporter.h" />
+    <ClInclude Include="src\Services\googleBooksClient.h" />
+    <ClInclude Include="src\Domain\graphLayout.h" />
+    <ClInclude Include="src\Domain\graphManager.h" />
+    <ClInclude Include="src\Core\inputHandler.h" />
+    <ClInclude Include="src\Core\logging.h" />
+    <ClInclude Include="src\Domain\nodeRenderer.h" />
+    <ClInclude Include="src\Domain\searchFilter.h" />
+    <ClInclude Include="src\Domain\date_utils.h" />
+    <ClInclude Include="src\Domain\validation.h" />
     <ClInclude Include="src\textRenderer.h" />
-    <ClInclude Include="src\uiManager.h" />
+    <ClInclude Include="src\UIManager\uiManager.h" />
+    <ClInclude Include="src\UIManager\uiManager_internal.h" />
     <ClInclude Include="src\UI\button.h" />
+    <ClInclude Include="src\UI\calendarWidget.h" />
     <ClInclude Include="src\UI\checkbox.h" />
+    <ClInclude Include="src\UI\dropdown.h" />
+    <ClInclude Include="src\UI\flexLayout.h" />
     <ClInclude Include="src\UI\label.h" />
     <ClInclude Include="src\UI\panel.h" />
     <ClInclude Include="src\UI\slider.h" />
     <ClInclude Include="src\UI\textBox.h" />
     <ClInclude Include="src\UI\textInput.h" />
     <ClInclude Include="src\UI\widget.h" />
+    <ClInclude Include="src\utf8_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ideas.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".env" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+
+
+
+
+
+
+
+

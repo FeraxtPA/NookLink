@@ -6,15 +6,12 @@
 #include "panel.h"
 #include "../textRenderer.h"
 #include "../colors.h"
+#include "../constants.h"
 
 #include <algorithm>
 
-namespace {
-constexpr float kPanelTitleBarHeight = 40.0f;
-}
-
 Panel::Panel(Anchor anchor, Vector2 offset, Vector2 size, std::string t)
-    : Widget(anchor, offset, size), title(t)
+    : Widget(anchor, offset, size), m_Title(t)
 {
     OnWindowResize(GetScreenWidth(), GetScreenHeight());
 }
@@ -35,7 +32,7 @@ std::shared_ptr<FlexLayout> Panel::CreateContentLayout(
         crossAlign
     );
 
-    contentLayouts.push_back(layout);
+    m_ContentLayouts.push_back(layout);
     SyncContentLayouts();
     return layout;
 }
@@ -44,9 +41,9 @@ Rectangle Panel::GetContentRect() const
 {
     return Rectangle{
         m_Bounds.x,
-        m_Bounds.y + kPanelTitleBarHeight,
+        m_Bounds.y + NookConst::UI::kPanelTitleBarHeight,
         m_Bounds.width,
-        std::max(0.0f, m_Bounds.height - kPanelTitleBarHeight)
+        std::max(0.0f, m_Bounds.height - NookConst::UI::kPanelTitleBarHeight)
     };
 }
 
@@ -54,15 +51,15 @@ void Panel::SyncContentLayouts()
 {
     const Rectangle contentRect = GetContentRect();
     // All content layouts share one logical content area below the title bar.
-    for (auto& layout : contentLayouts) {
-        layout->m_Bounds = contentRect;
+    for (auto& layout : m_ContentLayouts) {
+        layout->SetBounds(contentRect);
     }
 }
 
 
 void Panel::OnWindowResize(int screenWidth, int screenHeight) {
     Widget::OnWindowResize(screenWidth, screenHeight);
-    for (auto& child : children) {
+    for (auto& child : m_Children) {
         child->OnWindowResize(screenWidth, screenHeight); 
     }
     SyncContentLayouts();
@@ -70,23 +67,65 @@ void Panel::OnWindowResize(int screenWidth, int screenHeight) {
 
 
 void Panel::AddChild(std::shared_ptr<Widget> widget) {
-    children.push_back(widget);
+    m_Children.push_back(widget);
+}
+
+void Panel::BeginFrameInputRecursive()
+{
+    BeginFrameInput();
+
+    for (auto& child : m_Children) {
+        if (child) {
+            child->BeginFrameInputRecursive();
+        }
+    }
+
+    for (auto& layout : m_ContentLayouts) {
+        if (layout) {
+            layout->BeginFrameInputRecursive();
+        }
+    }
+}
+
+MouseCursor Panel::ResolveRequestedCursorRecursive() const
+{
+    if (!m_IsVisible) {
+        return MOUSE_CURSOR_DEFAULT;
+    }
+
+    for (auto it = m_ContentLayouts.rbegin(); it != m_ContentLayouts.rend(); ++it) {
+        if (!(*it)) continue;
+        const MouseCursor requested = (*it)->ResolveRequestedCursorRecursive();
+        if (requested != MOUSE_CURSOR_DEFAULT) {
+            return requested;
+        }
+    }
+
+    for (auto it = m_Children.rbegin(); it != m_Children.rend(); ++it) {
+        if (!(*it)) continue;
+        const MouseCursor requested = (*it)->ResolveRequestedCursorRecursive();
+        if (requested != MOUSE_CURSOR_DEFAULT) {
+            return requested;
+        }
+    }
+
+    return GetRequestedCursor();
 }
 
 void Panel::Update() {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     Vector2 mouse = GetMousePosition();
 
     
-    if (isDragging) {
+    if (m_IsDragging) {
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            isDragging = false;
+            m_IsDragging = false;
         }
         else {
            
-            float newX = mouse.x + dragOffset.x;
-            float newY = mouse.y + dragOffset.y;
+            float newX = mouse.x + m_DragOffset.x;
+            float newY = mouse.y + m_DragOffset.y;
 
           
             float deltaX = newX - m_Bounds.x;
@@ -97,57 +136,60 @@ void Panel::Update() {
             m_Bounds.y = newY;
 
             // Move absolute-positioned children by the same delta to preserve visual structure.
-            for (auto& child : children) {
-                child->m_Bounds.x += deltaX;
-                child->m_Bounds.y += deltaY;
+            for (auto& child : m_Children) {
+                Rectangle childBounds = child->GetBounds();
+                childBounds.x += deltaX;
+                childBounds.y += deltaY;
+                child->SetBounds(childBounds);
             }
 
             SyncContentLayouts();
 
-            Widget::DesiredCursor = MOUSE_CURSOR_RESIZE_ALL;
+			RequestCursor(MOUSE_CURSOR_RESIZE_ALL);
         }
     }
     
     // Clicking, Hovering Logic
     else {
         
-        Rectangle titleBar = { m_Bounds.x, m_Bounds.y, m_Bounds.width, 40 };
+        Rectangle titleBar = { m_Bounds.x, m_Bounds.y, m_Bounds.width, NookConst::UI::kPanelTitleBarHeight };
 
         if (CheckCollisionPointRec(mouse, titleBar)) {
            
-            Widget::DesiredCursor = MOUSE_CURSOR_RESIZE_ALL;
-            isHovered = true;
+			RequestCursor(MOUSE_CURSOR_RESIZE_ALL);
+            m_IsHovered = true;
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                isDragging = true;
+                m_IsDragging = true;
                 // Store grab offset so panel does not snap its top-left to cursor.
-                dragOffset = { m_Bounds.x - mouse.x, m_Bounds.y - mouse.y };
+                m_DragOffset = { m_Bounds.x - mouse.x, m_Bounds.y - mouse.y };
             }
         }
         else if (CheckCollisionPointRec(mouse, m_Bounds)) {
            
-            isHovered = true;
+            m_IsHovered = true;
            
         }
         else {
-            isHovered = false;
+            m_IsHovered = false;
         }
     }
 
     SyncContentLayouts();
 
     // Reverse traversal keeps top-most children/layouts first for interaction consistency.
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+    for (auto it = m_Children.rbegin(); it != m_Children.rend(); ++it) {
         (*it)->Update();
     }
 
-    for (auto it = contentLayouts.rbegin(); it != contentLayouts.rend(); ++it) {
+	// Content layouts are on the same visual plane as children, so update them in the same back-to-front order.
+    for (auto it = m_ContentLayouts.rbegin(); it != m_ContentLayouts.rend(); ++it) {
         (*it)->Update();
     }
 }
 
 void Panel::Draw(TextRenderer* renderer) {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     SyncContentLayouts();
 
@@ -170,12 +212,12 @@ void Panel::Draw(TextRenderer* renderer) {
     DrawRectangleRounded(m_Bounds, panelRoundness, kPanelRoundSegments, NookCol::UI_PANEL);
 
     // Use the same pixel corner radius as the panel so top corners align perfectly.
-    const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, kPanelTitleBarHeight };
+    const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, NookConst::UI::kPanelTitleBarHeight };
     const float titleRoundness = roundnessForRect(titleBarRect, desiredCornerRadiusPx);
     DrawRectangleRounded(titleBarRect, titleRoundness, kPanelRoundSegments, NookCol::UI_SHELL);
-    const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, kPanelTitleBarHeight * 0.5f);
+    const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, NookConst::UI::kPanelTitleBarHeight * 0.5f);
     DrawRectangleRec(
-        { titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + kPanelTitleBarHeight - titleFillStartY },
+        { titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + NookConst::UI::kPanelTitleBarHeight - titleFillStartY },
         NookCol::UI_SHELL
     );
 
@@ -184,15 +226,18 @@ void Panel::Draw(TextRenderer* renderer) {
 
     // Title Text
     if (renderer) {
-        renderer->DrawSimpleText(title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
+        renderer->DrawSimpleText(m_Title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
     }
 
     // Draw Children
-    for (auto& child : children) {
+	// Probably useless since content layouts are usually used instead of direct children, but support both just in case.
+    for (auto& child : m_Children) {
         child->Draw(renderer);
     }
-
-    for (auto& layout : contentLayouts) {
+    
+    
+    for (auto& layout : m_ContentLayouts) {
         layout->Draw(renderer);
     }
+    
 }

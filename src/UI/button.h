@@ -13,11 +13,11 @@ public:
     Button(Anchor anchor, Vector2 offset, Vector2 size, std::string t, std::function<void()> callback);
     void Update() override;
     void Draw(TextRenderer* renderer) override;
-    void SetText(const std::string& t) { text = t; }
-    void SetOnClick(std::function<void()> callback) { onClick = callback; }
+    void SetText(const std::string& t) { m_Text = t; }
+    void SetOnClick(std::function<void()> callback) { m_OnClick = callback; }
 
 private:
-    std::string text;
-    std::function<void()> onClick;
-    bool isHovered = false;
+    std::string m_Text{};
+    std::function<void()> m_OnClick;
+    bool m_IsHovered{ false };
 };

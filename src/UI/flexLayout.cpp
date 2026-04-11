@@ -21,27 +21,59 @@ void FlexLayout::AddChild(std::shared_ptr<Widget> widget, Vector2 size, float gr
     LayoutChildren();
 }
 
+// Add a spacer item that takes up flexible space without rendering anything.
 void FlexLayout::AddSpacer(float grow)
 {
     m_Items.push_back({ nullptr, { 0.0f, 0.0f }, grow });
     LayoutChildren();
 }
 
+
+// Remove all children and reset layout.
 void FlexLayout::ClearChildren()
 {
     m_Items.clear();
     LayoutChildren();
 }
 
+// Override to trigger child layout when the window is resized.
 void FlexLayout::OnWindowResize(int screenWidth, int screenHeight)
 {
     Widget::OnWindowResize(screenWidth, screenHeight);
     LayoutChildren();
 }
 
+void FlexLayout::BeginFrameInputRecursive()
+{
+    BeginFrameInput();
+
+    for (auto& item : m_Items) {
+        if (item.widget) {
+            item.widget->BeginFrameInputRecursive();
+        }
+    }
+}
+
+MouseCursor FlexLayout::ResolveRequestedCursorRecursive() const
+{
+    if (!m_IsVisible) {
+        return MOUSE_CURSOR_DEFAULT;
+    }
+
+    for (auto it = m_Items.rbegin(); it != m_Items.rend(); ++it) {
+        if (!it->widget) continue;
+        const MouseCursor requested = it->widget->ResolveRequestedCursorRecursive();
+        if (requested != MOUSE_CURSOR_DEFAULT) {
+            return requested;
+        }
+    }
+
+    return GetRequestedCursor();
+}
+
 void FlexLayout::Update()
 {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     LayoutChildren();
 
@@ -54,13 +86,14 @@ void FlexLayout::Update()
 
 void FlexLayout::Draw(TextRenderer* renderer)
 {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
     LayoutChildren();
 
     std::vector<std::shared_ptr<Dropdown>> expandedDropdowns;
     expandedDropdowns.reserve(m_Items.size());
 
+	// First draw all non-dropdown widgets and track expanded dropdowns to draw them last.
     for (auto& item : m_Items) {
         if (item.widget) {
             auto dropdown = std::dynamic_pointer_cast<Dropdown>(item.widget);
@@ -83,6 +116,7 @@ void FlexLayout::LayoutChildren()
 {
     if (m_Items.empty()) return;
 
+	// Calculate content area by applying padding to the layout's bounds.
     const float contentX = m_Bounds.x + m_Padding.x;
     const float contentY = m_Bounds.y + m_Padding.y;
     const float contentWidth = std::max(0.0f, m_Bounds.width - (m_Padding.x * 2.0f));
@@ -129,7 +163,7 @@ void FlexLayout::LayoutChildren()
                 case CrossAlign::Stretch: y = contentY; break;
                 }
 
-                item.widget->m_Bounds = { currentX, y, itemWidth, itemHeight };
+                item.widget->SetBounds({ currentX, y, itemWidth, itemHeight });
             }
 
             currentX += itemWidth + m_Gap;
@@ -162,6 +196,7 @@ void FlexLayout::LayoutChildren()
     const float growUnit = growTotal > 0.0f ? remaining / growTotal : 0.0f;
     float currentY = contentY;
 
+	// Layout each item vertically, applying cross-axis alignment for horizontal positioning.
     for (const auto& item : m_Items) {
         const float itemHeight = (item.grow > 0.0f) ? (growUnit * item.grow) : item.size.y;
         const float itemWidth = (m_CrossAlign == CrossAlign::Stretch) ? contentWidth : (item.size.x > 0.0f ? item.size.x : contentWidth);
@@ -176,7 +211,7 @@ void FlexLayout::LayoutChildren()
             case CrossAlign::Stretch: x = contentX; break;
             }
 
-            item.widget->m_Bounds = { x, currentY, itemWidth, itemHeight };
+            item.widget->SetBounds({ x, currentY, itemWidth, itemHeight });
         }
 
         currentY += itemHeight + m_Gap;

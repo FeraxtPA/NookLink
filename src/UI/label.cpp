@@ -14,11 +14,11 @@ Label::Label(Anchor anchor, Vector2 offset, Vector2 size, std::string t, int fSi
 }
 
 void Label::Update() {
-    if (!isVisible) return;
+    if (!m_IsVisible) return;
 
    
     if (CheckCollisionPointRec(GetMousePosition(), m_Bounds)) {
-        isHovered = true;
+        m_IsHovered = true;
         float wheel = GetMouseWheelMove();
 
         
@@ -27,7 +27,7 @@ void Label::Update() {
         }
     }
     else {
-        isHovered = false;
+        m_IsHovered = false;
     }
 
    
@@ -39,10 +39,10 @@ void Label::Update() {
 }
 
 void Label::Draw(TextRenderer* renderer) {
-    if (!isVisible || !renderer) return;
+    if (!m_IsVisible || !renderer) return;
 
     if (!wordWrap) {
-        renderer->DrawSimpleText(text, { m_Bounds.x, m_Bounds.y }, fontSize, color);
+        renderer->DrawSimpleText(text, { m_Bounds.x, m_Bounds.y }, static_cast<float>(fontSize), color);
     }
     else {
         // Recompute wrapped lines only when text changes to keep per-frame cost low.
@@ -66,17 +66,17 @@ void Label::Draw(TextRenderer* renderer) {
                 while (wordStream >> word) {
                     std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
 
-                    if (renderer->Measure(testLine, fontSize) > m_Bounds.width) {
+                    if (renderer->Measure(testLine, static_cast<float>(fontSize)) > m_Bounds.width) {
                         if (!currentLine.empty()) {
                             m_WrappedLines.push_back(currentLine);
                             currentLine = "";
                         }
 
                         // If one token is wider than the label, split it into character chunks.
-                        if (renderer->Measure(word, fontSize) > m_Bounds.width) {
+                        if (renderer->Measure(word, static_cast<float>(fontSize)) > m_Bounds.width) {
                             std::string chunk = "";
                             for (char c : word) {
-                                if (renderer->Measure(chunk + c, fontSize) > m_Bounds.width) {
+                                if (renderer->Measure(chunk + c, static_cast<float>(fontSize)) > m_Bounds.width) {
                                     m_WrappedLines.push_back(chunk);
                                     chunk = std::string(1, c);
                                 }
@@ -101,7 +101,7 @@ void Label::Draw(TextRenderer* renderer) {
         }
 
         
-        m_ContentHeight = m_WrappedLines.size() * (fontSize + 5);
+        m_ContentHeight = static_cast<float>(m_WrappedLines.size() * (fontSize + 5));
 
         // Clip rendering to bounds so long text does not bleed into neighboring widgets.
         BeginScissorMode((int)m_Bounds.x, (int)m_Bounds.y, (int)m_Bounds.width, (int)m_Bounds.height);
@@ -110,9 +110,9 @@ void Label::Draw(TextRenderer* renderer) {
 
         for (const auto& line : m_WrappedLines) {
             if (!line.empty()) {
-                renderer->DrawSimpleText(line, { m_Bounds.x, yOffset }, fontSize, color);
+                renderer->DrawSimpleText(line, { m_Bounds.x, yOffset }, static_cast<float>(fontSize), color);
             }
-            yOffset += (fontSize + 5);
+            yOffset += (static_cast<float>(fontSize) + 5.0f);
         }
 
         EndScissorMode(); 
