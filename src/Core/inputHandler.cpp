@@ -9,7 +9,7 @@
 #include "logging.h"
 #include "uiManager.h"
 
-#include <algorithm>
+
 
 InputHandler::InputHandler(GraphManager* graphManager, BookManager& bookManager, UIManager* uiManager)
     : m_GraphManager(graphManager), m_BookManager(bookManager), m_UIManager(uiManager) {}

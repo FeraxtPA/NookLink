@@ -8,7 +8,7 @@
 #include <cctype>
 #include <string>     
 #include <fstream>    
-#include "../include/nlohmann/json.hpp" 
+#include <nlohmann/json.hpp>
 #include <random>
 #include <filesystem>
 #include "logging.h"

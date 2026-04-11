@@ -8,7 +8,7 @@
 #include "colors.h"
 #include "logging.h"
 #include "constants.h"
-#include "../include/tinyfiledialogs/tinyfiledialogs.h"
+#include <tinyfiledialogs/tinyfiledialogs.h>
 
 #include <algorithm>
 #include <cctype>

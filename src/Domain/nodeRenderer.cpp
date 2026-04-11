@@ -8,7 +8,7 @@
 #include "math.h"
 #include <optional>
 #include <unordered_map>
-
+#include "colors.h"
 
 static std::optional<std::string> findGenreByNodeId(const std::unordered_map<std::string, GenreInfo>& genres, int nodeId) {
     for (const auto& [name, info] : genres) {

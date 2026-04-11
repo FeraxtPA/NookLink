@@ -4,9 +4,7 @@
 #include <cctype>
 #include <cstdio>
 #include <fstream>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
 
 namespace {
 
@@ -213,102 +211,6 @@ Status ParseStatus(const std::string& exclusiveShelf)
     return Status::ToRead;
 }
 
-void AddGenresFromShelves(Book& book, const std::string& shelvesRaw)
-{
-    const std::string raw = TrimCopy(shelvesRaw);
-    if (raw.empty()) {
-        return;
-    }
-
-    std::unordered_set<std::string> blocked = {
-        "read", "to-read", "currently-reading", "favorites", "owned", "default"
-    };
-    std::unordered_set<std::string> seen;
-
-    auto normalizeShelfToken = [](std::string token) {
-        token = TrimCopy(token);
-
-        const size_t posMarker = token.find(" (#");
-        if (posMarker != std::string::npos) {
-            token = TrimCopy(token.substr(0, posMarker));
-        }
-
-        if (!token.empty() && token.front() == '"' && token.back() == '"' && token.size() >= 2) {
-            token = token.substr(1, token.size() - 2);
-            token = TrimCopy(token);
-        }
-
-        return token;
-    };
-
-    std::string normalizedShelves = raw;
-    std::replace(normalizedShelves.begin(), normalizedShelves.end(), ';', ',');
-
-    std::stringstream ss(normalizedShelves);
-    std::string part;
-    while (std::getline(ss, part, ',')) {
-        const std::string genre = normalizeShelfToken(part);
-        if (genre.empty()) continue;
-
-        const std::string lowered = ToLowerAsciiCopy(genre);
-        if (blocked.contains(lowered)) continue;
-        if (!seen.insert(lowered).second) continue;
-
-        book.addGenre(genre);
-    }
-}
-
-void AddGenresFromTitleMetadata(Book& book, const std::string& title)
-{
-    const std::string rawTitle = TrimCopy(title);
-    if (rawTitle.empty()) {
-        return;
-    }
-
-    std::unordered_set<std::string> seen;
-    for (const std::string& existing : book.getGenres()) {
-        const std::string lowered = ToLowerAsciiCopy(TrimCopy(existing));
-        if (!lowered.empty()) {
-            seen.insert(lowered);
-        }
-    }
-
-    size_t start = 0;
-    while (true) {
-        const size_t openPos = rawTitle.find('(', start);
-        if (openPos == std::string::npos) break;
-        const size_t closePos = rawTitle.find(')', openPos + 1);
-        if (closePos == std::string::npos) break;
-
-        std::string inside = rawTitle.substr(openPos + 1, closePos - openPos - 1);
-        std::replace(inside.begin(), inside.end(), ';', ',');
-
-        std::stringstream ss(inside);
-        std::string part;
-        while (std::getline(ss, part, ',')) {
-            std::string token = TrimCopy(part);
-            if (token.empty()) continue;
-
-            // Ignore pure ordinal parts like "#1", "#1-5" etc.
-            if (!token.empty() && token.front() == '#') continue;
-
-            // Strip suffix ordinal if present inside token.
-            const size_t hashPos = token.find(" #");
-            if (hashPos != std::string::npos) {
-                token = TrimCopy(token.substr(0, hashPos));
-            }
-
-            if (token.empty()) continue;
-
-            const std::string lowered = ToLowerAsciiCopy(token);
-            if (!seen.insert(lowered).second) continue;
-
-            book.addGenre(token);
-        }
-
-        start = closePos + 1;
-    }
-}
 
 } // namespace
 

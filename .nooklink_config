@@ -1,5 +1,5 @@
-save_path=C:\Users\ferax\Desktop\reads.json
+save_path=my_books.json
 goal_target=15
 goal_baseline=70
 theme_index=5
-layout_density=0.7
+layout_density=0.4

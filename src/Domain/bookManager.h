@@ -7,11 +7,10 @@
 #pragma once
 #include "book.h"
 #include <vector>
-#include <algorithm>
-#include <stdexcept>
+
 #include <unordered_map>
 #include <string>    
-#include <fstream>   
+
 
 struct NodePosition {
     float x;

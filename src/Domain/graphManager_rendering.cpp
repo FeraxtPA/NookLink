@@ -1,5 +1,5 @@
 #include "graphManager.h"
-
+#include "colors.h"
 const Rectangle GraphManager::getCameraViewRect(const Camera2D &camera,
                                                 Vector2 screenDimensions) {
   float left = camera.target.x -

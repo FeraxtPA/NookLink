@@ -1,5 +1,5 @@
 #include "graphManager.h"
-
+#include "colors.h"
 namespace {
 Rectangle NormalizeRectangle(Rectangle rect) {
   if (rect.width < 0.0f) {

@@ -10,7 +10,7 @@
 #include "goodreadsCsvImporter.h"
 #include "logging.h"
 
-#include "../include/tinyfiledialogs/tinyfiledialogs.h"
+#include <tinyfiledialogs/tinyfiledialogs.h>
 
 #include <filesystem>
 #include <cstdlib> 
@@ -20,6 +20,8 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <fstream>
+#include "colors.h"
 
 namespace fs = std::filesystem;
 

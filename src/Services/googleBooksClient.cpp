@@ -1,14 +1,14 @@
 #include "googleBooksClient.h"
 
 
-#include "../include/nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <memory>
+
 #include <string>
 
 #if __has_include(<curl/curl.h>)

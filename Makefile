@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++23 -Wall -Wextra -Wno-reorder -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-missing-field-initializers -finput-charset=UTF-8 -fexec-charset=UTF-8 -I./include -I./src -I./src/Core -I./src/Services -I./src/Domain -I./src/UIManager -I./src/UI
 CFLAGS = -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 -I./include -I./src -I./src/Core -I./src/Services -I./src/Domain -I./src/UIManager -I./src/UI
 DEPFLAGS = -MMD -MP
-LDFLAGS = -lraylib
+LDFLAGS = -lraylib -lcurl -lssl -lcrypto -ldl -lpthread
 OBJ_DIR = obj
 
 # Updated to find .cpp files in all project source folders

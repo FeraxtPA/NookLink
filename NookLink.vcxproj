@@ -117,7 +117,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalHeaderUnitDependencies>%(AdditionalHeaderUnitDependencies)</AdditionalHeaderUnitDependencies>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -138,7 +138,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalHeaderUnitDependencies>%(AdditionalHeaderUnitDependencies)</AdditionalHeaderUnitDependencies>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)src\Core;$(ProjectDir)src\Services;$(ProjectDir)src\Domain;$(ProjectDir)src\UIManager;$(ProjectDir)src\UI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -8,8 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "../include/nlohmann/json.hpp"
-#include <algorithm>
+#include <nlohmann/json.hpp>
 #include <cmath>
 
 using nlohmann::json;
