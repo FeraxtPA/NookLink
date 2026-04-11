@@ -382,3 +382,4 @@ compile_commands.json
 *.ilk
 *.pdb
 
+/.env
