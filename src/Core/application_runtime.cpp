@@ -165,6 +165,8 @@ void Application::Shutdown()
 
 void Application::UpdateStartScreen()
 {
+    Widget::ResetInputConsumption();
+
     MouseCursor resolvedCursor = MOUSE_CURSOR_DEFAULT;
 
     auto updateStartButton = [&resolvedCursor](const std::shared_ptr<Button>& button) {

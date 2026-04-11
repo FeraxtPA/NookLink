@@ -15,7 +15,11 @@
 #define NOOKLINK_HAS_CURL 1
 #include <curl/curl.h>
 #ifdef _MSC_VER
+#if defined(_DEBUG)
+#pragma comment(lib, "libcurl-d.lib")
+#else
 #pragma comment(lib, "libcurl.lib")
+#endif
 #endif
 #else
 #define NOOKLINK_HAS_CURL 0
