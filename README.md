@@ -1,12 +1,14 @@
 # NookLink
 
-NookLink is a C++23 desktop application built with raylib and libcurl. CMake is the primary build definition. The repository keeps the small nlohmann JSON header and tinyfiledialogs C source in `include/`; raylib and curl are compiled libraries managed through vcpkg on Windows.
+NookLink is a C++23 desktop application built with raylib and libcurl. CMake is the build definition on Windows and Linux. The repository keeps the small nlohmann JSON header and tinyfiledialogs C source in `include/`; raylib and curl are compiled libraries managed through vcpkg on Windows.
 
 ## Windows: VS Code or Visual Studio 2022
 
 Install the Visual Studio 2022 **Desktop development with C++** workload, CMake 3.25 or newer, vcpkg, and the VS Code **CMake Tools** and **C/C++** extensions. Copy `CMakeUserPresets.json.example` to `CMakeUserPresets.json` and set `VCPKG_ROOT` to your vcpkg directory. The local presets file is ignored by Git.
 
 In VS Code, open the repository folder. Press **Ctrl+Shift+B** to configure and build Debug. In **Run and Debug**, choose **NookLink (CMake Debug)** and press **F5** to build and debug, or **Ctrl+F5** to run. If C/C++ Runner is installed, use its extension gear menu to **Disable (Workspace)**: it can regenerate GCC settings and a standalone-file launch profile that conflicts with this setup. CMake Tools supplies IntelliSense configuration.
+
+In Visual Studio 2022, open the repository folder as a CMake project and select the `windows-local` configure preset. The old hand-maintained solution and project files are no longer part of the repository; CMake may generate a solution inside `build/`.
 
 The same build is available from a terminal:
 
@@ -30,7 +32,7 @@ ctest --preset linux-debug
 
 For Release, configure and build with `linux-release`. VS Code's build tasks select the platform's preset; use the **NookLink (Linux Debug)** launch profile with GDB on Linux.
 
-Linux verification is still pending. Keep the existing `Makefile` and Visual Studio solution until the CMake application builds and launches on Linux. After that check, the legacy definitions can be retired. Add application sources to `CMakeLists.txt`; until the legacy Visual Studio project is retired, its source list also needs new files.
+The CMake build and tests have also been run on Linux. Add new application sources to `CMakeLists.txt`; it is the only maintained build definition. The asset directory is lowercase `assets/` on both platforms.
 
 ## Tests
 
@@ -63,4 +65,4 @@ Saving writes a complete temporary file beside the destination and replaces the 
 
 The cleanup snapshot is stored locally under `build/cleanup-backup/`. It contains the source before cleanup and copies of the local settings and libraries, including the configured active library. Keep this directory while reviewing the changes; it is ignored by Git and contains personal data.
 
-Before retiring the old builds, also check the application interactively: load a library, edit and save it, restore it after reopening, save after deleting the final book, cancel **Save As**, and verify graph positions survive saving on exit.
+When checking application behavior interactively, load a library, edit and save it, restore it after reopening, save after deleting the final book, cancel **Save As**, and verify graph positions survive saving on exit.
