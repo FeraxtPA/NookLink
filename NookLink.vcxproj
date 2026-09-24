@@ -153,6 +153,8 @@
   <ItemGroup>
     <ClCompile Include="include\tinyfiledialogs\tinyfiledialogs.c" />
     <ClCompile Include="src\Core\application.cpp" />
+    <ClCompile Include="src\Core\appPaths.cpp" />
+    <ClCompile Include="src\Core\fileStorage.cpp" />
     <ClCompile Include="src\Core\application_persistence.cpp" />
     <ClCompile Include="src\Core\application_runtime.cpp" />
     <ClCompile Include="src\Domain\book.cpp" />
@@ -161,6 +163,7 @@
     <ClCompile Include="src\colors.cpp" />
     <ClCompile Include="src\Domain\connectionManager.cpp" />
     <ClCompile Include="src\Core\debugManager.cpp" />
+    <ClCompile Include="src\iconRenderer.cpp" />
     <ClCompile Include="src\Services\goodreadsCsvImporter.cpp" />
     <ClCompile Include="src\Services\googleBooksClient.cpp" />
     <ClCompile Include="src\Domain\graphLayout.cpp" />
@@ -199,7 +202,10 @@
   <ItemGroup>
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\tinyfiledialogs\tinyfiledialogs.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\Core\application.h" />
+    <ClInclude Include="src\Core\appPaths.h" />
+    <ClInclude Include="src\Core\fileStorage.h" />
     <ClInclude Include="src\Domain\book.h" />
     <ClInclude Include="src\Domain\bookManager.h" />
     <ClInclude Include="src\Domain\cameraHandler.h" />
@@ -211,6 +217,7 @@
     <ClInclude Include="src\constants_input.h" />
     <ClInclude Include="src\constants_layout.h" />
     <ClInclude Include="src\Core\debugManager.h" />
+    <ClInclude Include="src\iconRenderer.h" />
     <ClInclude Include="src\Services\goodreadsCsvImporter.h" />
     <ClInclude Include="src\Services\googleBooksClient.h" />
     <ClInclude Include="src\Domain\graphLayout.h" />
@@ -243,15 +250,14 @@
   <ItemGroup>
     <None Include=".env" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\icon.ico" />
+    <Image Include="icon1.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-
-
-
-
-
-
-
-

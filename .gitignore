@@ -383,3 +383,14 @@ compile_commands.json
 *.pdb
 
 /.env
+
+/vcpkg_installed/
+/CMakeUserPresets.json
+
+# Local application state and generated Linux output
+/.nooklink_config
+/my_books.json
+/my_books.json.bak
+/my_books.json.tmp
+/NookLink_Linux
+/obj/

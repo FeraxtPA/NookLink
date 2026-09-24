@@ -14,6 +14,8 @@
 
 #include "book.h"
 #include "nodeRenderer.h"
+#include "iconRenderer.h"
+#include "UI/textBox.h"
 
 class BookManager;
 class GraphManager;
@@ -105,7 +107,7 @@ public:
     bool IsBlockingGraphInteraction() const { return isBlockingGraph; }
 
     void Update(BookManager& bookManager, GraphManager* graphRenderer);
-    void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const;
+    void Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer, float cameraZoom, bool isUserInteracting, bool hasUnsavedChanges) const;
 
     std::string GetSearchText() const;
 
@@ -154,6 +156,7 @@ private:
 
     int m_ScreenWidth, m_ScreenHeight;
     std::vector<std::shared_ptr<Widget>> m_Widgets;
+    std::unique_ptr<IconRenderer> m_IconRenderer;
 
     bool isBlockingGraph = false;
 
@@ -185,7 +188,6 @@ private:
     std::shared_ptr<int> m_AddStatusState;
 
     std::shared_ptr<Panel> m_LotteryPanel;
-    std::shared_ptr<TextBox> m_LotteryText;
     std::shared_ptr<Button> m_LotteryCloseBtn;
     std::shared_ptr<Checkbox> m_LotteryAutoRead;
 
@@ -222,6 +224,8 @@ private:
     bool m_IsLotteryRolling = false;
     float m_LotteryTimer = 0.0f;
     float m_LotterySpeedTimer = 0.0f;
+    float m_LotteryDuration = 0.0f;
+    float m_LotteryAngle = 0.0f;
 
     int m_LotteryWinnerId = -1;
     bool m_LastLotteryCheckState = false;
@@ -316,6 +320,7 @@ private:
     void SyncGenreDropdownOptions();
     void DrawHelpText(TextRenderer* renderer) const;
     void DrawAnalyticsCharts(TextRenderer* renderer) const;
+    void DrawLotteryWheel(TextRenderer* renderer, BookManager& bookManager) const;
     void LayoutAnalyticsLeftLabels() const;
     Rectangle GetSettingsHelpRect() const;
     void DrawNotification(TextRenderer* textRenderer) const;
@@ -350,6 +355,8 @@ private:
     void BuildBulkGenreAssignPanel();
     void BuildReadingGoalPanel();
     void BuildAnalyticsPanel();
+
+    int GetLotterySelectedIndex(int segmentCount) const;
 
     std::shared_ptr<CalendarWidget> m_CalendarWidget;
     std::shared_ptr<TextInput> m_ActiveDateInput;

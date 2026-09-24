@@ -117,7 +117,7 @@ private:
 	void UpdateSearchCameraAssist();
  std::vector<int> FindSearchFocusBookIds(const std::string& query) const;
 	void HandleEditorHotkeys();
-	void SaveLibrary();
+	bool SaveLibrary();
 	void SaveLibraryAs();
 	void LoadLibraryFromCurrentFile();
  void ImportGoodreadsCsv();

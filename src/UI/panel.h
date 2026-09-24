@@ -27,6 +27,7 @@ public:
     MouseCursor ResolveRequestedCursorRecursive() const override;
     void Update() override;
     void Draw(TextRenderer* renderer) override;
+    void DrawWithIcons(TextRenderer* renderer, IconRenderer* iconRenderer) override;
     void ClearChildren() {
         m_Children.clear();
     }

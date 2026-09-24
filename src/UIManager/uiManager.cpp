@@ -73,7 +73,8 @@ bool ParseDateDDMMYYYY(const std::string& date, int& day, int& month, int& year)
 }
 
 UIManager::UIManager(int screenWidth, int screenHeight)
-    : m_ScreenWidth(screenWidth), m_ScreenHeight(screenHeight)
+    : m_ScreenWidth(screenWidth), m_ScreenHeight(screenHeight),
+      m_IconRenderer(std::make_unique<IconRenderer>())
 {}
 
 UIManager::~UIManager() {}

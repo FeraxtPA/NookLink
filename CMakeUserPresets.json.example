@@ -1,0 +1,13 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "windows-local",
+      "inherits": "windows-vcpkg",
+      "displayName": "Windows x64 (local vcpkg)",
+      "environment": {
+        "VCPKG_ROOT": "C:/path/to/vcpkg"
+      }
+    }
+  ]
+}

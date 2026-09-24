@@ -86,30 +86,58 @@ void FlexLayout::Update()
 
 void FlexLayout::Draw(TextRenderer* renderer)
 {
-    if (!m_IsVisible) return;
+	if (!m_IsVisible) return;
 
-    LayoutChildren();
+	LayoutChildren();
 
-    std::vector<std::shared_ptr<Dropdown>> expandedDropdowns;
-    expandedDropdowns.reserve(m_Items.size());
+	std::vector<std::shared_ptr<Dropdown>> expandedDropdowns;
+	expandedDropdowns.reserve(m_Items.size());
 
 	// First draw all non-dropdown widgets and track expanded dropdowns to draw them last.
-    for (auto& item : m_Items) {
-        if (item.widget) {
-            auto dropdown = std::dynamic_pointer_cast<Dropdown>(item.widget);
-            if (dropdown && dropdown->IsExpanded()) {
-                expandedDropdowns.push_back(dropdown);
-                continue;
-            }
+	for (auto& item : m_Items) {
+		if (item.widget) {
+			auto dropdown = std::dynamic_pointer_cast<Dropdown>(item.widget);
+			if (dropdown && dropdown->IsExpanded()) {
+				expandedDropdowns.push_back(dropdown);
+				continue;
+			}
 
-            item.widget->Draw(renderer);
-        }
-    }
+			item.widget->Draw(renderer);
+		}
+	}
 
-    // Draw expanded dropdowns last so option menus stay above neighboring fields.
-    for (auto& dropdown : expandedDropdowns) {
-        dropdown->Draw(renderer);
-    }
+	// Draw expanded dropdowns last so option menus stay above neighboring fields.
+	for (auto& dropdown : expandedDropdowns) {
+		dropdown->Draw(renderer);
+	}
+}
+
+void FlexLayout::DrawWithIcons(TextRenderer* renderer, IconRenderer* iconRenderer)
+{
+	if (!m_IsVisible) return;
+
+	LayoutChildren();
+
+	std::vector<std::shared_ptr<Dropdown>> expandedDropdowns;
+	expandedDropdowns.reserve(m_Items.size());
+
+	// First draw all non-dropdown widgets and track expanded dropdowns to draw them last.
+	for (auto& item : m_Items) {
+		if (item.widget) {
+			auto dropdown = std::dynamic_pointer_cast<Dropdown>(item.widget);
+			if (dropdown && dropdown->IsExpanded()) {
+				expandedDropdowns.push_back(dropdown);
+				continue;
+			}
+
+			item.widget->DrawWithIcons(renderer, iconRenderer);
+		}
+	}
+
+	// Draw expanded dropdowns last so option menus stay above neighboring fields.
+	for (auto& dropdown : expandedDropdowns) {
+		dropdown->DrawWithIcons(renderer, iconRenderer);
+	}
 }
 
 void FlexLayout::LayoutChildren()

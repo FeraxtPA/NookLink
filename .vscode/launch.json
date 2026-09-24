@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NookLink (CMake Debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}\\build\\cmake\\windows\\Debug\\NookLink.exe",
+      "preLaunchTask": "Build NookLink (CMake Debug)",
+      "externalConsole": false
+    },
+    {
+      "name": "NookLink (CMake Release)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}\\build\\cmake\\windows\\Release\\NookLink.exe",
+      "preLaunchTask": "Build NookLink (CMake Release)",
+      "externalConsole": false
+    },
+    {
+      "name": "NookLink (Linux Debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/build/cmake/linux/NookLink",
+      "preLaunchTask": "Build NookLink (CMake Debug)",
+      "MIMode": "gdb",
+      "externalConsole": false
+    },
+    {
+      "name": "NookLink (Linux Release)",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/build/cmake/linux-release/NookLink",
+      "preLaunchTask": "Build NookLink (CMake Release)",
+      "MIMode": "gdb",
+      "externalConsole": false
+    }
+  ]
+}

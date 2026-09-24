@@ -189,55 +189,107 @@ void Panel::Update() {
 }
 
 void Panel::Draw(TextRenderer* renderer) {
-    if (!m_IsVisible) return;
+	if (!m_IsVisible) return;
 
-    SyncContentLayouts();
+	SyncContentLayouts();
 
-    constexpr float kPanelRoundness = 0.12f;
-    constexpr int kPanelRoundSegments = 12;
+	constexpr float kPanelRoundness = 0.12f;
+	constexpr int kPanelRoundSegments = 12;
 
-    // Convert a desired pixel corner radius into raylib's relative roundness for a rectangle.
-    const auto roundnessForRect = [](const Rectangle& rect, float radiusPx) {
-        const float minDim = std::max(1.0f, std::min(rect.width, rect.height));
-        const float clampedRadius = std::clamp(radiusPx, 0.0f, minDim * 0.5f);
-        return std::clamp((clampedRadius * 2.0f) / minDim, 0.0f, 1.0f);
-    };
+	// Convert a desired pixel corner radius into raylib's relative roundness for a rectangle.
+	const auto roundnessForRect = [](const Rectangle& rect, float radiusPx) {
+		const float minDim = std::max(1.0f, std::min(rect.width, rect.height));
+		const float clampedRadius = std::clamp(radiusPx, 0.0f, minDim * 0.5f);
+		return std::clamp((clampedRadius * 2.0f) / minDim, 0.0f, 1.0f);
+	};
 
-    // Keep panel corners in a stable visual range across both small and very large panels.
-    const float panelMinDim = std::min(m_Bounds.width, m_Bounds.height);
-    const float desiredCornerRadiusPx = std::clamp((kPanelRoundness * panelMinDim) * 0.5f, 10.0f, 18.0f);
-    const float panelRoundness = roundnessForRect(m_Bounds, desiredCornerRadiusPx);
+	// Keep panel corners in a stable visual range across both small and very large panels.
+	const float panelMinDim = std::min(m_Bounds.width, m_Bounds.height);
+	const float desiredCornerRadiusPx = std::clamp((kPanelRoundness * panelMinDim) * 0.5f, 10.0f, 18.0f);
+	const float panelRoundness = roundnessForRect(m_Bounds, desiredCornerRadiusPx);
 
-    // Background
-    DrawRectangleRounded(m_Bounds, panelRoundness, kPanelRoundSegments, NookCol::UI_PANEL);
+	// Background
+	DrawRectangleRounded(m_Bounds, panelRoundness, kPanelRoundSegments, NookCol::UI_PANEL);
 
-    // Use the same pixel corner radius as the panel so top corners align perfectly.
-    const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, NookConst::UI::kPanelTitleBarHeight };
-    const float titleRoundness = roundnessForRect(titleBarRect, desiredCornerRadiusPx);
-    DrawRectangleRounded(titleBarRect, titleRoundness, kPanelRoundSegments, NookCol::UI_SHELL);
-    const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, NookConst::UI::kPanelTitleBarHeight * 0.5f);
-    DrawRectangleRec(
-        { titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + NookConst::UI::kPanelTitleBarHeight - titleFillStartY },
-        NookCol::UI_SHELL
-    );
+	// Use the same pixel corner radius as the panel so top corners align perfectly.
+	const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, NookConst::UI::kPanelTitleBarHeight };
+	const float titleRoundness = roundnessForRect(titleBarRect, desiredCornerRadiusPx);
+	DrawRectangleRounded(titleBarRect, titleRoundness, kPanelRoundSegments, NookCol::UI_SHELL);
+	const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, NookConst::UI::kPanelTitleBarHeight * 0.5f);
+	DrawRectangleRec(
+		{ titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + NookConst::UI::kPanelTitleBarHeight - titleFillStartY },
+		NookCol::UI_SHELL
+	);
 
-    // Border
-    DrawRectangleRoundedLinesEx(m_Bounds, panelRoundness, kPanelRoundSegments, 2.0f, NookCol::UI_BORDER);
+	// Border
+	DrawRectangleRoundedLinesEx(m_Bounds, panelRoundness, kPanelRoundSegments, 2.0f, NookCol::UI_BORDER);
 
-    // Title Text
-    if (renderer) {
-        renderer->DrawSimpleText(m_Title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
-    }
+	// Title Text
+	if (renderer) {
+		renderer->DrawSimpleText(m_Title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
+	}
 
-    // Draw Children
+	// Draw Children
 	// Probably useless since content layouts are usually used instead of direct children, but support both just in case.
-    for (auto& child : m_Children) {
-        child->Draw(renderer);
-    }
-    
-    
-    for (auto& layout : m_ContentLayouts) {
-        layout->Draw(renderer);
-    }
-    
+	for (auto& child : m_Children) {
+		child->Draw(renderer);
+	}
+
+
+	for (auto& layout : m_ContentLayouts) {
+		layout->Draw(renderer);
+	}
+
+}
+
+void Panel::DrawWithIcons(TextRenderer* renderer, IconRenderer* iconRenderer) {
+	if (!m_IsVisible) return;
+
+	SyncContentLayouts();
+
+	constexpr float kPanelRoundness = 0.12f;
+	constexpr int kPanelRoundSegments = 12;
+
+	// Convert a desired pixel corner radius into raylib's relative roundness for a rectangle.
+	const auto roundnessForRect = [](const Rectangle& rect, float radiusPx) {
+		const float minDim = std::max(1.0f, std::min(rect.width, rect.height));
+		const float clampedRadius = std::clamp(radiusPx, 0.0f, minDim * 0.5f);
+		return std::clamp((clampedRadius * 2.0f) / minDim, 0.0f, 1.0f);
+	};
+
+	// Keep panel corners in a stable visual range across both small and very large panels.
+	const float panelMinDim = std::min(m_Bounds.width, m_Bounds.height);
+	const float desiredCornerRadiusPx = std::clamp((kPanelRoundness * panelMinDim) * 0.5f, 10.0f, 18.0f);
+	const float panelRoundness = roundnessForRect(m_Bounds, desiredCornerRadiusPx);
+
+	// Background
+	DrawRectangleRounded(m_Bounds, panelRoundness, kPanelRoundSegments, NookCol::UI_PANEL);
+
+	// Use the same pixel corner radius as the panel so top corners align perfectly.
+	const Rectangle titleBarRect{ m_Bounds.x, m_Bounds.y, m_Bounds.width, NookConst::UI::kPanelTitleBarHeight };
+	const float titleRoundness = roundnessForRect(titleBarRect, desiredCornerRadiusPx);
+	DrawRectangleRounded(titleBarRect, titleRoundness, kPanelRoundSegments, NookCol::UI_SHELL);
+	const float titleFillStartY = titleBarRect.y + std::min(desiredCornerRadiusPx, NookConst::UI::kPanelTitleBarHeight * 0.5f);
+	DrawRectangleRec(
+		{ titleBarRect.x, titleFillStartY, titleBarRect.width, titleBarRect.y + NookConst::UI::kPanelTitleBarHeight - titleFillStartY },
+		NookCol::UI_SHELL
+	);
+
+	// Border
+	DrawRectangleRoundedLinesEx(m_Bounds, panelRoundness, kPanelRoundSegments, 2.0f, NookCol::UI_BORDER);
+
+	// Title Text
+	if (renderer) {
+		renderer->DrawSimpleText(m_Title, { m_Bounds.x + 15, m_Bounds.y + 10 }, 22.0f, NookCol::UI_TEXT);
+	}
+
+	// Draw Children with icon support
+	for (auto& child : m_Children) {
+		child->DrawWithIcons(renderer, iconRenderer);
+	}
+
+
+	for (auto& layout : m_ContentLayouts) {
+		layout->DrawWithIcons(renderer, iconRenderer);
+	}
 }

@@ -70,7 +70,8 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
                 node.position,
                 node.radius * 1.8f, 
                 dynamicFontSize,
-                textColor
+                textColor,
+                zoom
             );
         }
     }
@@ -96,7 +97,8 @@ void NodeRenderer::drawNode(const Node& node, float zoom,
                 node.position,
                 node.radius * 1.8f,
                 dynamicFontSize,
-                textColor 
+                textColor,
+                zoom
             );
         }
     }

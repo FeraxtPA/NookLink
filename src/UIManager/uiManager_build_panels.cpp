@@ -13,7 +13,6 @@
 #include "UI/panel.h"
 #include "UI/slider.h"
 #include "UI/calendarWidget.h"
-#include "UI/textBox.h"
 #include "UI/textInput.h"
 #include "colors.h"
 #include "date_utils.h"
@@ -116,10 +115,12 @@ void UIManager::BuildBookDetailsPanel()
             }
         }
     );
+    m_DetailsEditBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Edit));
 
     m_DetailsCloseBtn = std::make_shared<Button>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ 120.0f, UiMetrics::kPanelButtonRowHeight }, "Close",
         [this]() { m_BookDetailsPanel->SetVisible(false); }
     );
+    m_DetailsCloseBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Close));
 
     auto detailsButtonRow = CreateButtonRow({ UiMetrics::kDetailsButtonRowWidth, UiMetrics::kPanelButtonRowHeight });
     detailsButtonRow->AddChild(m_DetailsEditBtn, { 0.0f, UiMetrics::kPanelButtonRowHeight }, 1.0f);
@@ -525,14 +526,12 @@ void UIManager::BuildLotteryPanel()
         FlexLayout::CrossAlign::Start
     );
 
-    m_LotteryText = std::make_shared<TextBox>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ UiMetrics::kPanelWideFieldWidth, UiMetrics::kLotteryTextHeight }, "...");
-    m_LotteryText->SetEditable(false);
-
     m_LotteryAutoRead = std::make_shared<Checkbox>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ UiMetrics::kFilterCheckboxSize, UiMetrics::kFilterCheckboxSize }, "Set status to 'Reading' automatically");
 
     m_LotteryCloseBtn = std::make_shared<Button>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ 100.0f, UiMetrics::kPanelButtonRowHeight }, "Close!",
         [this]() { m_LotteryPanel->SetVisible(false); }
     );
+    m_LotteryCloseBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Close));
     m_LotteryCloseBtn->SetVisible(false);
 
     auto lotteryCloseRow = CreateButtonRow({ UiMetrics::kPanelButtonRowWidth, UiMetrics::kPanelButtonRowHeight });
@@ -540,9 +539,9 @@ void UIManager::BuildLotteryPanel()
     lotteryCloseRow->AddChild(m_LotteryCloseBtn, { 100.0f, UiMetrics::kPanelButtonRowHeight });
     lotteryCloseRow->AddSpacer(1.0f);
 
-    lotteryLayout->AddChild(m_LotteryText, { UiMetrics::kPanelWideFieldWidth, UiMetrics::kLotteryTextHeight });
+    lotteryLayout->AddSpacer(12.0f);
     lotteryLayout->AddChild(m_LotteryAutoRead, { UiMetrics::kFilterCheckboxSize, UiMetrics::kFilterCheckboxSize });
-    lotteryLayout->AddSpacer(1.0f);
+    lotteryLayout->AddSpacer(0.3f);
     lotteryLayout->AddChild(lotteryCloseRow, { UiMetrics::kPanelButtonRowWidth, UiMetrics::kPanelButtonRowHeight });
 
     m_Widgets.push_back(m_LotteryPanel);
@@ -886,21 +885,23 @@ void UIManager::BuildAnalyticsPanel()
         Anchor::TopLeft,
         Vector2{ 0.0f, 0.0f },
         Vector2{ 120.0f, UiMetrics::kPanelButtonRowHeight },
-        "<< Prev",
+        "Prev",
         [goPrevAnalyticsMode]() {
             goPrevAnalyticsMode();
         }
     );
+    m_AnalyticsChartModePrevBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Left));
 
     m_AnalyticsChartModeBtn = std::make_shared<Button>(
         Anchor::TopLeft,
         Vector2{ 0.0f, 0.0f },
         Vector2{ 120.0f, UiMetrics::kPanelButtonRowHeight },
-        "Next >>",
+        "Next",
         [goNextAnalyticsMode]() {
             goNextAnalyticsMode();
         }
     );
+    m_AnalyticsChartModeBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Right));
 
     m_AnalyticsPageBinsBtn = std::make_shared<Button>(
         Anchor::TopLeft,
@@ -984,6 +985,7 @@ void UIManager::BuildSettingsPanel(
             if (onImportCsv) onImportCsv();
         }
     );
+    importCsvBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Upload));
 
     auto exportCsvBtn = std::make_shared<Button>(
         Anchor::TopLeft,
@@ -994,6 +996,7 @@ void UIManager::BuildSettingsPanel(
             if (onExportCsv) onExportCsv();
         }
     );
+    exportCsvBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Download));
 
     auto themeHelpLabel = std::make_shared<Label>(
         Anchor::TopLeft,
@@ -1103,6 +1106,7 @@ void UIManager::BuildSettingsPanel(
             }
         }
     );
+    closeBtn->SetIcon(static_cast<int>(IconRenderer::IconType::Close));
 
     auto closeRow = CreateButtonRow({ UiMetrics::kSettingsControlWidth, UiMetrics::kPanelButtonRowHeight });
     closeRow->AddSpacer(1.0f);

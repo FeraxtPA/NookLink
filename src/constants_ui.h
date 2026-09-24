@@ -58,9 +58,8 @@ inline constexpr float kDetailsButtonRowWidth = 288.0f;
 inline constexpr Vector2 kEditorPanelSize = { 460.0f, 760.0f };
 inline constexpr Vector2 kEditorPanelOffset = { 0.0f, 0.0f };
 
-inline constexpr Vector2 kLotteryPanelSize = { 400.0f, 350.0f };
+inline constexpr Vector2 kLotteryPanelSize = { 560.0f, 560.0f };
 inline constexpr Vector2 kLotteryPanelOffset = { 0.0f, 25.0f };
-inline constexpr float kLotteryTextHeight = 180.0f;
 
 inline constexpr Vector2 kGoalPanelSize = { 380.0f, 360.0f };
 inline constexpr Vector2 kGoalPanelOffset = { 0.0f, 0.0f };
@@ -78,12 +77,14 @@ inline constexpr float kNotificationHeight = 50.0f;
 inline constexpr float kNotificationTextPaddingX = 20.0f;
 inline constexpr float kNotificationTextPaddingY = 15.0f;
 
+inline constexpr float kStatusBarHeight = 32.0f;
+inline constexpr float kStatusBarPaddingX = 14.0f;
+inline constexpr float kStatusBarPaddingY = 7.0f;
+inline constexpr int kStatusBarFontSize = 16;
+
 } // namespace UI
 
 namespace Text {
-inline constexpr const char* kFilterToolbarGlyph = "☰";
-inline constexpr const char* kFilterToolbarGlyphActive = "☰*";
-inline constexpr const char* kSettingsToolbarGlyph = "⚙";
 inline constexpr const char* kDetailsDivider = "--------------------------------";
 } // namespace Text
 

@@ -12,6 +12,9 @@
 #include <random>
 #include <filesystem>
 #include "logging.h"
+#include "fileStorage.h"
+#include <limits>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -49,27 +52,27 @@ std::string ToLowerCopy(std::string value)
 
 int BookManager::addBook(const Book& book)
 {
+	if (m_NextId >= std::numeric_limits<int>::max()) {
+		throw std::overflow_error("No more book IDs are available");
+	}
 	Book newBook = book;
 	newBook.setId(m_NextId++);
 	m_Books.push_back(newBook);
+	m_BookIndex[newBook.getId()] = m_Books.size() - 1;
 	
 	return newBook.getId();
 }
 
 bool BookManager::restoreBook(const Book& book)
 {
-	if (findBookById(book.getId()) != nullptr) {
+	if (book.getId() <= 0 || book.getId() >= std::numeric_limits<int>::max() ||
+		findBookById(book.getId()) != nullptr) {
 		Log::Warn("restoreBook skipped: ID already exists " + std::to_string(book.getId()));
 		return false;
 	}
 
-	// Keep m_Books ordered by ID so lower_bound lookups stay valid.
-	auto it = std::lower_bound(m_Books.begin(), m_Books.end(), book.getId(),
-		[](const Book& current, int value) {
-			return current.getId() < value;
-		});
-
-	m_Books.insert(it, book);
+	m_Books.push_back(book);
+	m_BookIndex[book.getId()] = m_Books.size() - 1;
 	if (book.getId() >= m_NextId) {
 		m_NextId = book.getId() + 1;
 	}
@@ -81,6 +84,7 @@ void BookManager::removeBook(int id)
 {
 	m_Books.erase(std::remove_if(m_Books.begin(), m_Books.end(),
 		[id](const Book& book) { return book.getId() == id; }), m_Books.end());
+	rebuildIndex();
 	
 }
 
@@ -100,34 +104,22 @@ const std::vector<Book>& BookManager::getBooksToBeRead()
 	return toBeReadBooks;
 }
 
-Book* BookManager::getBookById(int id) {
-	// Keep lookup cost low for large libraries.
-	auto it = std::lower_bound(m_Books.begin(), m_Books.end(), id,
-		[](const Book& book, int value) {
-			return book.getId() < value;
-		});
-
-	if (it != m_Books.end() && it->getId() == id) {
-		return &(*it);
+void BookManager::rebuildIndex()
+{
+	m_BookIndex.clear();
+	for (size_t index = 0; index < m_Books.size(); ++index) {
+		m_BookIndex.emplace(m_Books[index].getId(), index);
 	}
+}
 
-	return nullptr;
+Book* BookManager::getBookById(int id) {
+	const auto it = m_BookIndex.find(id);
+	return it == m_BookIndex.end() ? nullptr : &m_Books[it->second];
 }
 const Book* BookManager::findBookById(int id) const
 {
-	//Binary search since books are stored sorted by id
-	auto it = std::lower_bound(m_Books.begin(), m_Books.end(), id,
-		[](const Book& book, int value) {
-			return book.getId() < value;
-		});
-
-	if (it != m_Books.end() && it->getId() == id) {
-		return &(*it);
-	}
-	else {
-		return nullptr;
-	}
-	
+	const auto it = m_BookIndex.find(id);
+	return it == m_BookIndex.end() ? nullptr : &m_Books[it->second];
 }
 
 const Book& BookManager::getRandomBookToBeRead()
@@ -177,6 +169,14 @@ void BookManager::sortBooks(BookSortMode mode)
 			return da > db;
 		});
 		break;
+   case BookSortMode::PageCountDesc:
+		std::sort(m_Books.begin(), m_Books.end(), [](const Book& a, const Book& b) {
+			if (a.getPageCount() == b.getPageCount()) {
+				return a.getId() < b.getId();
+			}
+			return a.getPageCount() > b.getPageCount();
+		});
+		break;
 	case BookSortMode::IdAsc:
 	default:
 		std::sort(m_Books.begin(), m_Books.end(), [](const Book& a, const Book& b) {
@@ -184,182 +184,148 @@ void BookManager::sortBooks(BookSortMode mode)
 		});
 		break;
 	}
+	rebuildIndex();
 }
 
 bool BookManager::saveBooksToFile(const std::string& filename, const std::unordered_map<int, NodePosition>& positions) const
 {
-	setLastError("");
-
-	if (filename.empty()) {
-		const std::string message = "Save failed: target filename is empty";
-		setLastError(message);
-		Log::Error(message);
-		return false;
-	}
-
-	nlohmann::json j;
-
-	j["books"] = m_Books;
-	j["next_id"] = m_NextId;
-
-	nlohmann::json posJson = nlohmann::json::object();
-	// Persist positions for all graph nodes keyed by node ID.
-	for (const auto& [id, pos] : positions) {
-		posJson[std::to_string(id)] = { {"x", pos.x}, {"y", pos.y}, {"locked", pos.locked} };
-	}
-	j["positions"] = posJson;
-
-	const fs::path targetPath(filename);
-	const fs::path tempPath = targetPath.string() + ".tmp";
-	const fs::path backupPath = targetPath.string() + ".bak";
-
-	std::error_code ec;
-	if (fs::exists(targetPath, ec)) {
-		fs::copy_file(targetPath, backupPath, fs::copy_options::overwrite_existing, ec);
-		if (ec) {
-			Log::Warn("Failed to create backup file '" + backupPath.string() + "': " + ec.message());
-		}
-	}
-
-	std::ofstream o(tempPath, std::ios::trunc);
-	if (!o.is_open()) {
-		const std::string message = "Could not open temp file for writing: " + tempPath.string();
-		setLastError(message);
-		Log::Error(message);
-		return false;
-	}
-
-	// Two-phase replace: write temp first, then atomically move into place.
-	o << j.dump(4) << std::endl;
-	o.flush();
-	o.close();
-	if (!o) {
-		const std::string message = "Failed while writing temp file: " + tempPath.string();
-		setLastError(message);
-		Log::Error(message);
-		return false;
-	}
-
-	ec.clear();
-	fs::rename(tempPath, targetPath, ec);
-	if (ec) {
-		std::error_code removeEc;
-		fs::remove(targetPath, removeEc);
-		ec.clear();
-		fs::rename(tempPath, targetPath, ec);
-		if (ec) {
-			const std::string message = "Failed to replace target file '" + targetPath.string() + "': " + ec.message();
-			setLastError(message);
-			Log::Error(message);
-			std::error_code cleanupEc;
-			fs::remove(tempPath, cleanupEc);
-			return false;
-		}
-	}
-
-	Log::Info("Books and positions successfully saved to " + filename);
-	return true;
+    setLastError("");
+    try {
+        if (filename.empty()) throw std::runtime_error("The target filename is empty");
+        nlohmann::json document;
+        document["format_version"] = 1;
+        document["books"] = m_Books;
+        document["next_id"] = m_NextId;
+        auto positionJson = nlohmann::json::object();
+        for (const auto& [id, position] : positions) {
+            if (!std::isfinite(position.x) || !std::isfinite(position.y)) {
+                throw std::runtime_error("Cannot save a non-finite node position");
+            }
+            positionJson[std::to_string(id)] = {
+                {"x", position.x}, {"y", position.y}, {"locked", position.locked}
+            };
+        }
+        document["positions"] = std::move(positionJson);
+        const auto target = fs::absolute(fs::path(filename)).lexically_normal();
+        std::string error;
+        // A recovered library must not overwrite its good backup with the damaged primary.
+        if (!FileStorage::WriteAtomically(target, document.dump(4) + "\n", error,
+                                         target != m_RecoveredPath)) {
+            throw std::runtime_error(error);
+        }
+        m_RecoveredPath.clear();
+        Log::Info("Books and positions successfully saved to " + filename);
+        return true;
+    }
+    catch (const std::exception& exception) {
+        setLastError("Save failed: " + std::string(exception.what()));
+        Log::Error(getLastError());
+        return false;
+    }
 }
+
 bool BookManager::loadBooksFromFile(const std::string& filename, std::unordered_map<int, NodePosition>& loadedPositions)
 {
-	loadedPositions.clear();
-	setLastError("");
+    setLastError("");
+    if (filename.empty()) {
+        setLastError("Load failed: source filename is empty");
+        return false;
+    }
 
-	if (filename.empty()) {
-		const std::string message = "Load failed: source filename is empty";
-		setLastError(message);
-		Log::Error(message);
-		return false;
-	}
+    struct Library {
+        std::vector<Book> books;
+        std::unordered_map<int, NodePosition> positions;
+        int nextId = 1;
+    };
 
-	auto tryLoadFromPath = [&](const fs::path& path, std::vector<Book>& outBooks, int& outNextId, std::unordered_map<int, NodePosition>& outPositions) -> bool {
-		std::ifstream i(path);
-		if (!i.is_open()) {
-			return false;
-		}
+    auto readLibrary = [&](const fs::path& path, Library& library, std::string& error) {
+        try {
+            std::ifstream input(path);
+            if (!input) throw std::runtime_error("Could not open " + path.string());
+            const auto document = nlohmann::json::parse(input);
+            if (!document.is_object() || !document.contains("books") || !document["books"].is_array()) {
+                throw std::runtime_error("Expected an object containing a books array");
+            }
+            if (document.value("format_version", 1) != 1) {
+                throw std::runtime_error("Unsupported library format version");
+            }
 
-		nlohmann::json j;
-		try {
-			j = nlohmann::json::parse(i);
-		}
-		catch (const nlohmann::json::parse_error& e) {
-			setLastError("Failed to parse JSON file '" + path.string() + "': " + e.what());
-			Log::Error(getLastError());
-			return false;
-		}
+            Library candidate;
+            std::unordered_set<int> ids;
+            for (const auto& entry : document["books"]) {
+                if (!entry.is_object() || !entry.contains("id") || !entry["id"].is_number_integer() ||
+                    entry["id"] <= 0 || entry["id"] >= std::numeric_limits<int>::max()) {
+                    throw std::runtime_error("A book has an invalid ID");
+                }
+                Book book = entry.get<Book>();
+                if (!ids.insert(book.getId()).second) throw std::runtime_error("Duplicate book ID");
+                if (!std::isfinite(book.getRating()) || book.getRating() < 0 || book.getRating() > 5) {
+                    throw std::runtime_error("A book has an invalid rating");
+                }
+                candidate.nextId = std::max(candidate.nextId, book.getId() + 1);
+                candidate.books.push_back(std::move(book));
+            }
 
-		try {
-			outBooks.clear();
-			if (j.contains("books") && j["books"].is_array()) {
-				// Best-effort import: malformed entries are skipped, valid ones still load.
-				for (const auto& entry : j["books"]) {
-					try {
-						outBooks.push_back(entry.get<Book>());
-					}
-					catch (const std::exception& e) {
-						Log::Warn("Skipping malformed book entry while loading '" + path.string() + "': " + std::string(e.what()));
-					}
-				}
-			}
-			outNextId = j.value("next_id", 1);
+            if (document.contains("next_id")) {
+                const auto& next = document["next_id"];
+                if (!next.is_number_integer() || next < 1 || next > std::numeric_limits<int>::max()) {
+                    throw std::runtime_error("Invalid next_id");
+                }
+                candidate.nextId = std::max(candidate.nextId, next.get<int>());
+            }
 
-			if (j.contains("positions")) {
-				for (auto& el : j["positions"].items()) {
-					int id = std::stoi(el.key());
-					float x = el.value()["x"];
-					float y = el.value()["y"];
-					bool locked = el.value().value("locked", false);
-					outPositions[id] = { x, y, locked };
-				}
-			}
-		}
-		catch (const std::exception& e) {
-			setLastError("Error reconstructing books from file '" + path.string() + "': " + e.what());
-			Log::Error(getLastError());
-			return false;
-		}
+            if (document.contains("positions")) {
+                if (!document["positions"].is_object()) throw std::runtime_error("Expected a positions object");
+                for (const auto& [key, value] : document["positions"].items()) {
+                    size_t parsed = 0;
+                    const int id = std::stoi(key, &parsed);
+                    if (parsed != key.size()) throw std::runtime_error("Invalid node position ID");
+                    NodePosition position{value.at("x").get<float>(), value.at("y").get<float>(),
+                                          value.value("locked", false)};
+                    if (!std::isfinite(position.x) || !std::isfinite(position.y)) {
+                        throw std::runtime_error("Invalid node coordinates");
+                    }
+                    if (!candidate.positions.emplace(id, position).second) {
+                        throw std::runtime_error("Duplicate node position ID");
+                    }
+                }
+            }
+            library = std::move(candidate);
+            return true;
+        }
+        catch (const std::exception& exception) {
+            error = exception.what();
+            return false;
+        }
+    };
 
-		return true;
-	};
+    try {
+        const fs::path primary = fs::absolute(fs::path(filename)).lexically_normal();
+        fs::path backup = primary;
+        backup += ".bak";
+        Library library;
+        std::string primaryError;
+        bool recovered = false;
+        if (!readLibrary(primary, library, primaryError)) {
+            std::string backupError;
+            if (!readLibrary(backup, library, backupError)) {
+                throw std::runtime_error("Primary: " + primaryError + "; backup: " + backupError);
+            }
+            recovered = true;
+            Log::Warn("Recovered library from " + backup.string() + "; primary: " + primaryError);
+        }
 
-	const fs::path primaryPath(filename);
-	const fs::path backupPath = primaryPath.string() + ".bak";
-
-	std::vector<Book> newBooks;
-	int newNextId = 1;
-
-	if (!tryLoadFromPath(primaryPath, newBooks, newNextId, loadedPositions)) {
-		const std::string primaryError = getLastError();
-		loadedPositions.clear();
-		std::vector<Book> backupBooks;
-		int backupNextId = 1;
-
-		// Automatic recovery path: if primary fails, attempt .bak file.
-		if (tryLoadFromPath(backupPath, backupBooks, backupNextId, loadedPositions)) {
-			Log::Warn("Loaded backup file after primary load failed: " + backupPath.string());
-			if (!primaryError.empty()) {
-				Log::Warn("Primary load failure reason: " + primaryError);
-			}
-			newBooks = std::move(backupBooks);
-			newNextId = backupNextId;
-		}
-		else {
-			const std::string backupError = getLastError();
-			const std::string combinedError =
-				"Could not load primary file or backup: " + primaryPath.string() + " / " + backupPath.string() +
-				" | primary: " + (primaryError.empty() ? "n/a" : primaryError) +
-				" | backup: " + (backupError.empty() ? "n/a" : backupError);
-			setLastError(combinedError);
-			Log::Error(combinedError);
-			loadedPositions.clear();
-			return false;
-		}
-	}
-
-	m_Books = std::move(newBooks);
-	std::sort(m_Books.begin(), m_Books.end(), [](const Book& a, const Book& b) {
-		return a.getId() < b.getId();
-	});
-	m_NextId = newNextId;
-	return true;
+        // Commit to live state only after the entire file has been validated.
+        m_Books = std::move(library.books);
+        m_NextId = library.nextId;
+        sortBooks(BookSortMode::IdAsc);
+        loadedPositions = std::move(library.positions);
+        m_RecoveredPath = recovered ? primary : fs::path{};
+        return true;
+    }
+    catch (const std::exception& exception) {
+        setLastError("Load failed: " + std::string(exception.what()));
+        Log::Error(getLastError());
+        return false;
+    }
 }

@@ -183,9 +183,18 @@ void TextInput::Draw(TextRenderer* renderer) {
 
     const float fontSize = 20.0f;
     const float paddingX = 5.0f;
-    const float paddingY = 8.0f;
+    const float textHeight = fontSize;
 
-    Vector2 textPos = { m_Bounds.x + paddingX, m_Bounds.y + paddingY };
+    const std::string displayText = (text.empty() && !isFocused) ? placeholder : text;
+
+    float textX = m_Bounds.x + paddingX;
+    if (m_CenterText) {
+        const float contentWidth = renderer->Measure(displayText, fontSize);
+        textX = m_Bounds.x + (m_Bounds.width - contentWidth) * 0.5f;
+    }
+
+    const float textY = m_Bounds.y + (m_Bounds.height - textHeight) * 0.5f;
+    Vector2 textPos = { textX, textY };
 
     // Draw Text or Placeholder
     if (text.empty() && !isFocused) {

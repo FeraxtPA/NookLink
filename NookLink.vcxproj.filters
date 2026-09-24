@@ -147,6 +147,9 @@
     <ClCompile Include="src\Domain\graphManager_selection.cpp">
       <Filter>Zdrojové soubory</Filter>
     </ClCompile>
+    <ClCompile Include="src\iconRenderer.cpp">
+      <Filter>Zdrojové soubory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\application.h">
@@ -266,11 +269,30 @@
     <ClInclude Include="src\constants_layout.h">
       <Filter>Hlavičkové soubory</Filter>
     </ClInclude>
+    <ClInclude Include="src\iconRenderer.h">
+      <Filter>Hlavičkové soubory</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Hlavičkové soubory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ideas.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".env" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Soubory zdrojů</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon1.ico">
+      <Filter>Soubory zdrojů</Filter>
+    </Image>
+    <Image Include="assets\icon.ico">
+      <Filter>Soubory zdrojů</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -22,6 +22,7 @@ enum class Anchor
 
 // Forward declaration
 class TextRenderer;
+class IconRenderer;
 
 class Widget {
 protected:
@@ -144,8 +145,12 @@ public:
     virtual ~Widget() = default;
 
     virtual void Update() = 0;
-    
+
     virtual void Draw(TextRenderer* renderer) = 0;
+
+    virtual void DrawWithIcons(TextRenderer* renderer, IconRenderer* iconRenderer) {
+        Draw(renderer);
+    }
 
 private:
 	MouseCursor m_RequestedCursor = MOUSE_CURSOR_DEFAULT;

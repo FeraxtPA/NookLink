@@ -21,7 +21,8 @@
 enum class LayoutMode
 {
     Physics,
-    Grid
+    Grid,
+    ValueGrid
 };
 
 struct GraphConfig {
@@ -46,6 +47,7 @@ public:
 
 
     void setLayoutMode(LayoutMode mode);
+    void setValueGridSortMode(BookSortMode mode);
     LayoutMode getLayoutMode() const { return m_LayoutMode; }
 
     std::vector<std::string> getAllGenreNames() const {
@@ -161,10 +163,12 @@ private:
 
     bool m_IsPhysicsActive = true;
     LayoutMode m_LayoutMode = LayoutMode::Physics;
+    BookSortMode m_ValueGridSortMode = BookSortMode::IdAsc;
 
     std::unordered_map<int, Vector2> m_PreGridPositions;
     std::unordered_map<int, Vector2> m_RestoreFromGridStartPositions;
     std::unordered_map<int, Vector2> m_RestoreFromGridTargetPositions;
+    std::unordered_map<int, int> m_ValueGridRankByBookId;
     bool m_IsRestoringFromGrid = false;
     float m_RestoreFromGridT = 0.0f;
     float m_RestoreFromGridDuration = 0.35f;
@@ -178,6 +182,7 @@ private:
     void resetNodeState();
     void markNodeIndexCacheDirty();
     void rebuildNodeIndexCache() const;
+    std::vector<int> buildSortedBookIdsForValueGrid() const;
 
     float calculateCircleRadius(int nodeCount, float minRadius) const;
 

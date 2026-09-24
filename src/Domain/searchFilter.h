@@ -8,7 +8,7 @@
 #include <vector>
 #include "book.h"
 
-enum class RuleType { Text, RatingGreater, RatingLower, RatingEqual, Status, Genre, GenreMissing, FinishedRange };
+enum class RuleType { Invalid, Text, RatingGreater, RatingLower, RatingEqual, Status, Genre, GenreMissing, FinishedRange };
 
 struct FilterRule {
     RuleType type = RuleType::Text;

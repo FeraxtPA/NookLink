@@ -10,12 +10,14 @@
 #include "colors.h"
 #include "graphManager.h"
 #include "textRenderer.h"
+#include "iconRenderer.h"
 #include "uiManager_internal.h"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 
-void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer) const
+void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookManager& bookManager, TextRenderer* textRenderer, float cameraZoom, bool isUserInteracting, bool hasUnsavedChanges) const
 {
     if (!textRenderer) return;
 
@@ -32,6 +34,13 @@ void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookMa
     textRenderer->DrawSimpleText("Library", { UiMetrics::kToolbarLibraryX, UiMetrics::kToolbarLabelY }, UiMetrics::kToolbarLabelFontSize, Fade(NookCol::UI_TEXT, 0.90f));
     textRenderer->DrawSimpleText("Search", { m_ScreenWidth / 2.0f - UiMetrics::kToolbarSearchHalfLabelWidth, UiMetrics::kToolbarLabelY }, UiMetrics::kToolbarLabelFontSize, Fade(NookCol::UI_TEXT, 0.90f));
     textRenderer->DrawSimpleText("Actions", { (float)m_ScreenWidth - UiMetrics::kToolbarActionsInset, UiMetrics::kToolbarLabelY }, UiMetrics::kToolbarLabelFontSize, Fade(NookCol::UI_TEXT, 0.90f));
+    if (m_IconRenderer) {
+        m_IconRenderer->DrawIconCentered(
+            IconRenderer::IconType::Search,
+            { m_ScreenWidth / 2.0f - UiMetrics::kToolbarSearchHalfLabelWidth - 14.0f, UiMetrics::kToolbarLabelY + 8.0f },
+            14.0f,
+            Fade(NookCol::UI_TEXT, 0.90f));
+    }
 
     const std::string multiText = m_MultiSelectIndicatorActive
         ? ("Multi-select ON (" + std::to_string(m_MultiSelectIndicatorCount) + ")")
@@ -51,15 +60,14 @@ void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookMa
             Fade(NookCol::UI_ACCENT_SOFT, 0.95f));
     }
 
-    textRenderer->DrawSimpleText(std::to_string(GetFPS()), { 10, (float)m_ScreenHeight - 20 }, 20, NookCol::UI_ACCENT_SOFT);
-
     if (m_AnalyticsPanel && m_AnalyticsPanel->IsVisible()) {
         LayoutAnalyticsLeftLabels();
     }
 
-    for (auto& w : m_Widgets) w->Draw(textRenderer);
+    for (auto& w : m_Widgets) w->DrawWithIcons(textRenderer, m_IconRenderer.get());
 
     DrawAnalyticsCharts(textRenderer);
+    DrawLotteryWheel(textRenderer, const_cast<BookManager&>(bookManager));
 
     if (m_NodeContextMenuVisible) {
         DrawRectangleRounded(m_NodeContextMenuBounds, 0.16f, 8, NookCol::UI_PANEL_ALT);
@@ -91,23 +99,72 @@ void UIManager::Draw(Vector2 mousePos, GraphManager* graphRenderer, const BookMa
                 };
                 const bool hovered = (i == m_NodeContextHoverIndex);
                 DrawRectangleRounded(itemRect, 0.12f, 6, hovered ? NookCol::UI_PANEL_HOVER : NookCol::UI_PANEL);
-                textRenderer->DrawSimpleText(labels[i], { itemRect.x + 10.0f, itemRect.y + 7.0f }, 20, NookCol::UI_TEXT);
+
+                if (m_IconRenderer) {
+                    IconRenderer::IconType icon = IconRenderer::IconType::Edit;
+                    if (i == 2) {
+                        icon = m_NodeContextNodeLocked ? IconRenderer::IconType::Unlock : IconRenderer::IconType::Lock;
+                    }
+                    m_IconRenderer->DrawIconCentered(icon, { itemRect.x + 18.0f, itemRect.y + itemRect.height * 0.5f }, 16.0f, NookCol::UI_TEXT);
+                }
+                textRenderer->DrawSimpleText(labels[i], { itemRect.x + 32.0f, itemRect.y + 7.0f }, 20, NookCol::UI_TEXT);
             }
         }
         else {
             Rectangle itemRect = { listRect.x, listRect.y, listRect.width, listRect.height };
             const bool hovered = (m_NodeContextHoverIndex == 0);
             DrawRectangleRounded(itemRect, 0.12f, 6, hovered ? NookCol::UI_PANEL_HOVER : NookCol::UI_PANEL);
-            textRenderer->DrawSimpleText(m_NodeContextNodeLocked ? "Unlock node" : "Lock node", { itemRect.x + 10.0f, itemRect.y + 7.0f }, 20, NookCol::UI_TEXT);
+            if (m_IconRenderer) {
+                m_IconRenderer->DrawIconCentered(
+                    m_NodeContextNodeLocked ? IconRenderer::IconType::Unlock : IconRenderer::IconType::Lock,
+                    { itemRect.x + 18.0f, itemRect.y + itemRect.height * 0.5f },
+                    16.0f,
+                    NookCol::UI_TEXT);
+            }
+            textRenderer->DrawSimpleText(m_NodeContextNodeLocked ? "Unlock node" : "Lock node", { itemRect.x + 32.0f, itemRect.y + 7.0f }, 20, NookCol::UI_TEXT);
         }
     }
 
     DrawHelpText(textRenderer);
 
-    if (graphRenderer != nullptr) {
-        std::string count = "Nodes: " + std::to_string(graphRenderer->getNodes().size());
-        textRenderer->DrawSimpleText(count, { 10, (float)m_ScreenHeight - 40 }, 20, NookCol::UI_TEXT_MUTED);
-    }
+    const Rectangle statusBar = {
+        0.0f,
+        (float)m_ScreenHeight - UiMetrics::kStatusBarHeight,
+        (float)m_ScreenWidth,
+        UiMetrics::kStatusBarHeight
+    };
+    DrawRectangleRec(statusBar, Fade(NookCol::UI_SHELL, 0.94f));
+    DrawLineEx({ statusBar.x, statusBar.y }, { statusBar.x + statusBar.width, statusBar.y }, 1.0f, Fade(NookCol::UI_BORDER_SOFT, 0.5f));
+
+    const size_t nodeCount = graphRenderer ? graphRenderer->getNodes().size() : 0u;
+    const std::string filterText = m_ActiveFilterQuery.empty() ? "Filter: none" : std::string("Filter: ") + m_ActiveFilterQuery;
+    auto ellipsize = [](const std::string& value, size_t maxLen) {
+        if (value.size() <= maxLen) return value;
+        if (maxLen <= 3) return value.substr(0, maxLen);
+        return value.substr(0, maxLen - 3) + "...";
+    };
+
+    const std::string zoomText = std::format("Zoom: {:.0f}%", std::clamp(cameraZoom * 100.0f, 0.0f, 999.0f));
+    const std::string interactionText = std::string("Interaction: ") + (isUserInteracting ? "Active" : "Idle");
+    const std::string saveText = hasUnsavedChanges ? "Unsaved" : "Saved";
+    const std::string statusLeft = std::format(
+        "Nodes: {} | {} | {} | {} | {}",
+        nodeCount,
+        ellipsize(filterText, 40),
+        zoomText,
+        interactionText,
+        saveText);
+    const std::string fpsText = std::format("FPS: {}", GetFPS());
+
+    const float textY = statusBar.y + UiMetrics::kStatusBarPaddingY;
+    textRenderer->DrawSimpleText(statusLeft, { statusBar.x + UiMetrics::kStatusBarPaddingX, textY }, UiMetrics::kStatusBarFontSize, NookCol::UI_TEXT_MUTED);
+
+    const float fpsWidth = textRenderer->Measure(fpsText, UiMetrics::kStatusBarFontSize);
+    textRenderer->DrawSimpleText(
+        fpsText,
+        { statusBar.x + statusBar.width - UiMetrics::kStatusBarPaddingX - fpsWidth, textY },
+        UiMetrics::kStatusBarFontSize,
+        NookCol::UI_ACCENT_SOFT);
 
     DrawNotification(textRenderer);
 }
@@ -437,6 +494,115 @@ void UIManager::DrawAnalyticsCharts(TextRenderer* renderer) const
     }
 }
 
+void UIManager::DrawLotteryWheel(TextRenderer* renderer,  BookManager& bookManager) const
+{
+    if (!renderer || !m_LotteryPanel || !m_LotteryPanel->IsVisible()) {
+        return;
+    }
+
+    const auto& books = bookManager.getBooksToBeRead();
+    const int numSegments = static_cast<int>(books.size());
+    if (numSegments <= 0) {
+        return;
+    }
+
+    if (!m_IsLotteryRolling && m_LotteryWinnerId == -1) {
+        return;
+    }
+
+    const Rectangle panelBounds = m_LotteryPanel->GetBounds();
+    const float topPad = 56.0f;
+    const float bottomReserve = 120.0f;
+    const float availableHeight = std::max(120.0f, panelBounds.height - topPad - bottomReserve);
+    Vector2 center = {
+        panelBounds.x + panelBounds.width * 0.5f,
+        panelBounds.y + topPad + availableHeight * 0.5f
+    };
+    float radius = std::min(panelBounds.width * 0.38f, availableHeight * 0.5f);
+    radius = std::clamp(radius, 90.0f, 230.0f);
+
+    const float sliceAngle = 360.0f / static_cast<float>(numSegments);
+    const float angleOffset = m_LotteryAngle;
+    const int segmentCount = std::max(16, numSegments * 3);
+
+    auto shortenTitle = [](const std::string& value, size_t maxLen) {
+        if (value.size() <= maxLen) return value;
+        if (maxLen <= 3) return value.substr(0, maxLen);
+        return value.substr(0, maxLen - 3) + "...";
+    };
+
+    for (int i = 0; i < numSegments; ++i) {
+        const float startAngle = angleOffset + sliceAngle * static_cast<float>(i);
+        const float endAngle = startAngle + sliceAngle;
+        DrawCircleSector(center, radius, startAngle, endAngle, segmentCount, NookCol::LOTTERY_WHEEL[i % NookCol::LOTTERY_WHEEL.size()]);
+
+        if (sliceAngle >= 18.0f) {
+            const float midAngle = startAngle + sliceAngle * 0.5f;
+            const float textRadius = radius * 0.62f;
+            const Vector2 textPos = {
+                center.x + std::cos(midAngle * DEG2RAD) * textRadius,
+                center.y + std::sin(midAngle * DEG2RAD) * textRadius
+            };
+            const int fontSize = 14;
+            const std::string label = shortenTitle(books[static_cast<size_t>(i)].getTitle(), 12);
+            const float textWidth = renderer->Measure(label, fontSize);
+            renderer->DrawSimpleText(label, { textPos.x - textWidth * 0.5f, textPos.y - fontSize * 0.5f }, fontSize, NookCol::UI_TEXT);
+        }
+    }
+    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, Fade(NookCol::UI_BORDER_SOFT, 0.9f));
+
+    const float arrowTipY = center.y - radius + 12.0f;
+    const float arrowBaseY = arrowTipY - 22.0f;
+    const float arrowHalfWidth = 14.0f;
+    DrawTriangle(
+        { center.x, arrowTipY },
+        { center.x - arrowHalfWidth, arrowBaseY },
+        { center.x + arrowHalfWidth, arrowBaseY },
+        Fade(NookCol::UI_ACCENT, 0.95f));
+    DrawTriangleLines(
+        { center.x, arrowTipY },
+        { center.x - arrowHalfWidth, arrowBaseY },
+        { center.x + arrowHalfWidth, arrowBaseY },
+        Fade(NookCol::UI_BORDER_SOFT, 0.9f));
+
+    int selectedIndex = -1;
+    if (m_IsLotteryRolling) {
+        selectedIndex = GetLotterySelectedIndex(numSegments);
+    }
+    else if (m_LotteryWinnerId != -1) {
+        for (int i = 0; i < numSegments; ++i) {
+            if (books[static_cast<size_t>(i)].getId() == m_LotteryWinnerId) {
+                selectedIndex = i;
+                break;
+            }
+        }
+    }
+    if (selectedIndex < 0 || selectedIndex >= numSegments) {
+        return;
+    }
+
+    const Book& selectedBook = books[static_cast<size_t>(selectedIndex)];
+    const std::string title = selectedBook.getTitle();
+    const std::string author = selectedBook.getAuthor().empty() ? std::string("Unknown author") : "by " + selectedBook.getAuthor();
+    const int titleSize = 22;
+    const int authorSize = 18;
+    const float titleWidth = renderer->Measure(title, titleSize);
+    const float authorWidth = renderer->Measure(author, authorSize);
+    const float boxWidth = std::max(titleWidth, authorWidth) + 28.0f;
+    const float boxHeight = titleSize + authorSize + 22.0f;
+    const Rectangle box = {
+        center.x - boxWidth * 0.5f,
+        center.y - boxHeight * 0.5f,
+        boxWidth,
+        boxHeight
+    };
+
+    DrawRectangleRounded(box, 0.2f, 8, Fade(NookCol::UI_SHELL, 0.9f));
+    DrawRectangleRoundedLinesEx(box, 0.2f, 8, 2.0f, Fade(NookCol::UI_BORDER_SOFT, 0.8f));
+    renderer->DrawSimpleText(title, { box.x + (box.width - titleWidth) * 0.5f, box.y + 6.0f }, titleSize, NookCol::UI_TEXT);
+    renderer->DrawSimpleText(author, { box.x + (box.width - authorWidth) * 0.5f, box.y + 8.0f + titleSize }, authorSize, NookCol::UI_TEXT_MUTED);
+}
+
 void UIManager::DrawHelpText(TextRenderer* renderer) const
 {
     if (!renderer) {
@@ -483,7 +649,7 @@ void UIManager::DrawNotification(TextRenderer* textRenderer) const
     const float boxHeight = UiMetrics::kNotificationHeight;
 
     const float x = m_ScreenWidth - boxWidth - UiMetrics::kNotificationMargin;
-    const float y = m_ScreenHeight - boxHeight - UiMetrics::kNotificationMargin;
+    const float y = m_ScreenHeight - boxHeight - UiMetrics::kNotificationMargin - UiMetrics::kStatusBarHeight;
 
     const Color boxColor = Fade(NookCol::UI_SHELL, alpha * 0.96f);
     const Color textColor = Fade(NookCol::UI_TEXT, alpha);

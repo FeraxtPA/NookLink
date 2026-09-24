@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 #include <regex>
+#include <chrono>
+#include <cmath>
 
 namespace Validation {
 
@@ -38,7 +40,10 @@ bool IsValidPublishedDate(const std::string& text)
     if (std::regex_match(text, kPatternYearMonthDay)) {
         const int month = std::stoi(text.substr(5, 2));
         const int day = std::stoi(text.substr(8, 2));
-        return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+        const int year = std::stoi(text.substr(0, 4));
+        return std::chrono::year_month_day{std::chrono::year{year},
+            std::chrono::month{static_cast<unsigned>(month)},
+            std::chrono::day{static_cast<unsigned>(day)}}.ok();
     }
 
     return false;
@@ -114,7 +119,7 @@ bool TryParseRating(const std::string& ratingText, float& outRating)
     try {
         size_t processed = 0;
         const float parsed = std::stof(trimmed, &processed);
-        if (processed != trimmed.size()) {
+        if (processed != trimmed.size() || !std::isfinite(parsed) || parsed < 0.0f || parsed > 5.0f) {
             return false;
         }
         outRating = parsed;

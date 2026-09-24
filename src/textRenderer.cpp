@@ -8,6 +8,8 @@
 #include "utf8_utils.h"
 
 #include <vector>
+#include <cmath>
+#include <algorithm>
 
 
 TextRenderer::TextRenderer() {
@@ -15,7 +17,10 @@ TextRenderer::TextRenderer() {
 }
 
 TextRenderer::~TextRenderer() {
-    UnloadFont(m_Font);
+    // Unload all pre-rasterized font atlases.
+    for (auto &f : m_Fonts) {
+        UnloadFont(f);
+    }
 }
 
 void TextRenderer::InitFont()
@@ -41,28 +46,42 @@ void TextRenderer::InitFont()
     addRange(0x2600, 0x26FF); // Misc symbols
     addRange(0x2700, 0x27BF); // Dingbats
 
-    m_Font = LoadFontEx("assets/DejaVuSans.ttf", 64, codepoints.data(), (int)codepoints.size());
-    if (m_Font.texture.id == 0) {
-        m_Font = GetFontDefault();
+
+    // Dense UI range + larger headings to minimize runtime scaling artifacts.
+    m_FontSizes = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 32, 36, 40, 48, 64, 96 };
+    m_Fonts.clear();
+    m_Fonts.reserve(m_FontSizes.size());
+
+    for (int sz : m_FontSizes) {
+        Font f = LoadFontEx("assets/Nunito-Regular.ttf", sz, codepoints.data(), (int)codepoints.size());
+        if (f.texture.id == 0) {
+            f = GetFontDefault();
+        }
+        // Keep UI text crisp; zoom-aware atlas selection handles world text scaling.
+        SetTextureFilter(f.texture, TEXTURE_FILTER_POINT);
+        m_Fonts.push_back(f);
     }
-    SetTextureFilter(m_Font.texture, TEXTURE_FILTER_BILINEAR);
 }
 
-float TextRenderer::Measure(const std::string& text, float fontSize) const {
-    return MeasureTextEx(m_Font, text.c_str(), fontSize, m_Spacing).x;
+float TextRenderer::Measure(const std::string& text, float fontSize, float renderScale) const {
+    const float sampleSize = std::max(1.0f, fontSize * renderScale);
+    const Font* f = GetFontForSize(sampleSize);
+    if (!f) return 0.0f;
+    return MeasureTextEx(*f, text.c_str(), fontSize, m_Spacing).x;
 }
 
-std::string TextRenderer::FitTextToWidth(const std::string& text, float maxWidth, float fontSize) {
-    if (Measure(text, fontSize) <= maxWidth) {
+std::string TextRenderer::FitTextToWidth(const std::string& text, float maxWidth, float fontSize, float renderScale) {
+    if (Measure(text, fontSize, renderScale) <= maxWidth) {
         return text;
     }
 
+
     std::string result = text;
     std::string ellipsis = "...";
-    float ellipsisW = Measure(ellipsis, fontSize);
+    float ellipsisW = Measure(ellipsis, fontSize, renderScale);
 
     // Remove trailing codepoints, not bytes, to keep UTF-8 valid.
-    while (!result.empty() && (Measure(result, fontSize) + ellipsisW) > maxWidth) {
+    while (!result.empty() && (Measure(result, fontSize, renderScale) + ellipsisW) > maxWidth) {
         size_t cursor = result.size();
         Utf8::ErasePrevCodepoint(result, cursor);
     }
@@ -70,23 +89,48 @@ std::string TextRenderer::FitTextToWidth(const std::string& text, float maxWidth
     return result + ellipsis;
 }
 
-void TextRenderer::DrawSimpleText(const std::string& text, Vector2 pos, float fontSize, Color col)
+const Font* TextRenderer::GetFontForSize(float fontSize) const
 {
-    DrawTextEx(m_Font, text.c_str(), pos, fontSize, m_Spacing, col);
+    if (m_Fonts.empty() || m_FontSizes.empty()) return nullptr;
+    // Pick the closest pre-rasterized size to reduce visual artifacts.
+    size_t bestIdx = 0;
+    float bestDiff = std::abs((float)m_FontSizes[0] - fontSize);
+    for (size_t i = 1; i < m_FontSizes.size(); ++i) {
+        float diff = std::abs((float)m_FontSizes[i] - fontSize);
+        if (diff < bestDiff) {
+            bestDiff = diff;
+            bestIdx = i;
+        }
+    }
+    return &m_Fonts[bestIdx];
 }
 
-void TextRenderer::DrawTextCentered(const std::string& text, Vector2 centerPos, float fontSize, Color col)
+void TextRenderer::DrawSimpleText(const std::string& text, Vector2 pos, float fontSize, Color col, float renderScale)
 {
-    Vector2 size = MeasureTextEx(m_Font, text.c_str(), fontSize, m_Spacing);
+    // Keep positions aligned to pixels to reduce shimmer during movement.
+    pos.x = std::round(pos.x);
+    pos.y = std::round(pos.y);
+    const float sampleSize = std::max(1.0f, fontSize * renderScale);
+    const Font* f = GetFontForSize(sampleSize);
+    if (!f) return;
+    DrawTextEx(*f, text.c_str(), pos, fontSize, m_Spacing, col);
+}
+
+void TextRenderer::DrawTextCentered(const std::string& text, Vector2 centerPos, float fontSize, Color col, float renderScale)
+{
+    const float sampleSize = std::max(1.0f, fontSize * renderScale);
+    const Font* f = GetFontForSize(sampleSize);
+    if (!f) return;
+    Vector2 size = MeasureTextEx(*f, text.c_str(), fontSize, m_Spacing);
     Vector2 drawPos = {
-        centerPos.x - size.x / 2.0f,
-        centerPos.y - size.y / 2.0f
+        std::round(centerPos.x - size.x / 2.0f),
+        std::round(centerPos.y - size.y / 2.0f)
     };
-    DrawTextEx(m_Font, text.c_str(), drawPos, fontSize, m_Spacing, col);
+    DrawTextEx(*f, text.c_str(), drawPos, fontSize, m_Spacing, col);
 }
 
-void TextRenderer::DrawTextFitted(const std::string& text, Vector2 centerPos, float maxWidth, float fontSize, Color col)
+void TextRenderer::DrawTextFitted(const std::string& text, Vector2 centerPos, float maxWidth, float fontSize, Color col, float renderScale)
 {
-    std::string toDraw = FitTextToWidth(text, maxWidth, fontSize);
-    DrawTextCentered(toDraw, centerPos, fontSize, col);
+    std::string toDraw = FitTextToWidth(text, maxWidth, fontSize, renderScale);
+    DrawTextCentered(toDraw, centerPos, fontSize, col, renderScale);
 }

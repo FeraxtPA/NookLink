@@ -10,6 +10,7 @@
 
 #include <unordered_map>
 #include <string>    
+#include <filesystem>
 
 
 struct NodePosition {
@@ -22,7 +23,8 @@ enum class BookSortMode {
     IdAsc,
     AuthorAsc,
     RatingDesc,
-    DateAddedDesc
+    DateAddedDesc,
+    PageCountDesc
 };
 
 class BookManager
@@ -49,12 +51,16 @@ public:
     bool loadBooksFromFile(const std::string& filename, std::unordered_map<int, NodePosition>& loadedPositions);
 
     const std::string& getLastError() const { return m_LastError; }
+    bool wasRecoveredFromBackup() const { return !m_RecoveredPath.empty(); }
 
 private:
     void setLastError(const std::string& message) const { m_LastError = message; }
+    void rebuildIndex();
 
     std::vector<Book> m_Books;
+    std::unordered_map<int, size_t> m_BookIndex;
     std::vector<Book> toBeReadBooks;
     int m_NextId = 1;
     mutable std::string m_LastError{};
+    mutable std::filesystem::path m_RecoveredPath;
 };

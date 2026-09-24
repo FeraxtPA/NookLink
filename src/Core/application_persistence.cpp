@@ -7,27 +7,57 @@
 
 #include "colors.h"
 #include "logging.h"
+#include "appPaths.h"
+#include "fileStorage.h"
 
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
+#include <cmath>
 
 namespace fs = std::filesystem;
 
 void Application::LoadConfig()
 {
-    std::ifstream configFile(".nooklink_config");
+    fs::path configPath;
+    bool migrateLegacy = false;
+    try {
+        m_SaveFileName = AppPaths::DefaultLibraryFile();
+        configPath = AppPaths::ConfigFile();
+        if (!fs::exists(configPath)) {
+            migrateLegacy = fs::exists(".nooklink_config") || fs::exists("my_books.json");
+            configPath = ".nooklink_config";
+            if (fs::exists("my_books.json")) m_SaveFileName = fs::absolute("my_books.json");
+        }
+    }
+    catch (const std::exception& error) {
+        Log::Warn("Could not locate settings: " + std::string(error.what()));
+        return;
+    }
+    const auto hasLibrary = [](const fs::path& path) {
+        std::error_code error;
+        if (fs::is_regular_file(path, error)) return true;
+        fs::path backup = path;
+        backup += ".bak";
+        return fs::is_regular_file(backup, error);
+    };
+    std::ifstream configFile(configPath);
     if (configFile.is_open()) {
         std::string line;
         bool hasStructuredData = false;
+        bool firstLine = true;
         while (std::getline(configFile, line)) {
+            if (firstLine && line.starts_with("\xEF\xBB\xBF")) line.erase(0, 3);
+            firstLine = false;
+            if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.empty()) continue;
 
             const size_t eqPos = line.find('=');
             // Backward compatibility: older config stored only a raw path per line.
             if (eqPos == std::string::npos) {
-                if (!hasStructuredData && fs::exists(line)) {
-                    m_SaveFileName = line;
+                if (!hasStructuredData && hasLibrary(line)) {
+                    m_SaveFileName = fs::absolute(line);
                     Log::Info("Restored last session file: " + m_SaveFileName.string());
                 }
                 continue;
@@ -38,8 +68,8 @@ void Application::LoadConfig()
             const std::string value = line.substr(eqPos + 1);
 
             if (key == "save_path") {
-                if (fs::exists(value)) {
-                    m_SaveFileName = value;
+                if (hasLibrary(value)) {
+                    m_SaveFileName = fs::absolute(value);
                     Log::Info("Restored last session file: " + m_SaveFileName.string());
                 }
             }
@@ -65,26 +95,35 @@ void Application::LoadConfig()
             }
             else if (key == "layout_density") {
                 try {
-                    m_LayoutDensityScale = std::clamp(std::stof(value), 0.3f, 1.6f);
+                    const float density = std::stof(value);
+                    if (std::isfinite(density)) m_LayoutDensityScale = std::clamp(density, 0.3f, 1.6f);
                 }
                 catch (...) {}
             }
         }
         configFile.close();
     }
+    if (migrateLegacy) SaveConfig();
 }
 
 void Application::SaveConfig()
 {
-    // Persist only lightweight app state needed for restoring the next session.
-    std::ofstream configFile(".nooklink_config");
-    if (configFile.is_open()) {
+    try {
+        const auto configPath = AppPaths::ConfigFile();
+        fs::create_directories(configPath.parent_path());
+        std::ostringstream configFile;
         configFile << "save_path=" << m_SaveFileName.string() << "\n";
         configFile << "goal_target=" << m_ReadingGoalTarget << "\n";
         configFile << "goal_baseline=" << m_ReadingGoalBaselineRead << "\n";
         configFile << "theme_index=" << m_ThemePresetIndex << "\n";
         configFile << "layout_density=" << m_LayoutDensityScale << "\n";
-        configFile.close();
+        std::string error;
+        if (!FileStorage::WriteAtomically(configPath, configFile.str(), error)) {
+            Log::Warn("Could not save settings: " + error);
+        }
+    }
+    catch (const std::exception& error) {
+        Log::Warn("Could not save settings: " + std::string(error.what()));
     }
 }
 

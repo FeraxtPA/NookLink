@@ -25,6 +25,12 @@ public:
         const std::unordered_map<int, std::vector<int>>& bookToGenreMap
     );
 
+    void calculateValueGridLayout(
+        std::vector<Node>& nodes,
+        Vector2 centerPos,
+        const std::vector<int>& orderedBookIds
+    );
+
     bool updateLerp(std::vector<Node>& nodes, float dt);
 
     // Main physics loop: applies attraction, repulsion, and gravity forces

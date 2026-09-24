@@ -11,7 +11,6 @@
 #include "UI/label.h"
 #include "UI/panel.h"
 #include "UI/slider.h"
-#include "UI/textBox.h"
 #include "UI/textInput.h"
 #include "colors.h"
 #include "uiManager_internal.h"
@@ -76,11 +75,12 @@ void UIManager::BuildFilterPanel(const std::function<void(Status)>& onToggleStat
         Vector2{ UiMetrics::kFilterControlWidth, UiMetrics::kPanelButtonRowHeight },
         "Sort: ID",
         [this, onSortBooks]() {
-            m_FilterSortState = (m_FilterSortState + 1) % 4;
+            m_FilterSortState = (m_FilterSortState + 1) % 5;
             if (m_FilterSortState == 0) m_FilterSortBtn->SetText("Sort: ID");
             else if (m_FilterSortState == 1) m_FilterSortBtn->SetText("Sort: Author");
             else if (m_FilterSortState == 2) m_FilterSortBtn->SetText("Sort: Rating");
-            else m_FilterSortBtn->SetText("Sort: Added Date");
+            else if (m_FilterSortState == 3) m_FilterSortBtn->SetText("Sort: Added Date");
+            else m_FilterSortBtn->SetText("Sort: Pages");
 
             if (onSortBooks) {
                 onSortBooks(m_FilterSortState);
@@ -237,6 +237,11 @@ void UIManager::BuildToolbar(
     auto makeToolbarButton = [toolbarRowHeight](const std::string& label, std::function<void()> callback, float width) {
         return std::make_shared<Button>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ width, toolbarRowHeight }, label, std::move(callback));
     };
+    auto makeIconButton = [toolbarRowHeight](IconRenderer::IconType iconType, std::string label, std::function<void()> callback, float width) {
+        auto btn = std::make_shared<Button>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ width, toolbarRowHeight }, std::move(label), std::move(callback));
+        btn->SetIcon(static_cast<int>(iconType));
+        return btn;
+    };
 
     m_ToolbarLayout = std::make_shared<FlexLayout>(
         Anchor::TopCenter,
@@ -248,17 +253,20 @@ void UIManager::BuildToolbar(
         FlexLayout::CrossAlign::Center
     );
 
-    m_ToolbarLayout->AddChild(makeToolbarButton("Back", onBackToMenu, UiMetrics::kToolbarBackWidth), { UiMetrics::kToolbarBackWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Load", onLoad, UiMetrics::kToolbarLoadWidth), { UiMetrics::kToolbarLoadWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Save", onSave, UiMetrics::kToolbarSaveWidth), { UiMetrics::kToolbarSaveWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Save As", onSaveAs, UiMetrics::kToolbarSaveAsWidth), { UiMetrics::kToolbarSaveAsWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Back, "Back", onBackToMenu, UiMetrics::kToolbarBackWidth), { UiMetrics::kToolbarBackWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Download, "Load", onLoad, UiMetrics::kToolbarLoadWidth), { UiMetrics::kToolbarLoadWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Save, "Save", onSave, UiMetrics::kToolbarSaveWidth), { UiMetrics::kToolbarSaveWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Upload, "Save As", onSaveAs, UiMetrics::kToolbarSaveAsWidth), { UiMetrics::kToolbarSaveAsWidth, toolbarRowHeight });
 
     m_ToolbarLayout->AddSpacer(1.0f);
 
     m_SearchBar = std::make_shared<TextInput>(Anchor::TopLeft, Vector2{ 0.0f, 0.0f }, Vector2{ UiMetrics::kToolbarSearchWidth, toolbarRowHeight }, "Search Books/Authors...");
+    m_SearchBar->SetTextCentered(true);
     m_ToolbarLayout->AddChild(m_SearchBar, { UiMetrics::kToolbarSearchWidth, toolbarRowHeight });
 
-    m_ToggleFiltersBtn = makeToolbarButton(NookConst::Text::kFilterToolbarGlyph,
+    m_ToggleFiltersBtn = makeIconButton(
+        IconRenderer::IconType::Filter,
+        "",
         [this]() {
             static double lastClickTime = 0;
             if (GetTime() - lastClickTime > 0.2) {
@@ -270,7 +278,8 @@ void UIManager::BuildToolbar(
     );
     m_ToolbarLayout->AddChild(m_ToggleFiltersBtn, { UiMetrics::kToolbarFiltersWidth, toolbarRowHeight });
 
-    m_ToolbarLayout->AddChild(makeToolbarButton("Goals",
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Goals,
+        "Goals",
         [this]() {
             if (m_ReadingGoalPanel) {
                 m_ReadingGoalPanel->SetVisible(!m_ReadingGoalPanel->IsVisible());
@@ -279,7 +288,8 @@ void UIManager::BuildToolbar(
         UiMetrics::kToolbarGoalsWidth
     ), { UiMetrics::kToolbarGoalsWidth, toolbarRowHeight });
 
-    m_OpenStatsBtn = makeToolbarButton("Stats",
+    m_OpenStatsBtn = makeIconButton(IconRenderer::IconType::Chart,
+        "Stats",
         [this]() {
             if (m_AnalyticsPanel) {
                 m_AnalyticsPanel->SetVisible(!m_AnalyticsPanel->IsVisible());
@@ -289,26 +299,30 @@ void UIManager::BuildToolbar(
     );
     m_ToolbarLayout->AddChild(m_OpenStatsBtn, { UiMetrics::kToolbarStatsWidth, toolbarRowHeight });
 
-    m_ToolbarLayout->AddChild(makeToolbarButton("Undo", onUndo, UiMetrics::kToolbarUndoWidth), { UiMetrics::kToolbarUndoWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Redo", onRedo, UiMetrics::kToolbarRedoWidth), { UiMetrics::kToolbarRedoWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Add Book", [this]() { m_AddPanel->SetVisible(true); }, UiMetrics::kToolbarAddBookWidth), { UiMetrics::kToolbarAddBookWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Next Read",
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Left, "Undo", onUndo, UiMetrics::kToolbarUndoWidth), { UiMetrics::kToolbarUndoWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Right, "Redo", onRedo, UiMetrics::kToolbarRedoWidth), { UiMetrics::kToolbarRedoWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Plus, "Add Book", [this]() { m_AddPanel->SetVisible(true); }, UiMetrics::kToolbarAddBookWidth), { UiMetrics::kToolbarAddBookWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Dice,
+        "Next Read",
         [this]() {
             m_LotteryPanel->SetVisible(true);
             m_IsLotteryRolling = true;
-            m_LotteryTimer = 2.0f;
+            m_LotteryDuration = 2.0f;
+            m_LotteryTimer = m_LotteryDuration;
             m_LotterySpeedTimer = 0.0f;
+            m_LotteryAngle = (float)GetRandomValue(0, 360);
             m_LotteryCloseBtn->SetVisible(false);
-            m_LotteryText->SetText("Spinning...");
+            m_LotteryWinnerId = -1;
         },
         UiMetrics::kToolbarNextReadWidth
     ), { UiMetrics::kToolbarNextReadWidth, toolbarRowHeight });
-    m_ToolbarLayout->AddChild(makeToolbarButton("Toggle Layout", onToggleLayout, UiMetrics::kToolbarToggleLayoutWidth), { UiMetrics::kToolbarToggleLayoutWidth, toolbarRowHeight });
+    m_ToolbarLayout->AddChild(makeIconButton(IconRenderer::IconType::Grid, "Toggle Layout", onToggleLayout, UiMetrics::kToolbarToggleLayoutWidth), { UiMetrics::kToolbarToggleLayoutWidth, toolbarRowHeight });
 
     m_ToolbarLayout->AddSpacer(1.0f);
 
-    m_OpenSettingsBtn = makeToolbarButton(
-        NookConst::Text::kSettingsToolbarGlyph,
+    m_OpenSettingsBtn = makeIconButton(
+        IconRenderer::IconType::Settings,
+        "",
         [this]() {
             if (m_SettingsPanel) {
                 m_SettingsPanel->SetVisible(!m_SettingsPanel->IsVisible());

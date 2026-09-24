@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure NookLink (CMake)",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--preset", "linux-system"],
+      "windows": { "args": ["--preset", "windows-local"] },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build NookLink (CMake Debug)",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--build", "--preset", "linux-debug", "--parallel", "4"],
+      "windows": { "args": ["--build", "--preset", "windows-debug", "--parallel", "4"] },
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Configure NookLink (CMake)",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$msCompile", "$gcc"]
+    },
+    {
+      "label": "Build NookLink (CMake Release)",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--build", "--preset", "linux-release", "--parallel", "4"],
+      "windows": { "args": ["--build", "--preset", "windows-release", "--parallel", "4"] },
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Configure NookLink (CMake Release)",
+      "problemMatcher": ["$msCompile", "$gcc"]
+    },
+    {
+      "label": "Configure NookLink (CMake Release)",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--preset", "linux-release"],
+      "windows": { "args": ["--preset", "windows-local"] },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test NookLink (CMake Debug)",
+      "type": "process",
+      "command": "ctest",
+      "args": ["--preset", "linux-debug"],
+      "windows": { "args": ["--preset", "windows-debug"] },
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Build NookLink (CMake Debug)",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

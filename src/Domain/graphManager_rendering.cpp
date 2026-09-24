@@ -1,5 +1,7 @@
 #include "graphManager.h"
 #include "colors.h"
+
+#include <algorithm>
 const Rectangle GraphManager::getCameraViewRect(const Camera2D &camera,
                                                 Vector2 screenDimensions) {
   float left = camera.target.x -
@@ -48,6 +50,11 @@ void GraphManager::drawEdges(float zoom, const Rectangle &viewRect) {
 
 void GraphManager::drawNodes(float zoom, const Rectangle &viewRect) {
   bool searchActive = m_SearchFilter.isActive();
+  const bool valueGridMode = (m_LayoutMode == LayoutMode::ValueGrid);
+
+  const Node *topBookNode = nullptr;
+  const Node *bottomBookNode = nullptr;
+  int bottomRank = 0;
 
   for (const auto &node : m_Nodes) {
     if (!isNodeVisible(node, viewRect))
@@ -69,9 +76,55 @@ void GraphManager::drawNodes(float zoom, const Rectangle &viewRect) {
 
     m_NodeRenderer.drawNode(node, zoom, m_Genres, isDimmed);
 
+    if (valueGridMode && node.type == NodeType::Book) {
+      const auto rankIt = m_ValueGridRankByBookId.find(node.id);
+      if (rankIt != m_ValueGridRankByBookId.end()) {
+        const int rank = rankIt->second;
+        const float rankFontSize = std::clamp(16.0f / std::max(zoom, 0.08f), 12.0f, 48.0f);
+
+        const Vector2 labelPos = {node.position.x - node.radius * 0.9f,
+                                  node.position.y - node.radius * 1.25f};
+        if (TextRenderer *tr = m_NodeRenderer.getTextRenderer()) {
+          tr->DrawSimpleText("#" + std::to_string(rank), labelPos, rankFontSize,
+                             Fade(NookCol::UI_TEXT, 0.95f));
+        }
+
+        if (rank == 1) {
+          topBookNode = &node;
+        }
+        if (rank > bottomRank) {
+          bottomRank = rank;
+          bottomBookNode = &node;
+        }
+      }
+    }
+
     if (node.type == NodeType::Book && m_MultiSelectedBookIds.contains(node.id)) {
       DrawCircleLines(static_cast<int>(node.position.x), static_cast<int>(node.position.y), node.radius + 10.0f, Fade(NookCol::UI_ACCENT, 0.95f));
       DrawCircleLines(static_cast<int>(node.position.x), static_cast<int>(node.position.y), node.radius + 12.0f, Fade(NookCol::UI_ACCENT_SOFT, 0.8f));
+    }
+  }
+
+  if (valueGridMode) {
+    const float hintFontSize = std::clamp(18.0f / std::max(zoom, 0.08f), 14.0f, 54.0f);
+    TextRenderer *tr = m_NodeRenderer.getTextRenderer();
+    if (topBookNode) {
+      const Vector2 topPos = {
+          topBookNode->position.x - topBookNode->radius * 0.5f,
+          topBookNode->position.y - topBookNode->radius * 2.0f};
+      if (tr) {
+        tr->DrawSimpleText("TOP", topPos, hintFontSize,
+                           Fade(NookCol::UI_ACCENT, 0.95f));
+      }
+    }
+    if (bottomBookNode) {
+      const Vector2 bottomPos = {
+          bottomBookNode->position.x - bottomBookNode->radius * 0.9f,
+          bottomBookNode->position.y + bottomBookNode->radius * 1.4f};
+      if (tr) {
+        tr->DrawSimpleText("BOTTOM", bottomPos, hintFontSize,
+                           Fade(NookCol::UI_TEXT_MUTED, 0.95f));
+      }
     }
   }
 }

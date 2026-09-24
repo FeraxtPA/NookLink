@@ -25,10 +25,12 @@ public:
     std::string GetText() const { return text; }
     void Clear() { text.clear(); isFocused = false; }
     void SetValidationError(bool value) { hasValidationError = value; }
+    void SetTextCentered(bool value) { m_CenterText = value; }
 
 private:
     float m_BackspaceRepeatTimer = 0.0f;
     bool m_BackspaceRepeatArmed = false;
     static constexpr float kBackspaceRepeatDelay = NookConst::Input::kTextInputBackspaceRepeatDelay;
     static constexpr float kBackspaceRepeatRate = NookConst::Input::kTextInputBackspaceRepeatRate;
+    bool m_CenterText = false;
 };

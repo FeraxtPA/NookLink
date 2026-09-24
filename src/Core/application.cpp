@@ -9,6 +9,7 @@
 #include "UI/button.h"
 #include "goodreadsCsvImporter.h"
 #include "logging.h"
+#include "appPaths.h"
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
 
@@ -26,6 +27,15 @@
 namespace fs = std::filesystem;
 
 namespace {
+bool HasLibraryFile(const fs::path& path)
+{
+    std::error_code error;
+    if (fs::is_regular_file(path, error)) return true;
+    fs::path backup = path;
+    backup += ".bak";
+    return fs::is_regular_file(backup, error);
+}
+
 std::string GetTodayDateDDMMYYYY()
 {
     const auto now = std::chrono::system_clock::now();
@@ -396,23 +406,35 @@ void Application::ExportLibraryCsv()
     Log::Info("CSV export finished: " + std::string(path));
 }
 
-void Application::SaveLibrary()
+bool Application::SaveLibrary()
 {
     if (m_SaveFileName.empty()) {
         m_UIManager->ShowNotification("Save failed: no target file selected.");
         Log::Warn("Save blocked: empty save file name");
-        return;
+        return false;
     }
 
     Log::Info("Saving library to: " + m_SaveFileName.string());
+    try {
+        if (m_SaveFileName == AppPaths::DefaultLibraryFile()) {
+            fs::create_directories(m_SaveFileName.parent_path());
+        }
+    }
+    catch (const std::exception& error) {
+        Log::Error("Could not prepare the library folder: " + std::string(error.what()));
+        m_UIManager->ShowNotification("Save failed. Could not create the library folder.");
+        return false;
+    }
     auto currentPositions = m_GraphManager->exportPositions();
     if (!m_BookManager.saveBooksToFile(m_SaveFileName.string(), currentPositions)) {
         m_UIManager->ShowNotification("Save failed. Check logs for details.");
-        return;
+        return false;
     }
 
     m_UIManager->ShowNotification("Library Saved!");
     m_HasUnsavedChanges = false;
+    SaveConfig();
+    return true;
 }
 
 void Application::SaveLibraryAs()
@@ -433,13 +455,14 @@ void Application::SaveLibraryAs()
         return;
     }
 
-    m_SaveFileName = path;
+    const fs::path selectedPath(path);
     auto currentPositions = m_GraphManager->exportPositions();
-    if (!m_BookManager.saveBooksToFile(m_SaveFileName.string(), currentPositions)) {
+    if (!m_BookManager.saveBooksToFile(selectedPath.string(), currentPositions)) {
         m_UIManager->ShowNotification("Save As failed. Check logs for details.");
         return;
     }
 
+    m_SaveFileName = selectedPath;
     SaveConfig();
     Log::Info("Saved As: " + m_SaveFileName.string());
 
@@ -449,7 +472,7 @@ void Application::SaveLibraryAs()
 
 void Application::LoadLibraryFromCurrentFile()
 {
-    if (!fs::exists(m_SaveFileName)) {
+    if (!HasLibraryFile(m_SaveFileName)) {
         m_UIManager->ShowNotification("Load failed: file does not exist.");
         Log::Warn("Load blocked: missing file " + m_SaveFileName.string());
         return;
@@ -470,7 +493,7 @@ void Application::LoadLibraryFromCurrentFile()
     m_LayoutDirty = true;
     SaveConfig();
     ClearHistory();
-    m_UIManager->ShowNotification("Library Loaded!");
+    m_UIManager->ShowNotification(m_BookManager.wasRecoveredFromBackup() ? "Recovered library from backup." : "Library Loaded!");
     m_UIManager->MarkAnalyticsDirty();
     m_HasUnsavedChanges = false;
     m_AppState = AppState::Editor;
@@ -481,7 +504,7 @@ void Application::ReturnToStartScreen()
     m_AppState = AppState::StartScreen;
     if (m_BtnContinue) {
         std::string btnText = "Continue";
-        if (fs::exists(m_SaveFileName)) {
+        if (HasLibraryFile(m_SaveFileName)) {
             btnText += " (" + m_SaveFileName.filename().string() + ")";
         }
         m_BtnContinue->SetText(btnText);
@@ -498,7 +521,7 @@ void Application::Initialize()
 
     SetExitKey(KEY_NULL);
 
-    Image icon = LoadImage("assets/icon2.png");
+    Image icon = LoadImage("assets/logo64.png");
 
     SetWindowIcon(icon);
     UnloadImage(icon);
@@ -520,7 +543,7 @@ void Application::Initialize()
 
 
     std::string btnText = "Continue";
-    if (fs::exists(m_SaveFileName)) {
+    if (HasLibraryFile(m_SaveFileName)) {
         btnText += " (" + m_SaveFileName.filename().string() + ")";
     }
 
@@ -537,7 +560,7 @@ void Application::Initialize()
             }
 
             // Case 2: Load from the dynamic m_SaveFileName
-            if (!fs::exists(m_SaveFileName)) {
+            if (!HasLibraryFile(m_SaveFileName)) {
                 m_UIManager->ShowNotification("Saved library file was not found.");
                 Log::Warn("Continue blocked: missing file " + m_SaveFileName.string());
                 return;
@@ -563,6 +586,10 @@ void Application::Initialize()
             ClearHistory();
             m_UIManager->MarkAnalyticsDirty();
             m_AppState = AppState::Editor;
+            m_HasUnsavedChanges = false;
+            if (m_BookManager.wasRecoveredFromBackup()) {
+                m_UIManager->ShowNotification("Recovered library from backup.");
+            }
         }
     );
 
@@ -618,17 +645,18 @@ void Application::Initialize()
 
                 Log::Info("User selected library file: " + selectedPath.string());
 
-                m_SaveFileName = selectedPath;
+
 
               
-                if (fs::exists(m_SaveFileName)) {
+                if (HasLibraryFile(selectedPath)) {
                    
                     std::unordered_map<int, NodePosition> loadedPositions;
-                    if (!m_BookManager.loadBooksFromFile(m_SaveFileName.string(), loadedPositions)) {
+                    if (!m_BookManager.loadBooksFromFile(selectedPath.string(), loadedPositions)) {
                         m_UIManager->ShowNotification("Load failed. Check logs for details.");
                         return;
                     }
 
+                    m_SaveFileName = selectedPath;
                     SaveConfig();
 
                  
@@ -644,6 +672,10 @@ void Application::Initialize()
                     ClearHistory();
                     m_UIManager->MarkAnalyticsDirty();
                     m_AppState = AppState::Editor;
+                    m_HasUnsavedChanges = false;
+                    if (m_BookManager.wasRecoveredFromBackup()) {
+                        m_UIManager->ShowNotification("Recovered library from backup.");
+                    }
                 }
                 else {
                   
@@ -793,8 +825,12 @@ void Application::Initialize()
         },
         [this]() {
             if (m_GraphManager) {
-                if (m_GraphManager->getLayoutMode() == LayoutMode::Physics) {
+                const LayoutMode mode = m_GraphManager->getLayoutMode();
+                if (mode == LayoutMode::Physics) {
                     m_GraphManager->setLayoutMode(LayoutMode::Grid);
+                }
+                else if (mode == LayoutMode::Grid) {
+                    m_GraphManager->setLayoutMode(LayoutMode::ValueGrid);
                 }
                 else {
                     m_GraphManager->setLayoutMode(LayoutMode::Physics);
@@ -829,12 +865,12 @@ void Application::Initialize()
             if (sortMode == 1) mode = BookSortMode::AuthorAsc;
             else if (sortMode == 2) mode = BookSortMode::RatingDesc;
             else if (sortMode == 3) mode = BookSortMode::DateAddedDesc;
+            else if (sortMode == 4) mode = BookSortMode::PageCountDesc;
 
-            m_BookManager.sortBooks(mode);
             if (m_GraphManager) {
-                m_GraphManager->initializePositions();
+                m_GraphManager->setValueGridSortMode(mode);
+                m_GraphManager->setLayoutMode(LayoutMode::ValueGrid);
             }
-            m_HasUnsavedChanges = true;
         }
     
     );

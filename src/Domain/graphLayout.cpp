@@ -5,6 +5,7 @@
 
 #include "graphLayout.h"
 #include <algorithm>
+#include <unordered_set>
 
 namespace {
 float SmoothStep01(float t) {
@@ -90,6 +91,78 @@ void GraphLayout::calculateGridLayout(
             m_TargetPositions[b->id] = { startX + orphansCol * spacingX, startY + row * spacingY };
             orphansCol++;
         }
+    }
+
+    m_GridStartPositions.clear();
+    for (const auto& node : nodes) {
+        m_GridStartPositions[node.id] = node.position;
+    }
+    m_GridTransitionT = 0.0f;
+
+    m_Temperature = std::max(m_Temperature, m_MinTransitionTemperature);
+    m_CoolingHoldFrames = m_GridTransitionHoldFrames;
+}
+
+void GraphLayout::calculateValueGridLayout(
+    std::vector<Node>& nodes,
+    Vector2 centerPos,
+    const std::vector<int>& orderedBookIds)
+{
+    m_TargetPositions.clear();
+
+    std::vector<Node*> genres;
+    std::unordered_map<int, Node*> booksById;
+    booksById.reserve(nodes.size());
+
+    for (auto& n : nodes) {
+        if (n.type == NodeType::Genre) {
+            genres.push_back(&n);
+        }
+        else {
+            booksById[n.id] = &n;
+        }
+    }
+
+    std::sort(genres.begin(), genres.end(), [](const Node* a, const Node* b) {
+        return a->id < b->id;
+    });
+
+    const float genreSpacingX = 260.0f;
+    const float genreY = centerPos.y - 520.0f;
+    const float genresStartX = centerPos.x - ((float)std::max<size_t>(1, genres.size()) - 1.0f) * (genreSpacingX * 0.5f);
+    for (size_t i = 0; i < genres.size(); ++i) {
+        m_TargetPositions[genres[i]->id] = { genresStartX + (float)i * genreSpacingX, genreY };
+    }
+
+    const int columns = 7;
+    const float spacingX = 260.0f;
+    const float spacingY = 210.0f;
+    const float booksStartX = centerPos.x - ((float)columns - 1.0f) * (spacingX * 0.5f);
+    const float booksStartY = centerPos.y - 240.0f;
+
+    std::unordered_set<int> placed;
+    int index = 0;
+    for (int id : orderedBookIds) {
+        auto it = booksById.find(id);
+        if (it == booksById.end()) {
+            continue;
+        }
+
+        const int row = index / columns;
+        const int col = index % columns;
+        m_TargetPositions[id] = { booksStartX + (float)col * spacingX, booksStartY + (float)row * spacingY };
+        placed.insert(id);
+        ++index;
+    }
+
+    for (const auto& [id, node] : booksById) {
+        if (placed.count(id)) {
+            continue;
+        }
+        const int row = index / columns;
+        const int col = index % columns;
+        m_TargetPositions[id] = { booksStartX + (float)col * spacingX, booksStartY + (float)row * spacingY };
+        ++index;
     }
 
     m_GridStartPositions.clear();

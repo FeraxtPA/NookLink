@@ -1,0 +1,105 @@
+{
+    "version":  6,
+    "cmakeMinimumRequired":  {
+                                 "major":  3,
+                                 "minor":  25,
+                                 "patch":  0
+                             },
+    "configurePresets":  [
+                             {
+                                 "name":  "windows-vcpkg",
+                                 "displayName":  "Windows x64 (vcpkg)",
+                                 "generator":  "Visual Studio 17 2022",
+                                 "architecture":  "x64",
+                                 "binaryDir":  "${sourceDir}/build/cmake/windows",
+                                 "cacheVariables":  {
+                                                        "CMAKE_TOOLCHAIN_FILE":  "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                                                        "VCPKG_TARGET_TRIPLET":  "x64-windows",
+                                                        "VCPKG_USE_LEGACY_APPLOCAL":  "OFF"
+                                                    }
+                             },
+                             {
+                                 "name":  "linux-system",
+                                 "displayName":  "Linux (system libraries)",
+                                 "generator":  "Unix Makefiles",
+                                 "binaryDir":  "${sourceDir}/build/cmake/linux",
+                                 "cacheVariables":  {
+                                                        "CMAKE_BUILD_TYPE":  "Debug",
+                                                        "CMAKE_EXPORT_COMPILE_COMMANDS":  "ON"
+                                                    }
+                             },
+                             {
+                                 "name":  "linux-release",
+                                 "inherits":  "linux-system",
+                                 "displayName":  "Linux Release (system libraries)",
+                                 "binaryDir":  "${sourceDir}/build/cmake/linux-release",
+                                 "cacheVariables":  {
+                                                        "CMAKE_BUILD_TYPE":  "Release"
+                                                    }
+                             }
+                         ],
+    "buildPresets":  [
+                         {
+                             "name":  "windows-debug",
+                             "configurePreset":  "windows-vcpkg",
+                             "configuration":  "Debug"
+                         },
+                         {
+                             "name":  "windows-release",
+                             "configurePreset":  "windows-vcpkg",
+                             "configuration":  "Release"
+                         },
+                         {
+                             "name":  "linux-debug",
+                             "configurePreset":  "linux-system"
+                         },
+                         {
+                             "name":  "linux-release",
+                             "configurePreset":  "linux-release"
+                         }
+                     ],
+    "testPresets":  [
+                        {
+                            "name":  "windows-debug",
+                            "configurePreset":  "windows-vcpkg",
+                            "configuration":  "Debug",
+                            "output":  {
+                                           "outputOnFailure":  true
+                                       },
+                            "execution":  {
+                                              "noTestsAction":  "error"
+                                          }
+                        },
+                        {
+                            "name":  "windows-release",
+                            "configurePreset":  "windows-vcpkg",
+                            "configuration":  "Release",
+                            "output":  {
+                                           "outputOnFailure":  true
+                                       },
+                            "execution":  {
+                                              "noTestsAction":  "error"
+                                          }
+                        },
+                        {
+                            "name":  "linux-debug",
+                            "configurePreset":  "linux-system",
+                            "output":  {
+                                           "outputOnFailure":  true
+                                       },
+                            "execution":  {
+                                              "noTestsAction":  "error"
+                                          }
+                        },
+                        {
+                            "name":  "linux-release",
+                            "configurePreset":  "linux-release",
+                            "output":  {
+                                           "outputOnFailure":  true
+                                       },
+                            "execution":  {
+                                              "noTestsAction":  "error"
+                                          }
+                        }
+                    ]
+}

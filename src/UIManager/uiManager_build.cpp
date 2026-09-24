@@ -99,11 +99,12 @@ std::shared_ptr<FlexLayout> UIManager::CreateDateInputRow(const std::shared_ptr<
         Anchor::TopLeft,
         Vector2{ 0.0f, 0.0f },
         Vector2{ kDateButtonWidth, UiMetrics::kPanelInputHeight },
-        "Pick",
+        "",
         [this, input]() {
             OpenCalendarFor(input);
         }
     );
+    pickButton->SetIcon(static_cast<int>(IconRenderer::IconType::Calendar));
 
     row->AddChild(input, { UiMetrics::kPanelWideFieldWidth - kDateButtonWidth - kDateButtonGap, UiMetrics::kPanelInputHeight }, 1.0f);
     row->AddChild(pickButton, { kDateButtonWidth, UiMetrics::kPanelInputHeight });

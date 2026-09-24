@@ -51,6 +51,8 @@ public:
         const std::unordered_map<int, bool>* dimmedNodes = nullptr,
         const std::unordered_map<int, size_t>* nodeIndexById = nullptr);
 
+    TextRenderer* getTextRenderer() const { return m_TextRenderer; }
+
 private:
     const BookManager& m_BookManager;
     TextRenderer* m_TextRenderer; 

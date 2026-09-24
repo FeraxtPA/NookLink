@@ -94,35 +94,14 @@ void Application::Run()
         // Centralized exit gate: keep all save-confirmation behavior in one place.
         if (WindowShouldClose())
         {
-            if (!m_BookManager.getBooks().empty()) {
-                if (m_HasUnsavedChanges)
-                {
-                    const int result = tinyfd_messageBox(
-                        "Exit NookLink",
-                        "Do you want to save your library before exiting?",
-                        "yesnocancel",
-                        "question",
-                        1
-                    );
-
-                    if (result == 1) {
-                        Log::Info("Saving session to: " + m_SaveFileName.string());
-                        if (!m_BookManager.saveBooksToFile(m_SaveFileName.string())) {
-                            m_UIManager->ShowNotification("Save before exit failed. Cancelled exit.");
-                            exitApp = false;
-                            continue;
-                        }
-                        exitApp = true;
-                    }
-                    else if (result == 2) {
-                        exitApp = true;
-                    }
-                    else if (result == 0) {
-                        exitApp = false;
-                    }
+            if (m_HasUnsavedChanges) {
+                const int result = tinyfd_messageBox(
+                    "Exit NookLink", "Do you want to save your library before exiting?",
+                    "yesnocancel", "question", 1);
+                if (result == 1) {
+                    exitApp = SaveLibrary();
                 }
-                else
-                {
+                else if (result == 2) {
                     exitApp = true;
                 }
             }
@@ -245,7 +224,14 @@ void Application::Draw()
         m_CameraHandler->endMode();
 
         const double uiStart = NowSeconds();
-        m_UIManager->Draw(GetMousePosition(), m_GraphManager.get(), m_BookManager, m_TextRenderer.get());
+        m_UIManager->Draw(
+            GetMousePosition(),
+            m_GraphManager.get(),
+            m_BookManager,
+            m_TextRenderer.get(),
+            m_CameraHandler ? m_CameraHandler->getCamera().zoom : 1.0f,
+            m_IsUserInteracting,
+            m_HasUnsavedChanges);
         m_ProfileCurrent.drawUiMs = (float)((NowSeconds() - uiStart) * 1000.0);
 
         m_ProfileCurrent.frameCpuMs = (float)((NowSeconds() - frameCpuStart) * 1000.0);

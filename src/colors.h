@@ -5,12 +5,13 @@
 
 #pragma once
 #include <raylib.h>
+#include <array>
 
 namespace NookCol
 {
 	enum class ThemePreset {
 		Classic,
-     Graphite,
+		Graphite,
 		Mist,
 		Harvest,
 		Frost,
@@ -27,7 +28,23 @@ namespace NookCol
 		TokyoNight,
 		GruvboxDark,
 		EverforestDark,
-		OneDark
+		OneDark,
+		Cyberpunk,
+		OceanBreeze,
+		RoyalAmethyst,
+		Matcha,
+		AutumnNight,
+		RosePine,
+		GruvboxMaterial,
+		Kanagawa,
+		AyuDark,
+		OceanicNext,
+		NightOwl,
+		Palenight,
+		Synthwave84,
+		BasicLight,
+		BasicDark,
+		Slate
 	};
 
 	extern Color BACKGROUND;
@@ -52,6 +69,7 @@ namespace NookCol
 	extern Color UI_TEXT_MUTED;
 	extern Color UI_ACCENT;
 	extern Color UI_ACCENT_SOFT;
+	extern std::array<Color, 4> LOTTERY_WHEEL;
 
 	void ApplyThemePreset(ThemePreset preset);
 	void ApplyThemePresetByIndex(int index);

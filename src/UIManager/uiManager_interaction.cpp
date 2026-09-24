@@ -11,9 +11,11 @@
 #include "UI/textBox.h"
 #include "UI/textInput.h"
 #include "UI/widget.h"
-
+#include "colors.h"
 #include <algorithm>
+#include <cmath>
 #include <format>
+
 
 void UIManager::FocusSearchBar()
 {
@@ -279,7 +281,8 @@ void UIManager::Update(BookManager& bookManager, GraphManager* graphRenderer)
 
     if (m_ToggleFiltersBtn) {
         const bool hasAdvancedFilters = !m_ActiveFilterQuery.empty();
-        m_ToggleFiltersBtn->SetText(hasAdvancedFilters ? NookConst::Text::kFilterToolbarGlyphActive : NookConst::Text::kFilterToolbarGlyph);
+        m_ToggleFiltersBtn->SetIcon(static_cast<int>(
+            hasAdvancedFilters ? IconRenderer::IconType::FilterActive : IconRenderer::IconType::Filter));
     }
 
     UpdateGoalPanelTexts();
@@ -288,22 +291,30 @@ void UIManager::Update(BookManager& bookManager, GraphManager* graphRenderer)
     {
         float dt = GetFrameTime();
         m_LotteryTimer -= dt;
-        m_LotterySpeedTimer -= dt;
-
-        if (m_LotterySpeedTimer <= 0.0f && m_LotteryTimer > 0.0f) {
-            m_LotterySpeedTimer = 0.05f;
-            const auto& allBooks = bookManager.getBooksToBeRead();
-            if (!allBooks.empty()) {
-                int r = GetRandomValue(0, (int)allBooks.size() - 1);
-                m_LotteryText->SetText("... " + allBooks[r].getTitle() + " ...");
-            }
+        const float duration = std::max(0.01f, m_LotteryDuration);
+        const float timeRatio = std::clamp(m_LotteryTimer / duration, 0.0f, 1.0f);
+        const float maxSpeed = 900.0f;
+        const float minSpeed = 120.0f;
+        const float speed = minSpeed + (maxSpeed - minSpeed) * (timeRatio * timeRatio);
+        m_LotteryAngle = std::fmod(m_LotteryAngle + speed * dt, 360.0f);
+        if (m_LotteryAngle < 0.0f) {
+            m_LotteryAngle += 360.0f;
         }
 
         if (m_LotteryTimer <= 0.0f) {
             m_IsLotteryRolling = false;
+            const auto& allBooks = bookManager.getBooksToBeRead();
+            if (allBooks.empty()) {
+                ShowNotification("No books found with status 'To Read'!", 2.0f);
+                m_LotteryWinnerId = -1;
+            }
+            else {
+                int selectedIndex = GetLotterySelectedIndex((int)allBooks.size());
+                if (selectedIndex < 0) {
+                    selectedIndex = 0;
+                }
 
-            try {
-                const Book& winnerConst = bookManager.getRandomBookToBeRead();
+                const Book& winnerConst = allBooks[static_cast<size_t>(selectedIndex)];
                 m_LotteryWinnerId = winnerConst.getId();
                 m_LastLotteryCheckState = m_LotteryAutoRead->checked;
 
@@ -314,17 +325,9 @@ void UIManager::Update(BookManager& bookManager, GraphManager* graphRenderer)
                     MarkAnalyticsDirty();
                 }
 
-                std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
-                m_LotteryText->SetText(
-                    "WINNER!\n\n" +
-                    winnerConst.getTitle() + "\n" +
-                    "by " + winnerConst.getAuthor() + "\n" +
-                    statusMsg
-                );
-            }
-            catch (const std::exception&) {
-                m_LotteryText->SetText("No books found with status 'To Read'!");
-                m_LotteryWinnerId = -1;
+                if (m_LotteryAutoRead->checked) {
+                    ShowNotification("Winner status updated to Reading!", 2.0f);
+                }
             }
             m_LotteryCloseBtn->SetVisible(true);
         }
@@ -346,14 +349,12 @@ void UIManager::Update(BookManager& bookManager, GraphManager* graphRenderer)
 
                 if (graphRenderer) graphRenderer->initializePositions();
                 MarkAnalyticsDirty();
-
-                std::string statusMsg = m_LotteryAutoRead->checked ? "\n(Status updated to Reading!)" : "";
-                m_LotteryText->SetText(
-                    "WINNER!\n\n" +
-                    winner->getTitle() + "\n" +
-                    "by " + winner->getAuthor() + "\n" +
-                    statusMsg
-                );
+                if (m_LotteryAutoRead->checked) {
+                    ShowNotification("Winner status updated to Reading!", 2.0f);
+                }
+                else {
+                    ShowNotification("Winner status set to To Read.", 2.0f);
+                }
             }
         }
     }
@@ -450,4 +451,21 @@ void UIManager::Update(BookManager& bookManager, GraphManager* graphRenderer)
     isBlockingGraph = hoverBeforeUpdate || IsMouseOverUI() || m_NodeContextMenuVisible;
 
     SetMouseCursor(resolvedCursor);
+}
+
+int UIManager::GetLotterySelectedIndex(int segmentCount) const
+{
+    if (segmentCount <= 0) {
+        return -1;
+    }
+
+    const float sliceAngle = 360.0f / static_cast<float>(segmentCount);
+    const float pointerAngle = -90.0f;
+    float relativeAngle = std::fmod(pointerAngle - m_LotteryAngle, 360.0f);
+    if (relativeAngle < 0.0f) {
+        relativeAngle += 360.0f;
+    }
+
+    const int index = static_cast<int>(relativeAngle / sliceAngle);
+    return std::clamp(index, 0, segmentCount - 1);
 }
